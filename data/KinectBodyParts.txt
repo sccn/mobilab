@@ -1,0 +1,39 @@
+foot_r
+ankle_r
+knee_r
+hip_r
+hip_c
+spine
+shoulder_c
+head
+shoulder_r
+elbow_r
+wrist_r
+hand_r
+shoulder_l
+elbow_l
+wrist_l
+hand_l
+hip_l
+knee_l
+ankle_l
+foot_l
+1 2
+2 3
+3 4
+4 5
+5 6
+6 7
+7 8
+7 9
+9 10
+10 11
+11 12
+7 13
+13 14
+14 15
+15 16
+5 17
+17 18
+18 19
+19 20

@@ -1,0 +1,677 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<HED version="1.1">
+	<node default="true"><name>Time-Locked Event</name>
+		<node><name>Stimulus</name><description>Input from outside world, exogenous</description>
+			<node><name>Visual</name>
+				<node><name>Fixation Point</name></node>
+				<node><name>Shape</name>
+					<node><name>Ellipse</name>
+						<node><name>Circle</name></node>
+					</node>
+					<node><name>Rectangle</name>
+						<node><name>Square</name></node>
+					</node>
+					<node><name>Star</name></node>
+					<node><name>Triangle</name></node>
+					<node><name>Gabor Patch</name></node>
+					<node><name>Cross</name><description>By default a vertical-horizontal cross, for rotated add /rotated/ tag</description></node>
+					<node extensionAllowed="true"><name>Rotated</name>
+						<node><name>#</name><description>In degrees</description></node>
+					</node>
+				</node>
+				<node requireChild = "true"><name>Luminance</name>
+					<node><name>#</name><description>In candela, e.g 25 cd</description></node>
+				</node>
+				<node requireChild = "true"><name>Size</name>
+					<node><name>#</name><description>In degrees, e.g 5 deg</description></node>
+				</node>
+				<node><name>Checkerboard</name></node>
+				<node><name>Uniform Color</name><description>These are CSS 3 basic color names, available in Appendix 1</description>	
+					<node><name>Aqua</name></node>
+					<node><name>Black</name></node>
+					<node><name>Blue</name></node>
+					<node><name>Fuchsia</name></node>
+					<node><name>Gray</name></node>
+					<node><name>Green</name></node>
+					<node><name>Lime</name></node>
+					<node><name>Maroon</name></node>
+					<node><name>Navy</name></node>
+					<node><name>Olive</name></node>
+					<node><name>Purple</name></node>
+					<node><name>Red</name></node>
+					<node><name>Silver</name></node>
+					<node><name>Teal</name></node>
+					<node><name>White</name></node>
+					<node><name>Yellow</name></node>
+					<node><name>Red</name>
+						<node><name>#</name><description>R value of RGB, between 0 and 1</description></node>
+					</node>
+					<node><name>Blue</name>
+						<node><name>#</name><description>B value of RGB, between 0 and 1</description></node>
+					</node>
+					<node><name>Green</name>
+						<node><name>#</name><description>G value of RGB, between 0 and 1</description></node>
+					</node>
+					<node requireChild = "true"><name>Hue</name>
+						<node><name>#</name><description>H value of HSV, between 0 and 1</description></node>
+					</node>
+					<node requireChild = "true"><name>Saturation</name>
+						<node><name>#</name><description>S value of HSV, between 0 and 1</description></node>
+					</node>
+					<node requireChild = "true"><name>Value</name>
+						<node><name>#</name><description>V value of HSV, between 0 and 1</description></node>
+					</node>
+				</node>
+			<node><name>Achromatic</name><description>Gray, is only in black, white or between</description>
+				<node><name>#</name><description>White intensity between 0 and 1</description></node>
+			</node>
+			<node requireChild = "true"><name>Screen Location</name><description>If centered at a screen location, not all over the screen</description>
+				<node><name>Center</name></node>
+				<node><name>Top</name></node>
+				<node><name>Bottom</name></node>
+				<node><name>Left</name></node>
+				<node><name>Right</name></node>
+				<node><name>Upper Left</name></node>
+				<node><name>Lower Left</name></node>
+				<node><name>Upper Right</name></node>
+				<node><name>Lower Right</name></node>
+				<node requireChild = "true"><name>Angle</name><description>Clockwise angle</description></node>
+				<node requireChild = "true"><name>Center Displacement</name>
+					<node><name>#</name><description>Displacement from screen center, in any direction, in degrees</description></node>
+				</node>
+			</node>
+			<node><name>Up-down Separated</name><description>Stimuli presented both at the top and the bottom of fovea</description>
+				<node><name>#</name><description>Separation in degrees</description></node>
+			</node>
+			<node><name>Bilateral</name><description>For bilateral visual field stimulus presentations</description>
+				<node><name>#</name><description>Separation in degrees</description></node>
+			</node>
+			<node><name>Foveal</name><description>Presented exactly where the subject is now looking</description></node>
+			<node><name>Peripheral</name><description>Presented where the subject is not directly looking</description></node>
+			<node requireChild = "true"><name>Clock Face</name>
+				<node><name>#</name><description>Hour:Min</description></node>
+			</node>
+			<node><name>3D Object</name></node>
+			<node><name>Abstract Pattern</name></node>
+			<node><name>Non-Linguistic Symbol</name>
+				<node><name>Meaningful</name></node>
+				<node><name>Not Meaningful</name></node>
+				<node><name>Newly Learned Meaning</name></node>
+			</node>
+			<node><name>Braille Character</name></node>
+			<node><name>Face</name>
+				<node><name>Whole face with hair</name></node>
+				<node><name>Whole face without hair</name></node>
+				<node><name>Cut-out</name></node>
+				<node><name>Parts only</name>
+					<node><name>Nose</name></node>
+					<node><name>Lips</name></node>
+					<node><name>Chin</name></node>
+					<node><name>Eyes</name></node>
+					<node><name>Eye</name></node>
+				</node>
+			</node>
+			<node><name>Movie</name>
+				<node><name>Motion</name>
+					<node><name>In 3D Space</name>
+						<node><name>Body</name>
+							<node><name>Point Light</name></node>
+							<node><name>Motion Capture</name></node>
+							<node><name>Video</name></node>
+							<node><name>Animation</name>
+								<node><name>Outline</name></node>
+							</node>
+						</node>
+						<node><name>Social</name><description>e.g., mother-child interaction, videotaped or animated by a triangle and a square</description></node>
+					</node>
+					<node requireChild = "true"><name>On Screen</name><description>Note: above, also need/could use starting position on screen, end position, velocity in deg/s, etc.</description>
+						<node><name>Down</name><description>e.g. /2 deg</description></node>
+						<node><name>Up</name></node>
+						<node><name>Horizontal</name>
+							<node><name>Right</name><description>e.g. /3 deg</description></node>
+						</node>
+						<node><name></name>Oblique
+							<node requireChild = "true"><name>Clock Face</name>
+								<node><name>#</name><description>e.g.,  4:30</description></node>
+							</node>
+						</node>
+						<node><name>Flickering</name>
+							<node><name>Checkerboard</name></node>
+							<node><name>Dots</name></node>
+							<node><name>Steady State</name><description>Fixed stimulus onset asynchrony</description></node>
+							<node><name>#</name><description>flicker rate in Hz</description></node>
+						</node>
+					</node>
+					<node><name>Film Clip</name><description>Any clip from a commercial film, TV,...</description></node>
+				</node>
+				<node><name>FalseFont</name></node>
+				<node><name>Food</name></node>
+				<node><name>Fractal</name></node>
+				<node><name>LED</name></node>
+				<node><name>Random Dot</name></node>
+				<node extensionAllowed="true"><name>Language</name>
+					<node><name>Asian</name>
+						<node><name>Chinese</name></node>
+						<node><name>Japanese</name></node>
+					</node>
+					<node><name>Latin</name>
+						<node><name>English</name></node>
+						<node><name>German</name></node>
+						<node><name>French</name></node>
+					</node>
+					<node><name>Character</name>
+						<node><name>Digit</name></node>
+						<node><name>Pseudo-character</name><description>Alphabet-like, but not really</description></node>
+						<node><name>Letter</name><description>Authograph, valid letters including numbers, e.g. A, B, 5...</description></node>
+					</node>
+					<node><name>Word</name>
+						<node><name>Noun</name>
+							<node><name>Proper</name><description>A proper noun, refers to a unique entity, such as London, Jupiter, ...</description></node>
+							<node><name>Common</name><description>Refers to a class of entities (cities, planets, persons, corporations), or non-unique instances of a certain class (a city, another planet, these persons, our corporation)</description></node>
+						</node>
+						<node><name>Verb</name></node>
+						<node><name>Adjective</name></node>
+						<node><name>Pseudoword</name></node>
+						<node><name>#</name><description>Number of words</description></node>
+					</node>
+					<node><name>Sentence</name>
+						<node><name>Full</name></node>
+						<node><name>Partial</name></node>
+						<node><name>#</name><description>Number of sentences</description></node>
+						<node><name>Paragraph</name>
+							<node><name>#</name><description>Number of paragraphs</description></node>
+							<node><name>Story</name></node>
+						</node>
+					</node>
+				</node>
+				<node><name>Natural Scene</name></node>
+				<node><name>Drawing</name><description>e.g. cartoons</description>
+					<node><name>Line Drawing</name></node>
+				</node>
+				<node><name>IAPS</name><description>International Affective Picture System</description></node>
+				<node><name>Bistable</name><description>This could be either abstract line drawings or object illustrations</description></node>
+				<node requireChild = "true"><name>Background</name>
+					<node><name>Uniform Color</name><description>These are CSS 3 basic color names, available in Appendix 1</description>	
+						<node><name>Aqua</name></node>
+						<node><name>Black</name></node>
+						<node><name>Blue</name></node>
+						<node><name>Fuchsia</name></node>
+						<node><name>Gray</name></node>
+						<node><name>Green</name></node>
+						<node><name>Lime</name></node>
+						<node><name>Maroon</name></node>
+						<node><name>Navy</name></node>
+						<node><name>Olive</name></node>
+						<node><name>Purple</name></node>
+						<node><name>Red</name></node>
+						<node><name>Silver</name></node>
+						<node><name>Teal</name></node>
+						<node><name>White</name></node>
+						<node><name>Yellow</name></node>
+						<node><name>Red</name>
+							<node><name>#</name><description>R value of RGB, between 0 and 1</description></node>
+						</node>
+						<node><name>Blue</name>
+							<node><name>#</name><description>B value of RGB, between 0 and 1</description></node>
+						</node>
+						<node><name>Green</name>
+							<node><name>#</name><description>G value of RGB, between 0 and 1</description></node>
+						</node>
+						<node requireChild = "true"><name>Hue</name>
+							<node><name>#</name><description>H value of HSV, between 0 and 1</description></node>
+						</node>
+						<node requireChild = "true"><name>Saturation</name>
+							<node><name>#</name><description>S value of HSV, between 0 and 1</description></node>
+						</node>
+						<node requireChild = "true"><name>Value</name>
+							<node><name>#</name><description>V value of HSV, between 0 and 1</description></node>
+						</node>
+					</node>
+				</node>
+			</node>
+		</node>
+		<node><name>Auditory</name>
+			<node extensionAllowed="true"><name>Reward</name><description>e.g., trumpets!</description>
+				<node><name>Cash Register</name></node>
+			</node>
+			<node extensionAllowed="true"><name>Warning</name>
+				<node><name>Fire Alarm</name></node>
+			</node>
+			<node><name>Nameable</name><description>Could be described by a word</description></node>
+			<node requireChild = "true"><name>Loudness</name>
+				<node><name>#</name><description>In dB</description></node>
+			</node>
+			<node><name>Music</name></node>
+			<node><name>Chord Sequence</name></node>
+			<node><name>Click</name>
+				<node><name>ABR</name><description>Auditory Brainstem Response</description></node>
+			</node>
+			<node><name>Noise</name>
+				<node><name>White</name></node>
+				<node><name>Colored</name><description>Not white, 1/f, spectrum</description></node>
+			</node>
+			<node><name>Syllable</name></node>
+			<node extensionAllowed="true"><name>Tone</name>
+				<node><name>#</name><description>In Hz</description></node>
+				<node><name>Ramp Up</name></node>
+				<node><name>Ramp Down</name></node>
+			</node>
+			<node><name>Nonverbal Vocal Sound</name></node>
+			<node><name>Nonvocal Sound</name></node>
+			<node extensionAllowed="true"><name>Language</name>
+				<node><name>Word</name>
+					<node><name>Name</name></node>
+					<node><name>Noun</name></node>
+					<node><name>Verb</name></node>
+					<node><name>Adjective</name></node>
+						<node><name>#</name><description>Number of words</description></node>
+					</node>
+					<node><name>Sentence</name>
+						<node><name>Full</name></node>
+						<node><name>Partial</name></node>
+						<node><name>#</name><description>Number of sentences</description></node>
+						<node><name>Paragraph</name>
+							<node><name>#</name><description>Number of paragraphs</description></node>
+							<node><name>Story</name></node>
+						</node>
+					</node>
+				</node>
+				<node><name>Animal Voice</name></node>
+				<node><name>Real world sounds</name><description>People, machines, etc..</description></node>
+				<node><name>Emotional sounds</name></node>
+			</node>
+			<node><name>TMS</name>
+				<node><name>With SPGS</name><description>SPGS = spatial position guiding system</description></node>
+				<node><name>Without SPGS</name><description>SPGS = spatial position guiding system</description></node>
+			</node>
+			<node><name>Tactile</name>
+				<node><name>Vibration</name></node>
+				<node><name>Acupuncture</name></node>
+				<node><name>Eye Puff</name></node>
+			</node>
+			<node><name>Pain</name>
+				<node><name>Heat</name></node>
+				<node><name>Cold</name></node>
+				<node><name>Pressure</name></node>
+				<node><name>Electric Shock</name></node>
+				<node><name>Laser-evoked</name></node>
+			</node>
+			<node><name>Taste</name></node>
+			<node><name>Smell</name></node>
+			<node><name>Target</name><description>Something the subject is looking for is detected.</description></node>
+			<node><name>Oddball</name><description>Unexpected, infrequent</description>
+				<node><name>One Stimulus</name><description>See http://dx.doi.org/10.1016/0167-8760(96)00030-X</description></node>
+				<node><name>Two Stimuli</name><description>See http://dx.doi.org/10.1016/0167-8760(96)00030-X</description></node>
+				<node><name>Three Stimuli</name><description>See http://dx.doi.org/10.1016/0167-8760(96)00030-X</description></node>
+				<node><name>Silent counting</name></node>
+				<node><name>Button pressing for target</name></node>
+				<node><name>Button pressing for all</name></node>
+				<node><name>#</name><description>Probability, between 0 and 1</description></node>
+			</node>
+			<node><name>Novel</name><description>Genuine once or so per experiment event</description></node>
+			<node><name>Expected</name><description>Of low information value</description>
+				<node><name>Standard</name></node>
+				<node><name>Distractor</name></node>
+				<node><name>Non-Target</name></node>
+			</node>
+			<node><name>Feedback</name>
+				<node><name>Correct (Confirm)</name><description>Something went well, last action was correct</description></node>
+				<node><name>Incorrect (disconfirm)</name></node>
+				<node><name>Expected</name><description>Feedback was expected, for example they were often correct and they are again correct</description></node>
+				<node><name>Unexpected</name><description>Feedback was expected, for example they were often correct and they are again correct</description></node>
+				<node><name>On Accuracy</name><description>Feedback was provided by evaluating their accuracy</description></node>
+				<node><name>On Reaction Time</name><description>Feedback was provided by evaluating their reaction time</description></node>
+				<node default="true"><name>To Self</name></node>
+				<node><name>To Other</name><description>Observed feedback to another person, typically in a social paradigm</description></node>
+				<node><name>Deterministic</name><description>Should have a fixed relationship to what happened before</description></node>
+				<node><name>Stochastic</name><description>Non-deterministic, it does not have fixed relationship with what has happened before in the experiment</description></node>
+				<node><name>Reward</name>
+					<node><name>Low</name></node>
+					<node><name>Medium</name></node>
+					<node><name>High</name></node>
+					<node><name>#</name><description>Monetary values in some currency, for example $1, or the ratio of the reward to the maximum possible (3 of max 10 becomes 0.3)</description></node>
+				</node>
+				<node><name>Penalty</name>
+					<node><name>Low</name></node>
+					<node><name>Medium</name></node>
+					<node><name>High</name></node>
+					<node><name>#</name><description>Monetary values in some currency, for example $1, or the ratio of the reward to the maximum possible (3 of max 10 becomes 0.3)</description></node>
+				</node>
+			</node>
+			<node><name>Error</name>
+				<node><name>Self Originated</name></node>
+				<node><name>Other Originated</name>
+					<node><name>Human</name></node>
+					<node><name>Non-human</name></node>
+				</node>
+				<node><name>Expected</name></node>
+				<node><name>Unexpected</name></node>
+				<node><name>Planned</name><description>The error feedback was given regardless of the validity of subject response, e.g in a yoked design</description></node>
+			</node>
+			<node><name>Threat</name>
+				<node><name>To Self</name></node>
+				<node><name>To others</name>
+					<node><name>Close</name></node>
+				</node>
+			</node>
+			<node><name>Task Rest Start</name><description>Stop doing the task and rest, or just rest if the task has not yet begun</description></node>
+			<node><name>Task Rest End</name><description>Stop resting and prepare for or start performing the task</description></node>
+			<node><name>Presented action of another person</name><description>e.g., saw someone pick up something</description></node>
+			<node><name>Priming</name>
+				<node><name>Semantic</name></node>
+				<node><name>Motoric</name></node>
+				<node><name>Emotional</name></node>
+				<node><name>Perceptual</name></node>
+			</node>
+			<node><name>Instruction</name>
+				<node><name>Attend</name></node>
+				<node><name>Fixate</name></node>
+				<node><name>Recall</name></node>
+				<node><name>Generate</name></node>
+				<node><name>Repeat</name></node>
+				<node><name>Breath-Hold</name></node>
+				<node><name>Imagine</name></node>
+				<node><name>Rest</name></node>
+				<node><name>Count</name></node>
+				<node><name>Move</name>
+					<node><name>Natural/Constrained</name></node>
+					<node><name>Walk</name></node>
+					<node><name>Breathe</name></node>
+					<node><name>Move upper torso</name></node>
+					<node><name>Move lower torso</name></node>
+					<node><name>Move whole body</name></node>
+				</node>
+				<node><name>Speak</name></node>
+				<node><name>Sing</name></node>
+				<node><name>Detect</name></node>
+				<node><name>Name</name></node>
+				<node><name>Smile</name></node>
+				<node><name>Discriminate</name></node>
+				<node><name>Read</name></node>
+				<node><name>Track</name></node>
+				<node><name>Encode</name></node>
+				<node><name>Eye-Blink Inhibition</name></node>
+			</node>
+			<node><name>Subliminal</name>
+				<node><name>Unmasked</name></node>
+				<node><name>Masked</name>
+					<node><name>Forward</name></node>
+					<node><name>Backward</name></node>
+				</node>
+			</node>
+			<node default="true"><name>Supraliminal</name></node>
+			<node><name>Liminal</name><description>At the 75%/25% perception threshold</description></node>
+			<node default="true"><name>Onset</name></node>
+			<node><name>Offset</name><description>vs. Onset</description></node>
+		</node>
+		<node><name>Response</name><description>Self-initiated action</description>
+			<node><name>Button Press</name></node>
+			<node><name>Button Hold</name><description>Press and keep pressed</description></node>
+			<node><name>Hand</name>
+				<node><name>Right Hand</name></node>
+				<node><name>Left Hand</name></node>
+				<node><name>Finger</name>
+					<node><name>Tap</name></node>
+					<node><name>Lift</name></node>
+				</node>
+			</node>
+			<node><name>Leg</name>
+				<node><name>Right Leg</name></node>
+				<node><name>Left Leg</name></node>
+				<node><name>Walk</name>
+					<node><name>Start Stride</name></node>
+					<node><name>Peak stride</name></node>
+					<node><name>End Stride</name></node>
+				</node>
+			</node>
+			<node><name>Speech</name></node>
+			<node><name>Head</name>
+				<node><name>Turn</name></node>
+			</node>
+			<node><name>Torso</name>
+				<node><name>Turn</name></node>
+			</node>
+			<node requireChild = "true"><name>Movement</name>
+				<node><name>Onset Velocity</name></node>
+				<node><name>Peak Velocity</name></node>
+				<node><name>Offset Velocity</name></node>
+				<node><name>Onset Acceleration</name></node>
+				<node><name>Peak Acceleration</name></node>
+				<node><name>Offset Acceleration</name></node>
+				<node><name>Onset Jerk</name></node>
+				<node><name>Peak Jerk</name></node>
+				<node><name>Offset Jerk</name></node>
+				<node><name>Turn</name><description>Change in direction of movement</description></node>
+			</node>
+			<node><name>Follow</name></node>
+			<node><name>Lead</name></node>
+			<node><name>Point</name>
+				<node><name>Object</name><description>Point to an object</description></node>
+				<node><name>Direction</name><description>Point to a direction</description></node>
+			</node>
+			<node><name>Eye</name>
+				<node><name>Saccade</name>
+					<node><name>Start</name></node>
+					<node><name>Middle</name></node>
+					<node><name>End</name></node>
+				</node>
+				<node><name>Fixation</name></node>
+				<node><name>Blink</name></node>
+				<node><name>Close</name><description>and keep closed for  ~0.1 s</description></node>
+				<node><name>Open</name><description>and keep open for  ~0.1 s</description></node>
+			</node>
+		</node>
+	</node>
+	<node><name>State</name>
+		<node><name>Emotion</name>
+			<node><name>Awe</name></node>
+			<node><name>Frustration</name></node>
+			<node><name>Joy</name></node>
+			<node><name>Anger</name></node>
+			<node><name>Happiness</name></node>
+			<node><name>Sadness</name></node>
+			<node><name>Love</name></node>
+			<node><name>Fear</name></node>
+			<node><name>Compassion</name></node>
+			<node><name>Jealousy</name></node>
+			<node><name>Contentment</name></node>
+			<node><name>Grief</name></node>
+			<node><name>Relief</name></node>
+			<node><name>Excitement</name></node>
+			<node><name>Disgust</name></node>
+			<node><name>Negative Valence</name>
+				<node><name>#</name><description>A number between 0 and 1</description></node>
+			</node>
+			<node><name>Positive Valence</name>
+				<node><name>#</name><description>A number between 0 and 1</description></node>
+			</node>
+		</node>
+		<node><name>Awake</name>
+			<node><name>Task-relevant</name></node>
+			<node><name>Task-irrelevant</name></node>
+			<node><name>Induced</name>
+				<node><name>Sense of Community</name></node>
+				<node><name>Sense of Social Justice</name></node>
+				<node><name>Emotion</name>
+					<node><name>Awe</name></node>
+					<node><name>Frustration</name></node>
+					<node><name>Joy</name></node>
+					<node><name>Anger</name></node>
+					<node><name>Happiness</name></node>
+					<node><name>Sadness</name></node>
+					<node><name>Love</name></node>
+					<node><name>Fear</name></node>
+					<node><name>Compassion</name></node>
+					<node><name>Jealousy</name></node>
+					<node><name>Contentment</name></node>
+					<node><name>Grief</name></node>
+					<node><name>Relief</name></node>
+					<node><name>Excitement</name></node>
+					<node><name>Disgust</name></node>
+					<node><name>Negative Valence</name>
+						<node><name>#</name><description>A number between 0 and 1</description></node>
+					</node>
+					<node><name>Positive Valence</name>
+						<node><name>#</name><description>A number between 0 and 1</description></node>
+					</node>
+				</node>
+			</node>
+			<node><name>Under time pressure</name>
+				<node><name>Response Window</name></node>
+				<node><name>Competitive</name><description>Subject is competing against an opponent, for example when the faster respondent wins</description></node>
+				<node><name>Social Interaction</name><description>Social</description>
+					<node><name>Pseudo</name><description>Instructed so but actually not, the other person may not exist in real world, e.g. be a computer program agent</description></node>
+				</node>
+				<node><name>Passive</name><description>Not engaged in any particular task</description></node>
+				<node><name>Attention</name>
+					<node><name>Top-down</name></node>
+					<node><name>Bottom-up</name></node>
+					<node><name>Covert</name></node>
+					<node><name>Overt</name></node>
+					<node><name>Implicit</name></node>
+					<node><name>Explicit</name></node>
+					<node><name>Automatic</name></node>
+					<node><name>Orienting</name></node>
+					<node><name>Alerting</name></node>
+					<node><name>Control</name></node>
+					<node><name>Divided</name></node>
+					<node><name>Focused</name></node>
+					<node><name>Sustained</name><description>Being alert</description></node>
+					<node><name>Auditory</name></node>
+					<node><name>Visual</name></node>
+					<node><name>Tactile</name></node>
+					<node><name>To a Location</name><description>Spatial</description>
+						<node><name>Right</name></node>
+						<node><name>Left</name></node>
+						<node><name>Top</name></node>
+						<node><name>Bottom</name></node>
+						<node><name>Center</name></node>
+					</node>
+				</node>
+			</node>
+		</node>
+		<node><name>Low Conscious</name>
+			<node><name>Sleep</name></node>
+			<node><name>Drunk</name></node>
+			<node><name>Anesthesia</name></node>
+			<node><name>Locked-in</name></node>
+			<node><name>Coma</name></node>
+			<node><name>Vegetative</name></node>
+			<node><name>Brain-Death</name></node>
+		</node>
+	</node>
+	<node extensionAllowed="true"><name>Context</name><description>Describes the context of the whole experiment, also includes tags that are common across all events</description>
+		<node><name>With Chin Rest</name></node>
+		<node><name>Sitting</name></node>
+		<node><name>Standing</name></node>
+		<node><name>Prone</name><description>e.g. on a bed</description></node>
+		<node><name>Running</name>
+			<node><name>Treadmill</name>
+				<node><name>#</name><description>Speed (meters per second)</description></node>
+			</node>
+		</node>
+		<node><name>Walking</name>
+			<node><name>Treadmill</name>
+				<node><name>#</name><description>Speed (meters per second)</description></node>
+			</node>
+		</node>
+		<node default="true"><name>Indoors</name>
+			<node><name>Clinic</name><description>Recording in a clinical setting, e.g. in a hospital or doctor’s office</description></node>
+		</node>
+		<node><name>Outdoors</name></node>
+		<node><name>Motion platform</name><description>Subject is on a motion platform, e.g. simulated car movements</description></node>
+		<node requireChild = "true"><name>Screen Distance</name>
+			<node><name>#</name><description>Distance in meters from subject eyes to the presentation screen , e.g. 0.3 for 30 cm from subject eyes to the monitor</description></node>
+		</node>
+	</node>
+	<node extensionAllowed="true"><name>Custom</name><description>This node can be used to organize events in an alternative (parallel) hierarchy: you can define your custom tags and hierarchies without any restriction under this node. These tags will still be matched to each other, for example /Custom/Dance/Waltz is considered a subtype of /Custom/Dance.</description></node>
+	<node extensionAllowed="true"><name>Paradigm</name>
+		<node><name>Action Observation</name></node>
+		<node><name>Acupuncture</name></node>
+		<node><name>Anti-Saccades</name></node>
+		<node><name>Braille Reading</name></node>
+		<node><name>Breath-Holding</name></node>
+		<node><name>Chewing or Swallowing</name></node>
+		<node><name>Classical Conditioning</name></node>
+		<node><name>Counting or Calculation</name></node>
+		<node><name>Cued Explicit Recognition</name></node>
+		<node><name>Deception Task</name></node>
+		<node><name>Deductive Reasoning</name></node>
+		<node><name>Delay Discounting Task</name></node>
+		<node><name>Delayed Match To Sample</name></node>
+		<node><name>Delayed Non Match To Sample</name></node>
+		<node><name>Divided Auditory Attention</name></node>
+		<node><name>Drawing</name></node>
+		<node><name>Eating or Drinking</name></node>
+		<node><name>Encoding</name></node>
+		<node><name>Episodic Recall</name></node>
+		<node><name>Face Monitor or Discrimination</name></node>
+		<node><name>Film Viewing</name></node>
+		<node><name>Finger Tapping</name></node>
+		<node><name>Fixation</name></node>
+		<node><name>Flanker Task</name></node>
+		<node><name>Flashing Checkerboard</name></node>
+		<node><name>Flexion or Extension</name></node>
+		<node><name>Free Word List Recall</name></node>
+		<node><name>Go/No-Go</name></node>
+		<node><name>Grasping</name></node>
+		<node><name>Imagined Movement</name></node>
+		<node><name>Imagined Objects or Scenes</name></node>
+		<node><name>Isometric Force</name></node>
+		<node><name>Mental Rotation</name></node>
+		<node><name>Micturition Task</name></node>
+		<node><name>Music Comprehension or Production</name></node>
+		<node><name>n-back</name></node>
+		<node><name>Naming (Covert)</name></node>
+		<node><name>Naming (Overt)</name></node>
+		<node><name>Non-Painful Electrical Stimulation</name></node>
+		<node><name>Non-Painful Thermal Stimulation</name></node>
+		<node><name>Oddball Discrimination</name></node>
+		<node><name>Olfactory Monitor or Discrimination</name></node>
+		<node><name>Orthographic Discrimination</name></node>
+		<node><name>Pain Monitor or Discrimination</name></node>
+		<node><name>Paired Associate Recall</name></node>
+		<node><name>Passive Listening</name></node>
+		<node><name>Passive Viewing</name></node>
+		<node><name>Phonological Discrimination</name></node>
+		<node><name>Pitch Monitor or Discrimination</name></node>
+		<node><name>Pointing</name></node>
+		<node><name>Posner Task</name></node>
+		<node><name>Reading (Covert)</name></node>
+		<node><name>Reading (Overt)</name></node>
+		<node><name>Recitation or Repetition (Covert)</name></node>
+		<node><name>Recitation or Repetition (Overt)</name></node>
+		<node><name>Rest</name></node>
+		<node><name>Reward Task</name></node>
+		<node><name>Saccades</name></node>
+		<node><name>Semantic Monitor or Discrimination</name></node>
+		<node><name>Sequence Recall or Learning</name></node>
+		<node><name>Simon Task</name></node>
+		<node><name>Sleep</name></node>
+		<node><name>Spatial or Location Discrimination</name></node>
+		<node><name>Sternberg Task</name></node>
+		<node><name>Stroop Task</name></node>
+		<node><name>Subjective Emotional Picture Discrimination</name></node>
+		<node><name>Syntactic Discrimination</name></node>
+		<node><name>Tactile Monitor or Discrimination</name></node>
+		<node><name>Task Switching</name></node>
+		<node><name>Theory of Mind Task</name></node>
+		<node><name>Tone Monitor or Discrimination</name></node>
+		<node><name>Tower of London</name></node>
+		<node><name>Transcranial Magnetic Stimulation</name></node>
+		<node><name>Vibrotactile Monitor or Discrimination</name></node>
+		<node><name>Video Games</name></node>
+		<node><name>Visual Distractor or Visual Attention</name></node>
+		<node><name>Visual Pursuit or Tracking</name></node>
+		<node><name>Whistling</name></node>
+		<node><name>Wisconsin Card Sorting Test</name></node>
+		<node><name>Word Generation (Covert)</name></node>
+		<node><name>Word Generation (Overt)</name></node>
+		<node><name>Word Stem Completion (Covert)</name></node>
+		<node><name>Word Stem Completion (Overt)</name></node>
+		<node><name>Writing</name></node>
+	</node>
+	<node requireChild = "true"><name>Label</name><description>A short label for the event. For example /Label/Accept Button. Please note that the information under this tag will not be used in the analysis and is provided solely for the convenience in referring to events in the context of a single study.</description></node>
+	<node requireChild = "true"><name>Description</name><description>A detailed description of the event as text, can be used to complement information encoded in other HED tags. Please note that information under this tag would be unusable by computers and analysis software and should not be used as the main method for describing events (use HED tags other than Description and Label to explain events in a machine-understandable manner)</description></node>
+	<node requireChild = "true"><name>HED</name><description>HED specification version number: normally there is no need to specify the version number in the HED string since it will be matched by default to the most recent compliant version, but this tag can be used to specify the exact HED version the HED string was based on.</description></node>
+</HED>
