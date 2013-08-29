@@ -311,6 +311,7 @@ classdef cometBrowserHandle2 < browserHandle
             else
                 obj.play;
                 close(obj.videoHandle);
+                obj.speed = 1;
                 set(findobj(obj.figureHandle,'Tag','previous'),'Enable','on')
                 set(findobj(obj.figureHandle,'Tag','next'),'Enable','on')
                 set(findobj(obj.figureHandle,'Tag','play_rev'),'Enable','on')

@@ -25,10 +25,6 @@ if ~exist(mobiDataDirectory,'dir')
         errordlg2([repmat(' ',1,18) 'This is not a _MoBI folder' repmat(' ',1,18)],'Error loading MoBILAB dataSource');
         return
     end
-    if ~exist([mobiDataDirectory filesep 'descriptor.MoBI'],'file'),
-        errordlg2('This dataSource is corrupted. The file descriptor.MoBI is missing','Error loading MoBILAB dataSource');
-        return;
-    end
 end
 
 try

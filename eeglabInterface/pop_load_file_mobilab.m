@@ -80,7 +80,7 @@ try
         case '.bdf'
             disp('To import .bdf files recorded by DataRiver use the option ''Import from DataRiver .bdf file'' or ''pop_load_bdf'' from the command line.')
             return;
-        otherwise error('Unknown format.')
+        otherwise error('Unknown format.');
     end
         
     if dispCommand
@@ -120,9 +120,7 @@ try
         disp('Running:');
         disp(['  allDataStreams.export2eeglab( [' num2str(dataObjIndex(:)') '] , [' num2str(eventObjIndex(:)') '] );']);
     end
-    
     allDataStreams.export2eeglab(dataObjIndex,eventObjIndex);
-    
 catch ME
     if ~isempty(allDataStreams)
         N = length(allDataStreams.item);

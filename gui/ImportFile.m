@@ -166,7 +166,7 @@ end
 
 % Enter the DataRiver (.drf) file:
 function pushbutton3_Callback(hObject, eventdata, handles)
-[FileName,PathName] = uigetfile2({'*.xdf;*.xdfz','LSL files (*.xdf, *.xdfz)';'*.drf;*.bdf','Datariver File (*.drf, *.bdf)'},'Select the source file');
+[FileName,PathName] = uigetfile2({'*.xdf;*.xdfz','LSL files (*.xdf, *.xdfz)';'*.drf;*.bdf','Datariver File (*.drf, *.bdf)';'*.set;*.SET','EEGLAB File (*.set, *.SET)'},'Select the source file');
 if any([isnumeric(FileName) isnumeric(PathName)]), return;end
 sourceFileName = fullfile(PathName,FileName);
 [~,filename,ext] = fileparts(sourceFileName);

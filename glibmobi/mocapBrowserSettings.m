@@ -67,6 +67,8 @@ set(handles.popupmenu2,'Value',find(sList == speed));
 if isa(browserObj.master,'browserHandleList'), set(handles.popupmenu2,'Enable','off');end
 set(handles.checkbox3,'Value',browserObj.showChannelNumber);
 set(handles.checkbox4,'Value',browserObj.onscreenDisplay);
+Data = {browserObj.roomSize.x(1) browserObj.roomSize.x(2);browserObj.roomSize.y(1) browserObj.roomSize.y(2);browserObj.roomSize.z(1) browserObj.roomSize.z(2);};
+set(handles.uitable1,'Data',Data)
 
 path = [browserObj.streamHandle.container.container.path filesep 'skin'];
 CData = imread([path filesep 'selectColor.png']);
@@ -87,6 +89,7 @@ set(handles.uipanel1,'BackgroundColor',browserObj.streamHandle.container.contain
 set(handles.checkbox3,'BackgroundColor',browserObj.streamHandle.container.container.preferences.gui.backgroundColor);
 set(handles.checkbox4,'BackgroundColor',browserObj.streamHandle.container.container.preferences.gui.backgroundColor);
 set(handles.figure1,'userData',browserObj,'Color',browserObj.streamHandle.container.container.preferences.gui.backgroundColor);
+set(handles.uipanel6,'BackgroundColor',browserObj.streamHandle.container.container.preferences.gui.backgroundColor);
 
 
 
@@ -237,6 +240,7 @@ userData.lineColor = get(handles.pushbutton5,'userData');
 userData.floorColor = get(handles.pushbutton6,'userData');
 userData.background = get(handles.pushbutton7,'userData');
 userData.lineWidth = str2double(get(handles.edit21,'String'));
+userData.limits = cell2mat(get(handles.uitable1,'Data'));
 
 if ~isempty(userData.newColor)
     userData.newColor.channel = eval(['[' get(handles.edit19,'String') ']']);

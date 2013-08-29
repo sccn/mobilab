@@ -42,7 +42,7 @@ classdef gazeStreamBrowserHandle < mocapBrowserHandle
             obj.gazeStreamObj = dStreamObj;
             obj.uuid = defaults.uuid;
             
-            [~,t0] = min(abs(dStreamObj.timeStamp(obj.timeIndex) - obj.nowCursor));
+            [~,t0] = min(abs(dStreamObj.timeStamp - obj.nowCursor));
             hold(obj.axesHandle,'on');
             x = [obj.gazeStreamObj.eyePosition(t0,1) obj.gazeStreamObj.gazePosition(t0,1)];
             y = [obj.gazeStreamObj.eyePosition(t0,2) obj.gazeStreamObj.gazePosition(t0,2)];
@@ -56,7 +56,8 @@ classdef gazeStreamBrowserHandle < mocapBrowserHandle
         end
         %%
         function plotThisTimeStamp(obj,nowCursor)
-            t0 = plotThisTimeStamp@mocapBrowserHandle(obj,nowCursor);
+            plotThisTimeStamp@mocapBrowserHandle(obj,nowCursor);
+            [~,t0] = min(abs(obj.gazeStreamObj.timeStamp - obj.nowCursor));
             x = [obj.gazeStreamObj.eyePosition(t0,1) obj.gazeStreamObj.gazePosition(t0,1)];
             y = [obj.gazeStreamObj.eyePosition(t0,2) obj.gazeStreamObj.gazePosition(t0,2)];
             z = [obj.gazeStreamObj.eyePosition(t0,3) obj.gazeStreamObj.gazePosition(t0,3)];

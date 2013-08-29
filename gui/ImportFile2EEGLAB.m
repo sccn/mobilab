@@ -86,32 +86,14 @@ if ~isempty(ind),
     dataSourceName(ind:ind+4) = [];
     set(handles.edit3,'string',dataSourceName);
 end
-
 mobiDataDirectory = fullfile(rootDir,[dataSourceName '_MoBI']);
-if ~exist([rootDir filesep dataSourceName '_MoBI'],'dir')
-    try
-        mkdir(mobiDataDirectory);
-    catch ME
-        mobiDataDirectory = [];
-        uiresume;
-        errordlg2(ME.message);
-    end
-elseif ~isempty(dir(mobiDataDirectory)) 
-    choice = questdlg2(...
-        sprintf('The folder is not empty.\nAll the previous files will be zipped.\n Would you like to continue?'),...
+if exist(mobiDataDirectory,'dir') && ~isempty(dir(mobiDataDirectory)) 
+    choice = questdlg2(sprintf('The folder is not empty.\nAll the previous files will be zipped.\n Would you like to continue?'),...
         'Warning!!!','Yes','No','No');
-    switch choice
-        case 'Yes'
-            warning off %#ok
-            try rmdir(mobiDataDirectory,'s');end %#ok
-            try mkdir(mobiDataDirectory);end     %#ok
-            warning on %#ok
-        case 'No'
-            mobiDataDirectory = [];
-            return
-        otherwise
-            mobiDataDirectory = [];
-            return
+    if strcmp(choice,'No')
+        set(handles.figure1,'UserData',[]);
+        uiresume
+        return
     end
 end
 userData.source = source;

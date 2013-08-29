@@ -13,6 +13,7 @@ classdef browserHandle < handle
         cursorHandle
         timeTexttHandle
         timerObj = [];
+        timeStamp
     end
     properties(SetObservable)
         state = false
@@ -21,7 +22,7 @@ classdef browserHandle < handle
         speed
     end
     properties(Hidden=true)
-        timerMult = 1;
+        timerMult = 0.008;
     end
     %%
     methods
@@ -34,6 +35,7 @@ classdef browserHandle < handle
                 'BusyMode','queue','ExecutionMode','fixedRate','StopFcn',{@stopCallback, obj});
             obj.addlistener('state','PostSet',@browserHandle.triggerTimer);
             obj.addlistener('speed','PostSet',@browserHandle.setTimerPeriod);
+            obj.addlistener('timeIndex','PostSet',@browserHandle.setTimeStamps);
         end
         %%
         function delete(obj)
@@ -50,8 +52,7 @@ classdef browserHandle < handle
             defaults.uuid = obj.uuid;
             if isa(obj.master,'browserHandleList')
                 defaults.mode = 'slave';
-            else
-                defaults.mode = 'standalone';
+            else defaults.mode = 'standalone';
             end 
         end
         %%
@@ -76,8 +77,7 @@ classdef browserHandle < handle
             set(findobj(obj.figureHandle,'tag','deleteLine'),'Visible','off');
             if isa(obj.streamHandle,'segmentedStreamInContinuousTime') && ~isa(obj,'cometBrowserHandle2')
                 tmpObj = obj.streamHandle.originalStreamObj;
-            else
-                tmpObj = obj.streamHandle;
+            else tmpObj = obj.streamHandle;
             end
             set(findobj(obj.figureHandle,'tag','text4'),'String',num2str(tmpObj.timeStamp(obj.timeIndex(1)),4),'FontSize',obj.font.size,'FontWeight',obj.font.weight,...
                 'ForegroundColor',preferences.gui.fontColor);
@@ -106,6 +106,8 @@ classdef browserHandle < handle
                 set(findobj(obj.figureHandle,'tag','text4'),'Visible','off');
                 set(findobj(obj.figureHandle,'tag','text5'),'Visible','off');
             else
+                rotate3d(obj.axesHandle,'off');
+                set(obj.figureHandle,'WindowScrollWheelFcn',@(src, event)onMouseWheelMove(obj,[], event),'KeyPressFcn',@(src, event)onKeyPress(obj,[], event));
                 if isa(obj,'mocapBrowserHandle')
                     set(findobj(obj.figureHandle,'tag','connectLine'),'Visible','on');
                     set(findobj(obj.figureHandle,'tag','deleteLine'),'Visible','on');
@@ -128,34 +130,44 @@ classdef browserHandle < handle
         function enableCursor(obj,~,~)
             if strcmp(get(obj.cursorHandle.tb,'State'),'on')
                 obj.plotThisTimeStamp(obj.nowCursor);
-            else
-                obj.cursorHandle.gh.visible = 'off';
+            else obj.cursorHandle.gh.visible = 'off';
             end
         end
-        %%
-        function play(obj)
-            obj.state = ~obj.state;
+        function play(obj), obj.state = ~obj.state;end
+        function onMouseWheelMove(obj,~,eventObj)
+            % step = -10*obj.speed*(eventObj.VerticalScrollCount*eventObj.VerticalScrollAmount)/obj.streamHandle.samplingRate;%#ok
+            step = -(eventObj.VerticalScrollCount*eventObj.VerticalScrollAmount)/obj.streamHandle.samplingRate/2;%#ok
+            plotStep(obj,step);%#ok
+        end
+        function onKeyPress(obj,~,eventObj)
+            switch eventObj.Key
+                case 'leftarrow',  plotStep(obj,-obj.step*obj.speed*2);
+                case 'rightarrow', plotStep(obj,obj.step*obj.speed*2);
+            end
         end
     end
     %%
     methods(Static)
         function triggerTimer(~,evnt)
             if evnt.AffectedObject.state && strcmp(get(evnt.AffectedObject.timerObj,'Running'),'off')
-                start(evnt.AffectedObject.timerObj);
-            else
-                stop(evnt.AffectedObject.timerObj);
+                 start(evnt.AffectedObject.timerObj);
+            else stop(evnt.AffectedObject.timerObj);
             end
         end
         %%
         function setTimerPeriod(~,evnt)
             if strcmp(get(evnt.AffectedObject.timerObj,'Running'),'on');
-                stop(evnt.AffectedObject.timerObj);
-                triggerFlag = true;
-            else
-                triggerFlag = false;
+                 stop(evnt.AffectedObject.timerObj);
+                 triggerFlag = true;
+            else triggerFlag = false;
             end
             set(evnt.AffectedObject.timerObj,'Period',evnt.AffectedObject.timerMult/evnt.AffectedObject.speed);
             if triggerFlag, start(evnt.AffectedObject.timerObj);end
+        end
+        %%
+        function setTimeStamps(~,evnt)
+            if any(evnt.AffectedObject.timeIndex==-1), return;end
+            evnt.AffectedObject.timeStamp = evnt.AffectedObject.streamHandle.timeStamp(evnt.AffectedObject.timeIndex);
         end
     end
     %%

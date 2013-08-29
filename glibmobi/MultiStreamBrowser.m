@@ -59,7 +59,7 @@ end
 
 try
     if isa(varargin{1},'mobilabApplication') 
-        fprintf('Is highly recomended running this program on your local workstation. It can run\non a cluster as well, however, rendering is very inefficient due to network delays.\n');
+        fprintf('It is highly recomended running this program on your local workstation. It can run\nremotely as well, however, rendering is very slow inefficient in Matlab due to network delays.\n');
         mobilab = varargin{1};
         handles.mobilab = mobilab;
         guidata(hObject, handles);
@@ -116,6 +116,7 @@ try
         hListener = handle.listener(handles.slider1,'ActionEvent',@slider1_Callback);
         setappdata(handles.slider1,'sliderListeners',hListener);
 
+        set(handles.load,'Visible','off');
         load_Callback(handles.load, [], handles);
     elseif isa(varargin{1},'coreStreamObject') 
         streamObj = varargin{1};
@@ -152,9 +153,16 @@ varargout{1} = handles.output;
 function load_Callback(hObject, eventdata, handles)
 mobilab = handles.mobilab;
 try
-    if mobilab.isGuiActive, close(mobilab.isGuiActive);end
-    treeHandle = mobilab.gui('add2Browser_Callback');
-    %treeHandle = mobilab.gui('addBrowserList_Callback');
+    hFigure = mobilab.isGuiActive;
+    if hFigure
+        position = get(hFigure,'Position');
+        %close(mobilab.isGuiActive);
+        treeHandle = mobilab.gui('add2Browser_Callback');
+        %hFigure = mobilab.isGuiActive;
+        set(hFigure,'Position',position);
+    else
+        treeHandle = mobilab.gui('add2Browser_Callback');
+    end
     set(treeHandle,'Name','Right click on objects to add them to the Browser');
 catch ME
     sendEmailReport(ME);
@@ -178,18 +186,16 @@ function play_Callback(hObject, eventdata, handles)
 try
     browserListObj = get(handles.figure1,'userData');
     if ~isempty(browserListObj.list)
+        browserListObj.play;
+        browserListObj.state;
         CData = get(handles.play,'UserData');
-        if ~browserListObj.state
+        if browserListObj.state
             set(handles.play,'CData',CData{2});
+            start(browserListObj.timerObj);
         else
+            stop(browserListObj.timerObj);
             set(handles.play,'CData',CData{1});
         end
-        browserListObj.play
-%         if browserListObj.state %&& strcmp(get(browserListObj.timerObj,'Running'),'off')
-%             start(browserListObj.timerObj);
-%         else
-%             stop(browserListObj.timerObj);
-%         end
     end
 catch ME
     sendEmailReport(ME);
@@ -417,13 +423,12 @@ itemIndex = get(handles.edit8,'Value');
 ind = get(handles.listbox1,'ListboxTop');
 if ~isempty(browserListObj.list{itemIndex}.streamHandle.event.label)
     [~,loc] = ismember( browserListObj.list{itemIndex}.streamHandle.event.label, browserListObj.list{itemIndex}.streamHandle.event.uniqueLabel{ind});
-    tmp  = browserListObj.list{itemIndex}.streamHandle.event.latencyInFrame(logical(loc));
-    tmp2 = browserListObj.list{itemIndex}.streamHandle.timeStamp(browserListObj.list{itemIndex}.streamHandle.event.latencyInFrame(logical(loc))) -  browserListObj.nowCursor;
-    tmp(tmp2>=0) = [];
-    tmp2(tmp2>=0) = [];
-    [~,loc1] = max(tmp2);
-    jumpLatency = tmp(loc1);
-    if ~isempty(jumpLatency)
+    latency = browserListObj.list{itemIndex}.streamHandle.event.latencyInFrame(logical(loc));
+    I = browserListObj.nowCursor > browserListObj.list{itemIndex}.streamHandle.timeStamp(browserListObj.list{itemIndex}.streamHandle.event.latencyInFrame(logical(loc)));
+    latency(~I) = [];
+    if ~isempty(latency)
+        latency = sort(latency);
+        jumpLatency = latency(end);
         set(handles.slider1,'Value',browserListObj.list{itemIndex}.streamHandle.timeStamp(jumpLatency));
         slider1_Callback(handles.slider1,[],handles); 
     end
@@ -442,13 +447,12 @@ itemIndex = get(handles.edit8,'Value');
 ind = get(handles.listbox1,'ListboxTop');
 if ~isempty(browserListObj.list{itemIndex}.streamHandle.event.label)
     [~,loc] = ismember( browserListObj.list{itemIndex}.streamHandle.event.label, browserListObj.list{itemIndex}.streamHandle.event.uniqueLabel{ind});
-    tmp  = browserListObj.list{itemIndex}.streamHandle.event.latencyInFrame(logical(loc));
-    tmp2 = browserListObj.list{itemIndex}.streamHandle.timeStamp(browserListObj.list{itemIndex}.streamHandle.event.latencyInFrame(logical(loc))) -  browserListObj.nowCursor;
-    tmp(tmp2<0) = [];
-    tmp2(tmp2<0) = [];
-    [~,loc1] = max(tmp2);
-    jumpLatency = tmp(loc1);
-    if ~isempty(jumpLatency)
+    latency = browserListObj.list{itemIndex}.streamHandle.event.latencyInFrame(logical(loc));
+    I = browserListObj.nowCursor < browserListObj.list{itemIndex}.streamHandle.timeStamp(browserListObj.list{itemIndex}.streamHandle.event.latencyInFrame(logical(loc)));
+    latency(~I) = [];
+    if ~isempty(latency)
+        latency = sort(latency);
+        jumpLatency = latency(1);
         set(handles.slider1,'Value',browserListObj.list{itemIndex}.streamHandle.timeStamp(jumpLatency));
         slider1_Callback(handles.slider1,[],handles); 
     end

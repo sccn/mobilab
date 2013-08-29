@@ -24,7 +24,7 @@ try %#ok
         for it=1:length(browserObj.master.list)
             if browserObj.master.list{it} ~= browserObj
                 if isa(browserObj.master.list{it},'topographyBrowserHandle') || isa(browserObj.master.list{it},'mocapBrowserHandle') || isa(browserObj.master.list{it},'cometBrowserHandle') ||...
-                        isa(browserObj.master.list{it},'vectorBrowserHandle') || isa(browserObj.master.list{it},'videoStreamBrowserHandle')
+                        isa(browserObj.master.list{it},'vectorBrowserHandle') || isa(browserObj.master.list{it},'videoStreamBrowserHandle') || isa(browserObj.master.list{it},'pcdBrowserHandle')
                     browserObj.master.list{it}.plotThisTimeStamp( hCursor.Position(1));
                     
                 elseif isa(browserObj.master.list{it},'projectionBrowserHandle')
@@ -44,6 +44,7 @@ try %#ok
                         browserObj.master.list{it}.cursorHandle.gh.Position(1) = browserObj.nowCursor;
                         %browserObj.master.list{it}.cursorHandle.gh.updatePosition(hCursor);
                     end
+                    % browserObj.master.list{it}.plotThisTimeStamp( hCursor.Position(1));
                     browserObj.master.list{it}.nowCursor = browserObj.nowCursor;
                     set(browserObj.master.list{it}.sliderHandle,'Value',browserObj.nowCursor);
                     set(browserObj.master.list{it}.timeTexttHandle,'String',['Current latency = ' num2str(browserObj.nowCursor,4) ' sec']);

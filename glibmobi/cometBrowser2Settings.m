@@ -64,7 +64,7 @@ else
     speed = browserObj.speed;
 end
 set(handles.popupmenu2,'Value',find(sList == speed));
-if strcmp(class(browserObj.master),'browserHandleList')
+if isa(browserObj.master,'browserHandleList')
     set(handles.popupmenu2,'Enable','off');
 end
 

@@ -26,7 +26,7 @@ classdef headModelViewerHandle < handle
                 mobilab = streamObj.container.container;
                 path = fullfile(mobilab.path,'skin');
             else
-                color = [0.66 0.76 1];
+                color = [0.93 0.96 1];
                 path = fileparts(which('runmobilab'));
                 path = fullfile(path,'skin');
             end
@@ -112,18 +112,18 @@ classdef headModelViewerHandle < handle
             
             % cortex
             if ~isempty(obj.streamObj.atlas),
-                obj.hCortex = patch('vertices',surfData(3).vertices,'faces',surfData(3).faces,'FaceVertexCData',obj.streamObj.atlas.color,...
+                obj.hCortex = patch('vertices',surfData(3).vertices,'faces',surfData(3).faces,'FaceVertexCData',obj.streamObj.atlas.colorTable,...
                     'FaceColor','interp','FaceLighting','phong','LineStyle','none','FaceAlpha',1,'SpecularColorReflectance',0,...
                     'SpecularExponent',50,'SpecularStrength',0.5,'Parent',obj.hAxes);
-                % obj.hCortex = patch('vertices',surfData(3).vertices,'faces',surfData(3).faces,'FaceVertexCData',obj.streamObj.atlas.color,...
+                % obj.hCortex = patch('vertices',surfData(3).vertices,'faces',surfData(3).faces,'FaceVertexCData',obj.streamObj.atlas.colorTable,...
                 %     'facelighting','phong','LineStyle','none','LineWidth',.005,'EdgeColor',[.3 .3 .3],...
                 %     'AmbientStrength',.4,'FaceLighting','phong','FaceAlpha',1,'Parent',obj.hAxes);
                 camlight(0,180)
                 camlight(0,0)
             else
                 obj.hCortex = patch('vertices',surfData(3).vertices,'faces',surfData(3).faces,'facecolor','green',...
-                    'facelighting','phong','LineStyle','-','LineWidth',.005,'EdgeColor',[.3 .3 .3],'AmbientStrength',.4,...
-                    'FaceLighting','phong','FaceAlpha',1,'SpecularColorReflectance',0,'SpecularExponent',50,'SpecularStrength',0.5,'Parent',obj.hAxes);
+                    'FaceLighting','gouraud','LineStyle','-','LineWidth',.005,'EdgeColor',[.3 .3 .3],'AmbientStrength',.4,...
+                    'FaceAlpha',1,'SpecularColorReflectance',0,'SpecularExponent',50,'SpecularStrength',0.5,'Parent',obj.hAxes);
             end
             % skull
             obj.hSkull = patch('vertices',surfData(2).vertices,'faces',surfData(2).faces,'facecolor','white',...
@@ -179,7 +179,7 @@ classdef headModelViewerHandle < handle
                 case 'cortexOff'
                     set(obj.hCortex,'Visible','off');
                 case 'atlasOn'
-                    set(obj.hCortex,'FaceVertexCData',obj.streamObj.atlas.color,'LineStyle','none','FaceColor','interp');
+                    set(obj.hCortex,'FaceVertexCData',obj.streamObj.atlas.colorTable,'LineStyle','none','FaceColor','interp');
                 case 'atlasOff'
                     set(obj.hCortex,'FaceColor',[ 0 1 0],'LineStyle','-');
             end
@@ -195,7 +195,7 @@ classdef headModelViewerHandle < handle
             end
             pos = get(event_obj,'Position');
             loc = nearestNeighbor(DT, pos);
-            output_txt = obj.streamObj.atlas.label{obj.streamObj.atlas.color(loc)};
+            output_txt = obj.streamObj.atlas.label{obj.streamObj.atlas.colorTable(loc)};
             %updateCursor(obj.dcmHandle,pos);
         end
     end

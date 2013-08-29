@@ -95,16 +95,13 @@ userData.dataSourceName = get(handles.edit3,'string');
 userData.configList     = get(handles.uitable1,'Data');
 ind = strfind(userData.dataSourceName,'_MoBI');
 if ~isempty(ind), userData.dataSourceName(ind:ind+4) = [];set(handles.edit3,'string',userData.dataSourceName);end
-
 userData.mobiDataDirectory = [userData.rootDir filesep userData.dataSourceName '_MoBI'];
-if ~exist([userData.rootDir filesep userData.dataSourceName '_MoBI'],'dir')
-    try mkdir(userData.mobiDataDirectory);catch ME, msgbox(ME.message);return;end
-elseif ~isempty(dir(userData.mobiDataDirectory)) 
-    choice = questdlg2(...
-        sprintf('The folder is not empty.\nAll the previous files will be zipped.\n Would you like to continue?'),...
+if exist(userData.mobiDataDirectory,'dir') && ~isempty(dir(userData.mobiDataDirectory)) 
+    choice = questdlg2(sprintf('The folder is not empty.\nAll the previous files will be zipped.\n Would you like to continue?'),...
         'Warning!!!','Yes','No','No');
     if strcmp(choice,'No')
-        userData.mobiDataDirectory = [];
+        set(handles.figure1,'UserData',[]);
+        uiresume
         return
     end
 end

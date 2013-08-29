@@ -131,7 +131,9 @@ classdef mocapBrowserHandle < browserHandle
             [~,t0] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - obj.nowCursor));
             
             perm = [1 2 3];
-            if (strcmpi(obj.streamHandle.hardwareMetaData.name,'phasespace') || isempty(obj.streamHandle.hardwareMetaData.name))% && isa(obj.streamHandle.hardwareMetaData,'hardwareMetaData')
+            if (strcmpi(obj.streamHandle.hardwareMetaData.name,'phasespace') || isempty(obj.streamHandle.hardwareMetaData.name)) %&& isa(obj.streamHandle.hardwareMetaData,'hardwareMetaData')
+                perm = [1 3 2];
+            elseif isempty(obj.streamHandle.hardwareMetaData.name) || ~isempty(strfind(obj.streamHandle.hardwareMetaData.name,'KinectMocap'))
                 perm = [1 3 2];
             end
             obj.streamHandle.reshape([obj.dim(1) 3 obj.dim(2)/3]);
@@ -158,7 +160,7 @@ classdef mocapBrowserHandle < browserHandle
             %end
             axis(obj.axesHandle,'equal')
             
-            [x,y,z] = meshgrid(obj.roomSize.x,obj.roomSize.y,0*obj.roomSize.z(1));
+            [x,y,z] = meshgrid(obj.roomSize.x,obj.roomSize.y,obj.roomSize.z(1));
             surf(obj.axesHandle,double(x),double(y),double(z),'FaceColor',obj.floorColor);
             for it=1:obj.numberOfChannelsToPlot
                 obj.markerHandle(it) = scatter3(data(it,1),data(it,2),data(it,3),'filled');                
@@ -237,8 +239,10 @@ classdef mocapBrowserHandle < browserHandle
             obj.nowCursor = nowCursor;
             [~,t0] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - obj.nowCursor));
             
-            perm = [1 3 2];
+            perm = [1 2 3];
             if (strcmpi(obj.streamHandle.hardwareMetaData.name,'phasespace') || isempty(obj.streamHandle.hardwareMetaData.name)) %&& isa(obj.streamHandle.hardwareMetaData,'hardwareMetaData')
+                perm = [1 3 2];
+            elseif isempty(obj.streamHandle.hardwareMetaData.name) || ~isempty(strfind(obj.streamHandle.hardwareMetaData.name,'KinectMocap')) 
                 perm = [1 3 2];
             end
             

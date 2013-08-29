@@ -72,7 +72,7 @@ for it=1:N
             strPopup = {'topographyBrowserHandle','streamBrowserHandle'};
         case 'icaStream'
             strPopup = {'topographyBrowserHandle','streamBrowserHandle'};
-        case 'dataStream'
+        case {'dataStream','wii'}
             strPopup = 'streamBrowserHandle';
         case 'mocap'
             strPopup = {'mocapBrowserHandle' 'streamBrowserHandle' 'generalizedCoordinatesBrowserHandle','cometBrowserHandle'};%'phaseSpaceBrowser'
@@ -103,6 +103,8 @@ for it=1:N
             end
         case 'coreTimeFrequencyObject'
             strPopup = 'spectrogramBrowserHandle';
+        case 'pcdStream'
+             strPopup = {'pcdBrowserHandle','plotROI'};
         otherwise
             strPopup = 'streamBrowserHandle';
     end

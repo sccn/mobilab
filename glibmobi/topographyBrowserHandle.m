@@ -4,12 +4,12 @@ classdef topographyBrowserHandle < browserHandle
         hSensors
         hLabels
         numberOfChannelsToPlot
-        cmap = 'jet';
-        showLabels = false;
+        cmap = 'bipolar';
+        showLabels = true;
         interpolator
         surfData
         faceAlpha = 1;
-        showSensors = false;
+        showSensors = true;
     end
     properties(SetObservable)
         channelIndex
@@ -35,7 +35,7 @@ classdef topographyBrowserHandle < browserHandle
             if ~isfield(defaults,'mode'), defaults.mode = 'standalone';end
             if ~isfield(defaults,'speed'), defaults.speed = 1;end
             if ~isfield(defaults,'font'), defaults.font = struct('size',12,'weight','normal');end
-            if ~isfield(defaults,'cmap'), defaults.cmap = 'jet';end
+            if ~isfield(defaults,'cmap'), defaults.cmap = 'bipolar';end
             %obj.timerMult = 0.1;
             obj.uuid = defaults.uuid; 
             obj.streamHandle = dStreamObj;
@@ -58,7 +58,6 @@ classdef topographyBrowserHandle < browserHandle
             
             load(obj.streamHandle.surfaces);
             obj.surfData = surfData(1); %#ok
-            %obj.interpolator = geometricTools.localGaussianInterpolator(obj.streamHandle.channelSpace(obj.channelIndex,:),obj.surfData.vertices);
             obj.figureHandle = streamBrowserNG(obj);
         end
         %%
@@ -83,7 +82,8 @@ classdef topographyBrowserHandle < browserHandle
             obj.surfData = surfData(1); %#ok
             obj.interpolator = geometricTools.localGaussianInterpolator(obj.streamHandle.channelSpace,obj.surfData.vertices);
             if isa(obj.streamHandle,'icaStream'), obj.interpolator = obj.interpolator*obj.streamHandle.icawinv(:,obj.channelIndex);end
-            colormap(obj.cmap);
+            
+            if strcmp(obj.cmap,'bipolar'), colormap(bipolar(512, 0.99)); else colormap(obj.cmap);end
             
             % find now cursor index
             obj.nowCursor = nowCursor;
@@ -94,17 +94,27 @@ classdef topographyBrowserHandle < browserHandle
             
             hold(obj.axesHandle,'on');
             obj.hScalp = patch('vertices',obj.surfData.vertices,'faces',obj.surfData.faces,'FaceVertexCData',obj.interpolator*data,...
-                'FaceColor','interp','FaceLighting','phong','LineStyle','none','FaceAlpha',obj.faceAlpha,'Parent',obj.axesHandle);
+                'FaceColor','interp','FaceLighting','phong','LineStyle','none','FaceAlpha',obj.faceAlpha,'SpecularColorReflectance',0,...
+                    'SpecularExponent',50,'SpecularStrength',0.5,'Parent',obj.axesHandle);
             camlight(0,180)
             camlight(0,0)
             if obj.showSensors
                 obj.hSensors = scatter3(obj.streamHandle.channelSpace(obj.channelIndex,1),obj.streamHandle.channelSpace(obj.channelIndex,2),...
                     obj.streamHandle.channelSpace(obj.channelIndex,3),'filled','MarkerFaceColor','w','MarkerEdgeColor','k','Parent',obj.axesHandle);
+            else
+                try delete(obj.hSensors);end%#ok
+            end
+            if obj.showLabels
+                N = length(obj.streamHandle.label);
+                k = 1.1;
+                obj.hLabels = zeros(N,1);
+                for it=1:N, obj.hLabels(it) = text('Position',k*obj.streamHandle.channelSpace(it,:),'String',obj.streamHandle.label{it},'Parent',obj.axesHandle);end
+            else
+                try delete(obj.hLabels);end%#ok
             end
             hold(obj.axesHandle,'off');
             title(obj.axesHandle,'');
             set(obj.timeTexttHandle,'String',['Current latency = ' num2str(obj.nowCursor,4) ' sec'],'FontSize',obj.font.size,'FontWeight',obj.font.weight);
-            
             axis(obj.axesHandle,'equal','vis3d');
             axis(obj.axesHandle,'off')
             rotate3d
@@ -124,7 +134,10 @@ classdef topographyBrowserHandle < browserHandle
             [~,t0] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - obj.nowCursor));
             data = obj.streamHandle.data(obj.timeIndex(t0),obj.channelIndex)';
             data = double(data);
-            set(obj.hScalp,'FaceVertexCData',obj.interpolator*data);
+            val = obj.interpolator*data;
+            mx = max(abs(val));
+            set(obj.hScalp,'FaceVertexCData',val);
+            set(obj.axesHandle,'Clim',[-mx mx]);
             set(obj.timeTexttHandle,'String',['Current latency = ' num2str(obj.nowCursor,4) ' sec']);
             set(obj.sliderHandle,'Value',obj.nowCursor);
         end
@@ -162,7 +175,8 @@ classdef topographyBrowserHandle < browserHandle
                 PropertyGridField('speed',speed1,'Type',PropertyType('char','row',{'-5x','-4x','-3x','-2x','1x','2x','3x','4x','5x'}),'DisplayName','Speed','Description','Speed of the play mode.')...
                 PropertyGridField('faceAlpha',obj.faceAlpha,'DisplayName','Face alpha','Description','(Patch transparency.')...
                 PropertyGridField('showSensors',obj.showSensors,'DisplayName','Show sensors','Description','(Shows the sensor positions.')...
-                PropertyGridField('colormap',obj.cmap,'Type',PropertyType('char','row',{'jet','hsv','hot','cool','spring','summer'}),'DisplayName','Colormap','Description','')...
+                PropertyGridField('showLabels',obj.showLabels,'DisplayName','Show sensor labels','Description','(Shows the sensor labels.')...
+                PropertyGridField('colormap',obj.cmap,'Type',PropertyType('char','row',{'bipolar','jet','hsv','hot','cool','spring','summer'}),'DisplayName','Colormap','Description','')...
                 ];
          
             % create figure
@@ -178,6 +192,7 @@ classdef topographyBrowserHandle < browserHandle
             obj.cmap = val.colormap;
             obj.channelIndex = val.channels;
             obj.showSensors = val.showSensors;
+            obj.showLabels = val.showLabels;
             
             figure(obj.figureHandle);
             obj.createGraphicObjects(obj.nowCursor);

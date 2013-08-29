@@ -224,7 +224,7 @@ classdef streamBrowserHandle < browserHandle
             else
                 if sum(data(:))
                     ytick = 0;
-                    lim = [max(abs(data))*1.5 max(abs(data))*1.5];
+                    lim = [-max(abs(data))*1.5 max(abs(data))*1.5];
                 else
                     ytick = 0;
                     lim = [-1 1];

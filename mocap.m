@@ -60,10 +60,12 @@ classdef mocap < dataStream
             if ~isfield(obj.animationParameters,'conn'), obj.animationParameters.conn = [];saveIt=true;end
             if ~isfield(obj.animationParameters,'bodymodel'), obj.animationParameters.bodymodel = [];saveIt=true;end
             if isempty(obj.animationParameters.limits)
-                mx = max(max(abs(squeeze(obj.dataInXYZ(1:100:end,1,:)))));
-                my = max(max(abs(squeeze(obj.dataInXYZ(1:100:end,2,:)))));
-                mz = max(max(abs(squeeze(obj.dataInXYZ(1:100:end,3,:)))));
-                obj.animationParameters.limits = [-mx mx;-my my;0 mz];
+                mx  = 1.05*max(max(abs(squeeze(obj.dataInXYZ(1:100:end,1,:)))));
+                my  = 1.05*max(max(abs(squeeze(obj.dataInXYZ(1:100:end,2,:)))));
+                mz  = 1.05*max(max(abs(squeeze(obj.dataInXYZ(1:100:end,3,:)))));
+                mnz = min(min(squeeze(obj.dataInXYZ(1:100:end,3,:))));
+                
+                obj.animationParameters.limits = [-mx mx;-my my;mnz mz];
             end
             animationParameters = obj.animationParameters;
             if saveIt, save(obj.header,'-mat','-append','animationParameters');end
@@ -105,7 +107,9 @@ classdef mocap < dataStream
             if obj.isMemoryMappingActive
                 if obj.numberOfChannels/3 > 1
                     perm = 1:3;
-                    if strcmpi(obj.hardwareMetaData.name,'phasespace') || isempty(obj.hardwareMetaData.name) %&& isa(obj.hardwareMetaData,'hardwareMetaData')
+                    if isempty(obj.hardwareMetaData.name) || strcmpi(obj.hardwareMetaData.name,'phasespace') %&& isa(obj.hardwareMetaData,'hardwareMetaData')
+                        perm = [1 3 2];
+                    elseif isempty(obj.hardwareMetaData.name) ||  ~isempty(strfind(obj.hardwareMetaData.name,'KinectMocap')) 
                         perm = [1 3 2];
                     end
                     %if strcmp(obj.hardwareMetaData.name,'optitrack')

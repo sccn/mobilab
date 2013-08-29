@@ -28,10 +28,9 @@ if nargin < 3, configList = [];end
 flag = evalin('base','exist(''allDataStreams'',''var'')');
 if flag
     allDataStreams = evalin('base','allDataStreams');
-else
-    allDataStreams = [];
+else allDataStreams = [];
 end
-
+dispCommand = false;
 if ~exist(source,'file') || ~exist(mobiDataDirectory,'dir')
     handle = ImportFromDatariverBDF;
     uiwait(handle);
@@ -42,27 +41,31 @@ if ~exist(source,'file') || ~exist(mobiDataDirectory,'dir')
     source = userData.source;
     mobiDataDirectory = userData.mobiDataDirectory;
     configList = userData.configList;
+    dispCommand = true;
 end
 [~,~,ext] = fileparts(source);
+
+if dispCommand
+    disp('Running:');
+    disp(['  allDataStreams = dataSourceBDF( ''' source ''' , ''' mobiDataDirectory ''',configList);' ]);
+end
 
 try
     if strcmp(ext,'.bdf')
         allDataStreams = dataSourceBDF(source,mobiDataDirectory,configList);
         allDataStreams.container.allStreams = allDataStreams;
-    else
-        error(['Cannot read ' ext ' files']);
+    else error(['Cannot read ' ext ' files']);
     end
-        
     allDataStreams.export2eeglab(1);
 catch ME
     if ~isempty(allDataStreams)
         N = length(allDataStreams.item);
         for it=1:N
-            if exist(allDataStreams.item{it}.mmfName,'file')
-                delete(allDataStreams.item{it}.mmfName);
+            if exist(allDataStreams.item{it}.binFile,'file')
+                delete(allDataStreams.item{it}.binFile);
+                delete(allDataStreams.item{it}.header);
             end
         end
-        if exist(allDataStreams.dataSourceLocation,'file'), delete(allDataStreams.dataSourceLocation);end
     end
     sendEmailReport(ME);
     errordlg2(ME.message);

@@ -256,6 +256,7 @@ classdef projectionBrowserHandle < browserHandle
             [~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-delta)));  
             t0 = fix(delta*obj.streamHandle.samplingRate);
             t2 = t1+2*t0-1;
+            if t2-1 > size(obj.streamHandle,1), t2 = size(obj.streamHandle)+1;end
             time = obj.streamHandle.timeStamp((t1:t2-1));
             
             dataX = obj.streamHandle.mmfObj.Data.x(t1:t2-1,obj.superIndex(:,1));

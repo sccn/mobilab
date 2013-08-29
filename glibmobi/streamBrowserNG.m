@@ -52,6 +52,10 @@ browserObj = varargin{1};
 
 path = fileparts(which('eeglab'));
 path = [path filesep 'plugins' filesep 'mobilab' filesep 'skin'];
+if ~exist(path,'dir')
+    path = fileparts(which('streamBrowserNG.m'));
+    if isempty(path), path = pwd;end
+end
 
 try
     mobilab = browserObj.streamHandle.container.container;
@@ -228,7 +232,7 @@ try
     browserObj = get(handles.figure1,'userData');
     browserObj.plotStep(-browserObj.step);
 catch ME
-    sendEmailReport(ME);
+    ME.rethrow;
 end
 
 % --- Executes on button press in play.
@@ -243,7 +247,7 @@ try
     end
     browserObj.play;
 catch ME
-    sendEmailReport(ME);
+    ME.rethrow;
 end
 
 % --- Executes on button press in play_fwd.
@@ -252,7 +256,7 @@ try
     browserObj = get(handles.figure1,'userData');
     browserObj.plotStep(browserObj.step);
 catch ME
-    sendEmailReport(ME);
+    ME.rethrow;
 end
 
 % --- Executes on button press in settings.
@@ -261,7 +265,7 @@ try
     browserListObj = get(handles.figure1,'userData');
     browserListObj.changeSettings;
 catch ME
-    sendEmailReport(ME);
+    ME.rethrow;
 end
 
 
