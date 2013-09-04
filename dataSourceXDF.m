@@ -84,7 +84,7 @@ classdef dataSourceXDF < dataSource
                             rep_streams = find(strcmp(source_id,source_id(target(it))));
                             
                             % Exceptions
-                            if isempty(strcmp(streams{target(it)}.info.source_id,'OpenViBE')) 
+                            if isempty(strfind(streams{target(it)}.info.source_id,'OpenViBE')) 
                                 [~,loc] = min(created_at(rep_streams));
                                 rmTmp = setdiff(rep_streams,rep_streams(loc));
                                 rmTmp = ind_markers(rmTmp);
@@ -231,7 +231,7 @@ classdef dataSourceXDF < dataSource
                                         str2double(streams{stream_count}.info.desc.channels.channel{ch}.location.Z)];
                                 end
                             end
-                            eegChannels = ismember(channelType,'EEG');
+                            eegChannels = ismember(lower(channelType),'eeg');
                             % mmfObj = memmapfile(streams{stream_count}.tmpfile,'Format',{streams{stream_count}.precision...
                             %     [length(eegChannels) length(streams{stream_count}.time_stamps)] 'x'},'Writable',false);
                             if any(~eegChannels)
