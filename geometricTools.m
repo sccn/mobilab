@@ -34,7 +34,7 @@ classdef geometricTools
             Xcentered = Xcentered(1:3,:)';
         end
         %%
-        function [Aff,Sn] = affineMapping(S,T)
+        function [Aff,Sn, scale] = affineMapping(S,T)
             % S: source space
             % T: target space
             % S = [sx1 sy1 sz1; sx2 sy2 sz2; ... sxk syn szk]
@@ -44,6 +44,7 @@ classdef geometricTools
             % Sn = S*Aff';
             
             [~,~,transform] = procrustes(T,S);
+            scale = transform.b;
             Aff = [[transform.b*transform.T;transform.c(1,:)] [0;0;0;1]]';
             Sn = geometricTools.applyAffineMapping(S,Aff);
         end

@@ -215,7 +215,7 @@ classdef headModel < handle
             try obj.initStatusbar(1,8,'Co-registering...');end %#ok
             
             % affine co-registration
-            Aff = gTools.affineMapping(S,T);
+            [Aff,~,scale] = gTools.affineMapping(S,T);
             if isa(obj,'eeg'), obj.statusbar(1);end
             
             % b-spline co-registration (only fiducial landmarks)
@@ -267,6 +267,7 @@ classdef headModel < handle
             try obj.container.container.statusBar.setText('Fixing topological defects...');end %#ok
             dmax = ones(Ns-1,1)*5;
             dmax(1) = 8;
+            dmax = dmax*scale;
             ind = fliplr(1:Ns);
             for it=1:Ns-1
                 surfData(ind(it+1)).vertices = gTools.repareIntersectedSurface(surfData(ind(it)),surfData(ind(it+1)),dmax(it));
@@ -298,6 +299,7 @@ classdef headModel < handle
             obj.surfaces = individualHeadModelFile;
             save(obj.surfaces,'surfData');
             try obj.statusbar(8);end %#ok
+            disp('Done!')
         end
         %%
         function hFigureObj = plotOnModel(obj,J,V,figureTitle)
@@ -1031,20 +1033,28 @@ function [elec,labels,fiducials] = readMontage(file)
 elec = [cell2mat({eloc.X}'), cell2mat({eloc.Y}'), cell2mat({eloc.Z}')];
 Nl = length(labels);
 count = 1;
+lowerLabels = lower(labels);
+rmThis = false(Nl,1);
 for it=1:Nl
-    if ~isempty(strfind(labels{it},'fidnz')) || ~isempty(strfind(labels{it},'nasion')) || ~isempty(strfind(labels{it},'Nz'))
+    if ~isempty(strfind(lowerLabels{it},'fidnz')) || ~isempty(strfind(lowerLabels{it},'nasion')) || ~isempty(strfind(lowerLabels{it},'Nz'))
         fiducials.nasion = elec(it,:);
+        rmThis(it) = true;
         count = count+1;
-    elseif ~isempty(strfind(labels{it},'fidt9')) || ~isempty(strfind(labels{it},'lpa')) || ~isempty(strfind(labels{it},'LPA'))
+    elseif ~isempty(strfind(lowerLabels{it},'fidt9')) || ~isempty(strfind(lowerLabels{it},'lpa')) || ~isempty(strfind(lowerLabels{it},'LPA'))
         fiducials.lpa = elec(it,:);  
+        rmThis(it) = true;
         count = count+1;
-    elseif ~isempty(strfind(labels{it},'fidt10')) || ~isempty(strfind(labels{it},'rpa')) || ~isempty(strfind(labels{it},'RPA'))
+    elseif ~isempty(strfind(lowerLabels{it},'fidt10')) || ~isempty(strfind(lowerLabels{it},'rpa')) || ~isempty(strfind(lowerLabels{it},'RPA'))
         fiducials.rpa = elec(it,:);
+        rmThis(it) = true;
         count = count+1;
-    elseif ~isempty(strfind(labels{it},'fidt10')) || ~isempty(strfind(labels{it},'vertex'))
+    elseif ~isempty(strfind(lowerLabels{it},'fidt10')) || ~isempty(strfind(lowerLabels{it},'vertex'))
         fiducials.vertex = elec(it,:);
+        rmThis(it) = true;
         count = count+1;
     end
     if count > 4, break;end
 end
+elec(rmThis,:) = [];
+labels(rmThis) = [];
 end

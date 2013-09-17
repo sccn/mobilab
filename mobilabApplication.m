@@ -514,7 +514,7 @@ classdef mobilabApplication < handle
                 obj.preferences.eeg.resampleMethod = 'linear';
                 obj.preferences.eeg.filterType = 'bandpass';
                 obj.preferences.eeg.cutoff = [1 200];
-                obj.preferences.eeg.headModel = fullfile(obj.path,'data','headModelColin27_3751.mat');
+                obj.preferences.eeg.headModel = fullfile(obj.path,'data','head_modelColin27_4825.mat');
                 obj.preferences.tmpDirectory = tempdir;
                 
                 answer = [];
