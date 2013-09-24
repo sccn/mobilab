@@ -13,3 +13,4 @@ if out
     for it=1:dim(2), fwrite(fid,writeThis,precision);end
     fclose(fid);
 end
+
