@@ -35,15 +35,40 @@ classdef gazeStream < dataStream
         %%
         function browserObj = gazeStreamBrowser(obj,defaults)
             % Displays gaze position data in a browser as a heat map.
-            
             if nargin < 2, defaults.browser = @gazeStreamBrowserHandle;end
+            if ~isstruct(defaults), clear defaults, defaults.browser = @gazeStreamBrowserHandle;end
             browserObj = defaults.browser(obj,defaults);
         end
     end
-    methods(Static)
-        function [methodsInCell,callbacks] = methods2bePublished
-            methodsInCell = {'Plot'};
-            callbacks = {'gazeStreamBrowser'};
+    methods(Hidden)
+        function jmenu = contextMenu(obj) 
+            menuItem = javax.swing.JMenuItem('Plot');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'dataStreamBrowser',-1});
+            jmenu.add(menuItem);
+            %--
+            menuItem = javax.swing.JMenuItem('Plot heat map');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'gazeStreamBrowser',-1});
+            jmenu.add(menuItem);
+            %---------
+            jmenu.addSeparator;
+            %---------
+            menuItem = javax.swing.JMenuItem('Inspect');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'inspect',-1});
+            jmenu.add(menuItem);
+            %--
+            menuItem = javax.swing.JMenuItem('Annotation');
+            jmenu.add(menuItem);
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@annotation_Callback,obj});
+            %--
+            menuItem = javax.swing.JMenuItem('Generate batch script');
+            jmenu.add(menuItem);
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@generateBatch_Callback,obj});
+            %--
+            menuItem = javax.swing.JMenuItem('<HTML><FONT color="maroon">Delete object</HTML>');
+            jmenu.add(menuItem);
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj.container,'deleteItem',obj.container.findItem(obj.uuid)});
+
+             
         end
     end
 end
