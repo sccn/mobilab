@@ -44,6 +44,7 @@ classdef gazeStream < dataStream
         function jmenu = contextMenu(obj) 
             menuItem = javax.swing.JMenuItem('Plot');
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'dataStreamBrowser',-1});
+            jmenu = javax.swing.JPopupMenu;
             jmenu.add(menuItem);
             %--
             menuItem = javax.swing.JMenuItem('Plot heat map');
