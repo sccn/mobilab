@@ -643,9 +643,8 @@ classdef eeg < dataStream & headModel
                 xyz = bsxfun(@rdivide,xyz,max(xyz))/2;
                 for it=1:obj.numberOfChannels
                     chanlocs(it).labels = labels{it};
-                    if isfield(obj.hardwareMetaData,'desc')
-                         chanlocs(it).type = obj.hardwareMetaData.desc.channels.channel{it}.type;
-                    else chanlocs(it).type = 'EEG';
+                    try chanlocs(it).type = obj.hardwareMetaData.desc.channels.channel{it}.type;
+                    catch chanlocs(it).type = 'EEG';
                     end
                     chanlocs(it).X = xyz(it,1);
                     chanlocs(it).Y = -xyz(it,2);
