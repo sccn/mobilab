@@ -567,6 +567,7 @@ classdef mobilabApplication < handle
             end
             
             if flag
+                try  
                 jFrame = get(handle(obj.isGuiActive),'JavaFrame');
                 jWindow = jFrame.fHG1Client.getWindow;
                 hwait = com.mathworks.mlwidgets.dialog.ProgressBarDialog.createHeavyweightInternalProgressBar(jWindow,' ',[]);
@@ -576,6 +577,7 @@ classdef mobilabApplication < handle
                 hwait.setVisible(true);
                 hwait.setCircularProgressBar(true);
                 drawnow;
+                end
             else
                 try hwait.dispose;end %#ok
             end
