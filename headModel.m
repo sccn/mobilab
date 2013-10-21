@@ -149,31 +149,40 @@ classdef headModel < handle
             %    Seungyong Lee, George Wolberg, and Sung Yong Shing, "Scattered Data interpolation with Multilevel B-splines"
 
             if nargin < 2, error('Reference head model is missing.');end
-            if isempty(obj.channelSpace) || isempty(obj.label) || isempty(obj.fiducials)
-                error('Channel space or fiducials are missing.');
-            end
-            if ~exist(headModelFile,'file'), error('The file you''ve entered does not exist.');end
             if nargin < 3, individualHeadModelFile = [tempname '.mat'];end
+            if isempty(obj.channelSpace) || isempty(obj.label), error('Channel space or labels are missing.');end
+            if ~exist(headModelFile,'file'), error('The file you''ve entered does not exist.');end
             
             template = load(headModelFile);
             gTools = geometricTools;
             th = norminv(0.90);
             % mapping source to target spaces: S->T
             % target space: individual geometry
-            T = [obj.fiducials.nasion;...
-                obj.fiducials.lpa;...
-                obj.fiducials.rpa];
             
-            % source space: template
-            S = [template.fiducials.nasion;...
-                template.fiducials.lpa;...
-                template.fiducials.rpa;...
-                template.fiducials.vertex];
-            
-            % estimates vertex if is missing
-            if isfield(obj.fiducials,'vertex')
-                if numel(obj.fiducials.vertex) == 3
-                    T = [T;obj.fiducials.vertex];
+            try
+                T = [obj.fiducials.nasion;...
+                    obj.fiducials.lpa;...
+                    obj.fiducials.rpa];
+                
+                % source space: template
+                S = [template.fiducials.nasion;...
+                    template.fiducials.lpa;...
+                    template.fiducials.rpa;...
+                    template.fiducials.vertex];
+                
+                % estimates vertex if is missing
+                if isfield(obj.fiducials,'vertex')
+                    if numel(obj.fiducials.vertex) == 3
+                        T = [T;obj.fiducials.vertex];
+                    else
+                        point = 0.5*(obj.fiducials.lpa + obj.fiducials.rpa);
+                        point = ones(50,1)*point;
+                        point(:,3) = linspace(point(3),1.5*max(obj.channelSpace(:,3)),50)';
+                        [~,d] = gTools.nearestNeighbor(obj.channelSpace,point);
+                        [~,loc] = min(d);
+                        point = point(loc,:);
+                        T = [T;point];
+                    end
                 else
                     point = 0.5*(obj.fiducials.lpa + obj.fiducials.rpa);
                     point = ones(50,1)*point;
@@ -183,35 +192,19 @@ classdef headModel < handle
                     point = point(loc,:);
                     T = [T;point];
                 end
-            else
-                point = 0.5*(obj.fiducials.lpa + obj.fiducials.rpa);
-                point = ones(50,1)*point;
-                point(:,3) = linspace(point(3),1.5*max(obj.channelSpace(:,3)),50)';
-                [~,d] = gTools.nearestNeighbor(obj.channelSpace,point);
-                [~,loc] = min(d);
-                point = point(loc,:);
-                T = [T;point];
-            end
-            
-            if isfield(obj.fiducials,'inion')
-                if numel(obj.fiducials.vertex) == 3
-                    T = [T;obj.fiducials.inion];
-                    S = [S;template.fiducials.inion];
+                
+                if isfield(obj.fiducials,'inion')
+                    if numel(obj.fiducials.vertex) == 3
+                        T = [T;obj.fiducials.inion];
+                        S = [S;template.fiducials.inion];
+                    end
                 end
+            catch
+                disp('Fiducials are missing in the individual head model, selecting the common set of points based on the channel labels.')
+                [~,loc1,loc2] = intersect(obj.getChannelLabels,template.label,'stable');
+                T = obj.channelSpace(loc1,:);
+                S = template.channelSpace(loc2,:);
             end
-            %             else
-            %             % estimates inion if is missing
-            %                 point = 0.5*(obj.fiducials.lpa + obj.fiducials.rpa);
-            %                 b = regress([obj.fiducials.nasion(2); point(2)],[obj.fiducials.nasion(1) 1; point(1) 1]);
-            %                 point = ones(50,1)*point;
-            %                 if obj.fiducials.nasion(1)>point(1), s = -1;else s = 1;end
-            %                 point(:,1) = s*linspace(point(1,1),1000,50)';
-            %                 point(:,2) = b(1)*point(:,1) + b(2);
-            %                 [~,d] = gTools.nearestNeighbor(obj.channelSpace,point);
-            %                 [~,loc] = min(d);
-            %                 point = point(loc,:);
-            %                 T = [T;point];
-            %             end
             try obj.initStatusbar(1,8,'Co-registering...');end %#ok
             
             % affine co-registration
