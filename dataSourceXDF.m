@@ -52,10 +52,6 @@ classdef dataSourceXDF < dataSource
                 obj.container.lockGui;
                 
                 rmThis = false(length(streams),1);
-                created_at = [];
-                source_id  = {};
-                type       = {};
-                ind_markers = false(length(streams),1);
                 for stream_count=1:length(streams)
                     if isempty(streams{stream_count}.time_stamps)
                         msg = ['Stream ' streams{stream_count}.info.name ' has no time stamps. It cannot be imported.'];
@@ -64,46 +60,33 @@ classdef dataSourceXDF < dataSource
                         rmThis(stream_count) = true;
                         seeLogFile = true;
                     end
-                    %if strcmpi(streams{stream_count}.info.type,'markers')
-                    created_at(end+1) = str2double(streams{stream_count}.info.created_at); %#ok
-                    type{end+1} = lower(streams{stream_count}.info.type);
-                    if ~ischar(streams{stream_count}.info.source_id)
-                        source_id{end+1}  = [streams{stream_count}.info.name '_' streams{stream_count}.info.hostname]; %#ok
-                    else
-                        source_id{end+1}  = [streams{stream_count}.info.source_id '_' streams{stream_count}.info.hostname]; %#ok
+                end
+                
+                for stream_count=1:length(streams)
+                    disp([num2str(stream_count) '-> Stream ' streams{stream_count}.info.name ':']);
+                    disp(['     uuid:       ' streams{stream_count}.info.uid]);
+                    disp(['     host:       ' streams{stream_count}.info.hostname]);
+                    disp(['     type:       ' streams{stream_count}.info.type]);
+                    disp(['     session id: ' streams{stream_count}.info.session_id]);
+                    disp(['     created at: ' streams{stream_count}.info.created_at]);
+                    disp(['     samples:    ' streams{stream_count}.info.sample_count]);
+                    disp(['     channels:   ' num2str(size(streams{stream_count}.time_series,1))]);
+                    
+                    if isempty(streams{stream_count}.time_stamps)
+                        msg = ['Stream ' streams{stream_count}.info.name ' has no time stamps. It cannot be imported.'];
+                        warning('MoBILAB:noData',msg);
+                        fprintf(fLog,'%s\n',msg);
+                        rmThis(stream_count) = true;
+                        seeLogFile = true;
                     end
-                    ind_markers(stream_count) = true;
-                    %end
+                    
                 end
-                if any(ind_markers)
-                    ind_markers = find(ind_markers);
-                    [~,loc] = unique(source_id);
-                    target = setdiff(1:length(source_id), loc);
-                    if ~isempty(target)
-                        for it=1:length(target)
-                            rep_streams = find(strcmp(source_id,source_id(target(it))));
-                            
-                            % Exceptions
-                            if isempty(strfind(streams{target(it)}.info.source_id,'OpenViBE')) 
-                                [~,loc] = min(created_at(rep_streams));
-                                rmTmp = setdiff(rep_streams,rep_streams(loc));
-                                rmTmp = ind_markers(rmTmp);
-                                rmThis(rmTmp) = true;
-                            end
-                        end
-                    end
-                end
-                type_target = type(rmThis);
-                ind2rm = find(rmThis);
-                for k=1:length(type_target)
-                    if ~isempty(strfind(type_target{k},'videostream')), rmThis(ind2rm(k)) = false;end
-                end
-                clear type;
                 if any(rmThis)
                     tmp = streams(rmThis);
                     for k=1:length(tmp), if isfield(tmp{k},'tmpfile') && exist(tmp{k}.tmpfile,'file'), java.io.File(tmp{k}.tmpfile).delete();end;end
                     streams(rmThis) = [];
                 end
+                
                 tmp_names = cell(length(streams),1);
                 for stream_count=1:length(streams), tmp_names{stream_count} = lower(streams{stream_count}.info.name);end
                 [~,loc] = sort(tmp_names);
