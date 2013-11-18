@@ -1227,10 +1227,6 @@ classdef dataStream < coreStreamObject
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'continuousWaveletTransform',-1});
             jmenu.add(menuItem);
             %---------
-            menuItem = javax.swing.JMenuItem('Time frequency analysis (STFT)');
-            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'shortTimeFourierTransform',-1});
-            jmenu.add(menuItem);
-            %---------
             jmenu.addSeparator;
             %---------
             menuItem = javax.swing.JMenuItem('Plot');
