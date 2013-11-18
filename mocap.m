@@ -705,18 +705,59 @@ classdef mocap < dataStream
             epochObj = mocapEpoch(pdata,time,channelLabel,condition,eventInterval,subjectID,xy,derivativeLabel);
         end
         %%
-        function I = createEventsFromMagnitude(obj,channel,criteria,inhibitedWindowLength,eventType,segmentObj)
+        function I = createEventsFromMagnitude(obj,varargin)
             % criteria: 'maxima', 'minima', 'zero crossing', '% maxima', '% minima', or 'all' (default: criteria = 'all')
             % channel: index of the channel where search the events
-            if nargin < 2, channel = 1; else channel = channel(1);end
-            if nargin < 3, criteria = 'maxima';end
-            if nargin < 4
+            
+            dispCommand = false;
+            if  ~isempty(varargin) && length(varargin{1}) == 1 && isnumeric(varargin{1}) && varargin{1} == -1
+                prefObj = [...
+                    PropertyGridField('channel',1,'DisplayName','Marker','Category','Main','Description','Mocap marker.')...
+                    PropertyGridField('criteria','maxima','Type',PropertyType('char', 'row', {'maxima', 'minima','zero crossing'}),'DisplayName','Criteria','Category','Main','Description','Criterion for making the event, could be: maxima, minima, zero crossing.')...
+                    PropertyGridField('eventType','max','DisplayName','Marker name','Category','Main','Description','Name of the new event marker.')...
+                    ];
+
+                hFigure = figure('MenuBar','none','Name','Create event marker','NumberTitle', 'off','Toolbar', 'none','Units','pixels','Color',obj.container.container.preferences.gui.backgroundColor,...
+                    'Resize','off','userData',0);
+                position = get(hFigure,'position');
+                set(hFigure,'position',[position(1:2) 303 431]);
+                hPanel = uipanel(hFigure,'Title','','BackgroundColor','white','Units','pixels','Position',[0 55 303 380],'BorderType','none');
+                g = PropertyGrid(hPanel,'Properties', prefObj,'Position', [0 0 1 1]);%,'Description','Projects low-dimensional burst artifacts out of the data.');
+                uicontrol(hFigure,'Position',[72 15 70 21],'String','Cancel','ForegroundColor',obj.container.container.preferences.gui.fontColor,...
+                    'BackgroundColor',obj.container.container.preferences.gui.buttonColor,'Callback',@cancelCallback);
+                uicontrol(hFigure,'Position',[164 15 70 21],'String','Ok','ForegroundColor',obj.container.container.preferences.gui.fontColor,...
+                    'BackgroundColor',obj.container.container.preferences.gui.buttonColor,'Callback',@okCallback);
+                uiwait(hFigure);
+                if ~ishandle(hFigure), return;end
+                if ~get(hFigure,'userData'), close(hFigure);return;end
+                close(hFigure);
+                drawnow
+                val = g.GetPropertyValues();
+                varargin{1} = val.channel;
+                varargin{2} = val.criteria;
+                varargin{3} = val.eventType;
+                dispCommand = true;
+            end
+            
+            Narg = length(varargin);
+            if Narg < 1, channel   = 1;       else channel   = varargin{1}(1);end
+            if Narg < 2, criteria  = 'maxima';else criteria  = varargin{2};   end
+            if Narg < 3, eventType = [];else eventType = varargin{3};   end
+            if Narg < 4
                 inhibitedWindowLength = obj.samplingRate;
             else
-                inhibitedWindowLength = obj.samplingRate*inhibitedWindowLength;
+                inhibitedWindowLength = obj.samplingRate*varargin{4};
             end
-            if nargin < 5, eventType = '';end
-            if nargin < 6, segmentObj = basicSegment(obj.timeStamp(1),obj.timeStamp(end));end
+            if Narg < 5
+                segmentObj = basicSegment([obj.timeStamp(1),obj.timeStamp(end)]);
+            else
+                segmentObj = varargin{5};
+            end
+            
+            if dispCommand
+                disp('Running:');
+                disp('  latency = createEventsFromMagnitude(obj,mocap_marker, criteria, event_marker)');
+            end
             
             numberOfSegments = length(segmentObj.startLatency);
             index = obj.getTimeIndex([segmentObj.startLatency segmentObj.endLatency]);
@@ -727,7 +768,7 @@ classdef mocap < dataStream
                     case 'maxima',        eventType = 'max';
                     case 'zero crossing', eventType = 'zc';
                     case 'minima',        eventType = 'min';
-                    otherwise,            eventType = 'max';
+                    otherwise,            eventType = 'noname';
                 end
             end
             signal = obj.magnitude(:,channel);
@@ -738,6 +779,7 @@ classdef mocap < dataStream
                 latency = obj.getTimeIndex(time(I));
                 obj.event = obj.event.addEvent(latency,eventType);
             end
+            if dispCommand, disp('Done.');end
         end
     end
     
@@ -1151,6 +1193,10 @@ classdef mocap < dataStream
             %---------
             menuItem = javax.swing.JMenuItem('Time frequency analysis (CWT)');
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'continuousWaveletTransform',-1});
+            jmenu.add(menuItem);
+            %---------
+            menuItem = javax.swing.JMenuItem('Create event marker');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'createEventsFromMagnitude',-1});
             jmenu.add(menuItem);
             %---------
             jmenu.addSeparator;

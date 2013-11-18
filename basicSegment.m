@@ -14,7 +14,7 @@ classdef basicSegment
     methods
         %%
         function obj = basicSegment(varargin)
-            if length(varargin) == 1, varargin = varargin{1};end
+            if length(varargin) == 1 && iscell(varargin{1}), varargin = varargin{1};end
             N = length(varargin);
             if isnumeric(varargin{1})
                 obj.startLatency = varargin{1}(:,1)';
