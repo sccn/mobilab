@@ -59,7 +59,6 @@ end
 
 try
     if isa(varargin{1},'mobilabApplication') 
-        fprintf('It is highly recomended running this program on your local workstation. It can run\nremotely as well, however, rendering is very slow inefficient in Matlab due to network delays.\n');
         mobilab = varargin{1};
         handles.mobilab = mobilab;
         guidata(hObject, handles);
