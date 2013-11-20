@@ -63,15 +63,16 @@ classdef dataSourceXDF < dataSource
                 end
                 
                 for stream_count=1:length(streams)
-                    disp([num2str(stream_count) '-> Stream ' streams{stream_count}.info.name ':']);
-                    disp(['     uuid:       ' streams{stream_count}.info.uid]);
-                    disp(['     host:       ' streams{stream_count}.info.hostname]);
-                    disp(['     type:       ' streams{stream_count}.info.type]);
-                    disp(['     session id: ' streams{stream_count}.info.session_id]);
-                    disp(['     created at: ' streams{stream_count}.info.created_at]);
-                    disp(['     samples:    ' streams{stream_count}.info.sample_count]);
-                    disp(['     channels:   ' num2str(size(streams{stream_count}.time_series,1))]);
-                    
+                    try %#ok
+                        disp([num2str(stream_count) '-> Stream ' streams{stream_count}.info.name ':']);
+                        disp(['     uuid:       ' streams{stream_count}.info.uid]);
+                        disp(['     host:       ' streams{stream_count}.info.hostname]);
+                        disp(['     type:       ' streams{stream_count}.info.type]);
+                        disp(['     session id: ' streams{stream_count}.info.session_id]);
+                        disp(['     created at: ' streams{stream_count}.info.created_at]);
+                        disp(['     samples:    ' streams{stream_count}.info.sample_count]);
+                        disp(['     channels:   ' num2str(size(streams{stream_count}.time_series,1))]);
+                    end
                     if isempty(streams{stream_count}.time_stamps)
                         msg = ['Stream ' streams{stream_count}.info.name ' has no time stamps. It cannot be imported.'];
                         warning('MoBILAB:noData',msg);
@@ -442,7 +443,7 @@ classdef dataSourceXDF < dataSource
                             % clear mmfObj
                             metadata.artifactMask = sparse(length(metadata.timeStamp),numberOfChannels);
                             metadata.binFile = binFile;
-                            metadata.class = 'dataStream';
+                            metadata.class = 'audioStream';
                             header = metadata2headerFile(metadata);
                             
                         % hotspot
