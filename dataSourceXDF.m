@@ -221,7 +221,7 @@ classdef dataSourceXDF < dataSource
                             if any(~eegChannels)
                                 auxChannel.label = labels(~eegChannels);
                                 % auxChannel.data = mmfObj.Data.x(~eegChannels,:)';
-                                auxChannel.data = eval([precision '( streams{stream_count}.time_series(~eegChannels,:))']');
+                                auxChannel.data = eval([precision '( streams{stream_count}.time_series(~eegChannels,:))'])';
                                 %streams{stream_count}.time_series(~eegChannels,:) = [];
                             else
                                 auxChannel.label = {};
