@@ -45,27 +45,27 @@ classdef dataSourceSET < dataSource
             header  = [obj.mobiDataDirectory filesep EEG.setname '_' uuid '_' obj.sessionUUID '.hdr'];
             
             eventObj = event;
-            eventObj = eventObj.addEvent(cell2mat({EEG.event.latency}),{EEG.event.type});
+            eventObj = eventObj.addEvent(round(cell2mat({EEG.event.latency})),{EEG.event.type});
             fiducials = [];
             if ~isempty(EEG.chanlocs)
                 labels = {EEG.chanlocs.labels};
                 try
-                    [elec,lab] = readMontage(EEG.chaninfo.filename);
+                    [elec,lab] = readMontage(EEG);
                     I = ismember(lab,labels);
                     channelSpace = elec(I,:);
-                    I = ismember(lab,'fidnz') | ismember(lab,'nasion');
+                    I = ismember(lab,'fidnz') | ismember(lab,'nasion') | ismember(lab,'Nz');
                     if any(I), fiducials.nasion = elec(I,:);end
                     
-                    I = ismember(lab,'fidt9') | ismember(lab,'lpa');
+                    I = ismember(lab,'fidt9') | ismember(lab,'lpa') | ismember(lab,'LPA') ;
                     if any(I), fiducials.lpa = elec(I,:);end
                     
-                    I = ismember(lab,'fidt10') | ismember(lab,'rpa');
+                    I = ismember(lab,'fidt10') | ismember(lab,'rpa') | ismember(lab,'RPA');
                     if any(I), fiducials.rpa = elec(I,:);end
                     
                     I = ismember(lab,'fidt11') | ismember(lab,'vertex');
                     if any(I), fiducials.vertex = elec(I,:);end
                     
-                catch %#ok
+                catch 
                     channelSpace = [cell2mat({EEG.chanlocs.X})' cell2mat({EEG.chanlocs.Y})' cell2mat({EEG.chanlocs.Z})'];
                 end
             else
@@ -82,7 +82,7 @@ classdef dataSourceSET < dataSource
             parentCommand.varargin{2} = mobiDataDirectory;
             
             metadata = struct('binFile',binFile,'header',header,'name',EEG.setname,'timeStamp',[],'numberOfChannels',EEG.nbchan,'precision','double',...
-                'uuid',uuid,'sessionUUID',obj.sessionUUID,'writable',true,'unit','none','owner',struct('name',obj.container.preferences.username,...
+                'uuid',uuid,'sessionUUID',obj.sessionUUID,'writable',false,'unit','none','owner',struct('name',obj.container.preferences.username,...
                 'organization',obj.container.preferences.organization,'email',obj.container.preferences.email),'hardwareMetaData',[],...
                 'parentCommand',parentCommand,'label',[],'event',eventObj.saveobj,'notes','','artifactMask',sparse(length(timeStamp),...
                 EEG.nbchan),'samplingRate',EEG.srate,'channelSpace',[],'class','eeg','fiducials',fiducials);

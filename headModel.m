@@ -581,7 +581,8 @@ classdef headModel < handle
                 end
                 % Set number of cores used
                 try numcores = feature('numcores');
-                catch numcores = 4; %#ok
+                catch
+                    numcores = 4;
                 end
                 setenv('OMP_NUM_THREADS', num2str(numcores));
                 %---
