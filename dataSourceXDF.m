@@ -271,7 +271,8 @@ classdef dataSourceXDF < dataSource
                                             str2double(streams{stream_count}.info.desc.fiducials.fiducial{fch}.location.Z)];
                                     end
                                 end
-                            catch fiducials = [];%#ok
+                            catch
+                                fiducials = [];
                             end
                             fid = fopen(binFile,'w');
                             %for ch=1:length(channels2write), fwrite(fid,mmfObj.Data.x(channels2write(ch),:)',precision);end

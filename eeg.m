@@ -223,7 +223,7 @@ classdef eeg < dataStream & headModel
                     elecIndices = false(Nl,1);
                     channelIndices = zeros(Nl,1);
                     for jt=1:Nl
-                        if ~isempty(strfind(labels{jt},'fidnz')) || ~isempty(strfind(labels{jt},'nasion'))
+                        if ~isempty(strfind(labels{jt},'fidnz')) || ~isempty(strfind(labels{jt},'nasion')) || ~isempty(strfind(labels{jt},'Nz')) 
                             fiducials{it}.nasion = eloc(jt,:);
                         elseif ~isempty(strfind(labels{jt},'fidt9')) || ~isempty(strfind(labels{jt},'lpa'))
                             fiducials{it}.lpa = eloc(jt,:);
@@ -265,7 +265,7 @@ classdef eeg < dataStream & headModel
                 [eloc, labels, theta, radius, indices] = readlocs( file); %#ok
                 eloc = [cell2mat({eloc.X}'), cell2mat({eloc.Y}'), cell2mat({eloc.Z}')];
                 rmThis = [];
-                I = strcmpi(labels,'fidnz') | strcmpi(labels,'nasion'); 
+                I = strcmpi(labels,'fidnz') | strcmpi(labels,'nasion') | strcmpi(labels,'Nz'); 
                 if any(I), fiducials.nasion = eloc(I,:);rmThis(1) = find(I);end
                 
                 I = strcmpi(labels,'fidt9') | strcmpi(labels,'lpa');     
