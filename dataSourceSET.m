@@ -113,6 +113,10 @@ classdef dataSourceSET < dataSource
                 for it=1:metadata.numberOfChannels, metadata.label{it} = ['IC' num2str(it)];end
                 metadata.binFile = [obj.mobiDataDirectory filesep 'ica_' EEG.setname '_' uuid '_' obj.sessionUUID '.bin'];
                 fid = fopen(metadata.binFile,'w');
+                if isempty(EEG.icaact)
+                    EEG.icaact = (EEG.icaweights*EEG.icasphere)*EEG.data(EEG.icachansind,:);
+                    EEG.icaact = reshape( EEG.icaact, size(EEG.icaact,1), EEG.pnts, EEG.trials);
+                end
                 data = reshape(EEG.icaact,[dim(1) prod(dim(2:3))]);
                 if isa(data,'mmo'), data = data(:,:);end
                 fwrite(fid,data','double');
