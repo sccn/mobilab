@@ -117,6 +117,7 @@ classdef dataSourceSET < dataSource
                     EEG.icaact = (EEG.icaweights*EEG.icasphere)*EEG.data(EEG.icachansind,:);
                     EEG.icaact = reshape( EEG.icaact, size(EEG.icaact,1), EEG.pnts, EEG.trials);
                 end
+                dim = size(EEG.icaact);
                 data = reshape(EEG.icaact,[dim(1) prod(dim(2:3))]);
                 if isa(data,'mmo'), data = data(:,:);end
                 fwrite(fid,data','double');
