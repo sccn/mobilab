@@ -120,9 +120,10 @@ classdef cometBrowserHandle2 < browserHandle
             % find now cursor index
             delta = obj.tail/obj.streamHandle.samplingRate;
             obj.nowCursor = nowCursor;
-            [~,t1] = min(abs(obj.time - (obj.nowCursor-delta/2)));  
-            [~,t2] = min(abs(obj.time - (obj.nowCursor+delta/2)));  
-            
+            %[~,t1] = min(abs(obj.time - (obj.nowCursor-delta/2)));  
+            %[~,t2] = min(abs(obj.time - (obj.nowCursor+delta/2)));  
+            t1 = binary_findClosest(obj.time,(obj.nowCursor-delta/2));
+            t2 = binary_findClosest(obj.time,(obj.nowCursor+delta/2));
             data = obj.streamHandle.dataInXY(t1:t2-1,:,obj.channelIndex);
             
             %if obj.numberOfChannelsToPlot==1, data = data';end
@@ -188,7 +189,8 @@ classdef cometBrowserHandle2 < browserHandle
             
             % find now cursor index
             obj.nowCursor = nowCursor;
-            [~,t1] = min(abs(obj.time - (obj.nowCursor-delta)));  
+            %[~,t1] = min(abs(obj.time - (obj.nowCursor-delta))); 
+            t1 = binary_findClosest(obj.time,(obj.nowCursor-delta));
             t2 = t1+obj.tail;
             
             data = obj.streamHandle.dataInXY(t1:t2-1,:,obj.channelIndex);

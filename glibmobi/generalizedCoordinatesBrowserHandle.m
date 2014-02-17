@@ -74,6 +74,7 @@ classdef generalizedCoordinatesBrowserHandle < browserHandle
             
             [t1,t2] = dStreamObj.getTimeIndex([defaults.startTime defaults.endTime]);
             obj.timeIndex = t1:t2;
+            %obj.timeStamp = obj.streamHandle.timeStamp(obj.timeIndex);
             obj.gain = defaults.gain;
             obj.step = defaults.step;       % half a second
             obj.windowWidth = defaults.windowWidth;
@@ -117,8 +118,10 @@ classdef generalizedCoordinatesBrowserHandle < browserHandle
             
             % find now cursor index
             obj.nowCursor = nowCursor;
-            [~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-obj.windowWidth/2)));  
-            [~,t2] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor+obj.windowWidth/2)));  
+            %[~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-obj.windowWidth/2)));  
+            %[~,t2] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor+obj.windowWidth/2))); 
+            t1 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),(obj.nowCursor-obj.windowWidth/2));
+            t2 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),(obj.nowCursor+obj.windowWidth/2)); 
             Nt = length(t1:t2);           
             Nc = length(obj.children);
             data = zeros(Nt,(Nc+1)*obj.numberOfChannelsToPlot*sum(obj.coordinates));
@@ -149,8 +152,10 @@ classdef generalizedCoordinatesBrowserHandle < browserHandle
             
             % find now cursor index
             obj.nowCursor = nowCursor;
-            [~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-obj.windowWidth/2)));  
-            [~,t2] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor+obj.windowWidth/2)));  
+            %[~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-obj.windowWidth/2)));  
+            %[~,t2] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor+obj.windowWidth/2)));
+            t1 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),(obj.nowCursor-obj.windowWidth/2));
+            t2 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),(obj.nowCursor+obj.windowWidth/2));
             Nt = length(t1:t2);
             dt = Nt/2;
             

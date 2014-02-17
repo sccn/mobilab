@@ -192,8 +192,8 @@ try
             set(handles.play,'CData',CData{2});
             start(browserListObj.timerObj);
         else
-            stop(browserListObj.timerObj);
             set(handles.play,'CData',CData{1});
+            stop(browserListObj.timerObj);  
         end
     end
 catch ME

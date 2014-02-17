@@ -68,18 +68,22 @@ classdef sceneBrowserHandle < browserHandle
                                     
             % find now cursor index
             obj.nowCursor = nowCursor;
-            [~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-obj.windowWidth/2)));  
-            [~,t2] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor+obj.windowWidth/2)));  
-            
+            %[~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-obj.windowWidth/2)));  
+            %[~,t2] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor+obj.windowWidth/2)));  
+            t1 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),(obj.nowCursor-obj.windowWidth/2));
+            t2 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),(obj.nowCursor+obj.windowWidth/2));
             data = ceil(obj.streamHandle.data(obj.timeIndex(t1):obj.timeIndex(t2)-1,obj.channelIndex));
             I = data(:,1) < 1 | data(:,1) > obj.axesSize(1) | data(:,2) < 1 | data(:,2) > obj.axesSize(2);
             data(I,:) = [];
             npoints = size(data,1);
             data = [data (1:npoints)'];
             ind = sub2ind([obj.axesSize npoints],data(:,1),data(:,2),data(:,3));
-            ind(isnan(ind)) = [];
+            nanind = isnan(ind);
+            ind(nanind) = [];
+            win = gausswin(size(data,1));
+            win(nanind) = [];
             screen = zeros([obj.axesSize npoints]);
-            screen(ind) = 100;
+            screen(ind) = 100*win;
             map = mean(screen,3);
             %map = integralFilter(map, obj.kernel);
             map = imfilter(map, obj.kernel);
@@ -112,8 +116,10 @@ classdef sceneBrowserHandle < browserHandle
             
             % find now cursor index
             obj.nowCursor = nowCursor;
-            [~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-obj.windowWidth/2)));  
-            [~,t2] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor+obj.windowWidth/2)));  
+            %[~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-obj.windowWidth/2)));  
+            %[~,t2] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor+obj.windowWidth/2)));  
+            t1 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),(obj.nowCursor-obj.windowWidth/2));
+            t2 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),(obj.nowCursor+obj.windowWidth/2));
             if t1==t2, return;end
             
             data = ceil(obj.streamHandle.mmfObj.Data.x(obj.timeIndex(t1):obj.timeIndex(t2)-1,obj.channelIndex));
@@ -123,9 +129,15 @@ classdef sceneBrowserHandle < browserHandle
             npoints = size(data,1);
             data = [data (1:npoints)'];
             ind = sub2ind([obj.axesSize npoints],data(:,1),data(:,2),data(:,3));
-            ind(isnan(ind)) = [];
+            nanind = isnan(ind);
+            ind(nanind) = [];
+            win = gausswin(size(data,1),5);
+            win(nanind) = [];
+            %win(1:ceil(end/4)) = 0;
+            %win(end-ceil(end/4):end) = 0;
+            
             screen = zeros([obj.axesSize npoints]);
-            screen(ind) = 10000;
+            screen(ind) = 10000*win;
             map = mean(screen,3);
             %map = integralFilter(map, obj.kernel);
             map = imfilter(map, obj.kernel);
@@ -138,6 +150,7 @@ classdef sceneBrowserHandle < browserHandle
             set(obj.cursor,'XData',data(t0,1),'YData',data(t0,2));
             set(obj.timeTexttHandle,'String',['Current latency = ' num2str(obj.nowCursor,4) ' sec']);
             set(obj.sliderHandle,'Value',obj.nowCursor);
+            set(obj.axesHandle,'xlim',[1 size(map,1)],'ylim',[1 size(map,2)]);
         end
         %%
         function plotStep(obj,step)

@@ -133,7 +133,7 @@ classdef browserHandle < handle
             else obj.cursorHandle.gh.visible = 'off';
             end
         end
-        function play(obj), obj.state = ~obj.state;end
+        function play(obj), obj.state = ~obj.state; end
         function onMouseWheelMove(obj,~,eventObj)
             % step = -10*obj.speed*(eventObj.VerticalScrollCount*eventObj.VerticalScrollAmount)/obj.streamHandle.samplingRate;%#ok
             step = -(eventObj.VerticalScrollCount*eventObj.VerticalScrollAmount)/obj.streamHandle.samplingRate/2;%#ok
@@ -178,8 +178,14 @@ classdef browserHandle < handle
     end
 end
 function playCallback(obj, event, bObj) %#ok
-plotThisTimeStamp(bObj,bObj.nowCursor+bObj.timerMult*bObj.speed);
-drawnow;
+if bObj.state % this if statement added so that "pause" works.
+    plotThisTimeStamp(bObj,bObj.nowCursor+bObj.timerMult*bObj.speed);
+    
+    drawnow;
+else
+    bObj.state = false;
+    stop(bObj.timerObj);
+end
 end
 %%
 function stopCallback(obj, event, bObj) %#ok

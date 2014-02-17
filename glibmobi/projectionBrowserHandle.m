@@ -134,7 +134,8 @@ classdef projectionBrowserHandle < browserHandle
             
             % find now cursor index
             obj.nowCursor = nowCursor;
-            [~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-obj.windowWidth)));  
+            %[~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-obj.windowWidth)));
+            t1 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),(obj.nowCursor-obj.windowWidth));
             t0 = fix(delta*obj.streamHandle.samplingRate);
             t2 = t1+2*t0-1;
             time = obj.streamHandle.timeStamp((t1:t2-1));
@@ -253,7 +254,8 @@ classdef projectionBrowserHandle < browserHandle
             
             % find now cursor index
             obj.nowCursor = nowCursor;
-            [~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-delta)));  
+            %[~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-delta)));  
+            t1 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),(obj.nowCursor-delta));
             t0 = fix(delta*obj.streamHandle.samplingRate);
             t2 = t1+2*t0-1;
             if t2-1 > size(obj.streamHandle,1), t2 = size(obj.streamHandle)+1;end

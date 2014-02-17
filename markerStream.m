@@ -10,6 +10,13 @@ classdef markerStream < coreStreamObject
             if nargin < 2, defaults.browser = @dataStreamBrowser;end
             browserObj = streamBrowserHandle(obj,defaults); 
         end
+        
+        function browserObj = timelineBrowser(obj,defaults)
+            if nargin < 2, defaults.browser = @timelineBrowserHandle;end
+            browserObj = defaults.browser(obj,defaults); 
+        end
+        
+        
         function hFigure = dispHedTags(obj,~)
             if nargin < 2, dispCommand = false; else dispCommand = true;end
             if dispCommand
@@ -28,6 +35,10 @@ classdef markerStream < coreStreamObject
             %--
             menuItem = javax.swing.JMenuItem('Plot');
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'dataStreamBrowser',-1});
+            jmenu.add(menuItem);
+             %--
+            menuItem = javax.swing.JMenuItem('Plot Task Timeline');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'timelineBrowser',-1});
             jmenu.add(menuItem);
             %--
             menuItem = javax.swing.JMenuItem('Disp Hed Tree');

@@ -96,7 +96,8 @@ classdef pcdBrowserHandle < browserHandle
             
             % find now cursor index
             obj.nowCursor = nowCursor;
-            [~,t] = min(abs(obj.streamHandle.timeStamp - obj.nowCursor));
+            %[~,t] = min(abs(obj.streamHandle.timeStamp - obj.nowCursor));
+            t = binary_findClosest(obj.streamHandle.timeStamp, obj.nowCursor); 
             J = obj.streamHandle.mmfObj.Data.x(:,t);
             
             cla(obj.axesHandle);
@@ -178,7 +179,8 @@ classdef pcdBrowserHandle < browserHandle
             
             % find now cursor index
             obj.nowCursor = nowCursor;
-            [~,t] = min(abs(obj.streamHandle.timeStamp - obj.nowCursor));  
+            %[~,t] = min(abs(obj.streamHandle.timeStamp - obj.nowCursor));
+            t = binary_findClosest(obj.streamHandle.timeStamp, obj.nowCursor);
             J = obj.streamHandle.mmfObj.Data.x(:,t);
             
             if size(J,1) == 3*obj.numberOfPoints

@@ -64,6 +64,7 @@ classdef cometBrowserHandle < browserHandle
             
             [t1,t2] = dStreamObj.getTimeIndex([defaults.startTime defaults.endTime]);
             obj.timeIndex = t1:t2; 
+            %obj.timeStamp = obj.streamHandle.timeStamp(obj.timeIndex);
             obj.step = defaults.speed;       % one second
             obj.nowCursor = defaults.nowCursor;
                                                            
@@ -94,9 +95,11 @@ classdef cometBrowserHandle < browserHandle
             % find now cursor index
             delta = obj.tail/obj.streamHandle.samplingRate;
             obj.nowCursor = nowCursor;
-            [~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-delta/2)));  
-            [~,t2] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor+delta/2)));  
-          
+            %[~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-delta/2)));  
+            %[~,t2] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor+delta/2)));  
+            t1 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),obj.nowCursor - delta/2);
+            t2 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),obj.nowCursor + delta/2);
+            
             obj.streamHandle.reshape([obj.dim(1) 3 obj.dim(2)/3]);
             data = squeeze(obj.streamHandle.data(obj.timeIndex(t1):obj.timeIndex(t2)-1,:,obj.channelIndex));
             obj.streamHandle.reshape([obj.dim(1) obj.dim(2)]);
@@ -156,7 +159,8 @@ classdef cometBrowserHandle < browserHandle
             
             % find now cursor index
             obj.nowCursor = nowCursor;
-            [~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-delta)));  
+            %[~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-delta)));  
+            t1 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),obj.nowCursor - delta);
             t2 = t1+obj.tail;
             obj.streamHandle.reshape([obj.dim(1) 3 obj.dim(2)/3]);
             data = squeeze(obj.streamHandle.mmfObj.Data.x(obj.timeIndex(t1):obj.timeIndex(t2)-1,:,obj.channelIndex));

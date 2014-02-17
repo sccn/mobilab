@@ -128,8 +128,8 @@ classdef mocapBrowserHandle < browserHandle
             
             % find now cursor index
             obj.nowCursor = nowCursor;
-            [~,t0] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - obj.nowCursor));
-            
+            %[~,t0] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - obj.nowCursor));
+            t0 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),obj.nowCursor);
             perm = [1 2 3];
             if (strcmpi(obj.streamHandle.hardwareMetaData.name,'phasespace') || isempty(obj.streamHandle.hardwareMetaData.name)) %&& isa(obj.streamHandle.hardwareMetaData,'hardwareMetaData')
                 perm = [1 3 2];
@@ -237,7 +237,9 @@ classdef mocapBrowserHandle < browserHandle
             
             % find now cursor index
             obj.nowCursor = nowCursor;
-            [~,t0] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - obj.nowCursor));
+            %[~,t0] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - obj.nowCursor));
+            
+            t0 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),obj.nowCursor);
             
             perm = [1 2 3];
             if (strcmpi(obj.streamHandle.hardwareMetaData.name,'phasespace') || isempty(obj.streamHandle.hardwareMetaData.name)) %&& isa(obj.streamHandle.hardwareMetaData,'hardwareMetaData')

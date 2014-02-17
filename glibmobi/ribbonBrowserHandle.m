@@ -123,8 +123,11 @@ classdef ribbonBrowserHandle < browserHandle
             
             % find now cursor index
             obj.nowCursor = newNowCursor;
-            [~,t1] = min(abs(obj.time(obj.timeIndex) - (obj.nowCursor-delta)));  
-            [~,t2] = min(abs(obj.time(obj.timeIndex) - (obj.nowCursor+delta)));  
+            %[~,t1] = min(abs(obj.time(obj.timeIndex) - (obj.nowCursor-delta)));  
+            %[~,t2] = min(abs(obj.time(obj.timeIndex) - (obj.nowCursor+delta)));  
+            t1 = binary_findClosest(obj.time(obj.timeIndex),(obj.nowCursor-delta));
+            t2 = binary_findClosest(obj.time(obj.timeIndex),(obj.nowCursor+delta));
+            
             time1 = obj.time(obj.timeIndex(t1:t2-1));
                         
             x = squeeze(obj.streamHandle.dataInXY(t1:t2-1,1,obj.channelIndex));

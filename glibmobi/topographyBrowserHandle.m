@@ -87,7 +87,8 @@ classdef topographyBrowserHandle < browserHandle
             
             % find now cursor index
             obj.nowCursor = nowCursor;
-            [~,t0] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - obj.nowCursor));
+            %[~,t0] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - obj.nowCursor));
+            t0 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex), obj.nowCursor);
             data = obj.streamHandle.data(obj.timeIndex(t0),obj.channelIndex)';
             data = double(data);            
             cla(obj.axesHandle);
@@ -131,7 +132,8 @@ classdef topographyBrowserHandle < browserHandle
             
             % find now cursor index
             obj.nowCursor = nowCursor;
-            [~,t0] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - obj.nowCursor));
+            %[~,t0] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - obj.nowCursor));
+            t0 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex), obj.nowCursor);
             data = obj.streamHandle.data(obj.timeIndex(t0),obj.channelIndex)';
             data = double(data);
             val = obj.interpolator*data;

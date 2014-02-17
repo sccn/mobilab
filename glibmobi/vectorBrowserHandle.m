@@ -74,7 +74,8 @@ classdef vectorBrowserHandle < browserHandle
             set(obj.axesHandle,'Color',[1 1 1]);
             
             obj.nowCursor = nowCursor;
-            [~,t0] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - obj.nowCursor));
+            %[~,t0] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - obj.nowCursor));
+            t0 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),obj.nowCursor);
             data = obj.streamHandle.data(obj.timeIndex(t0),:);
             X = data(obj.superIndex(:,1));
             Y = data(obj.superIndex(:,2));
@@ -108,7 +109,8 @@ classdef vectorBrowserHandle < browserHandle
                 end
             end
             obj.nowCursor = nowCursor;
-            [~,t0] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - obj.nowCursor));  
+            %[~,t0] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - obj.nowCursor));  
+            t0 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),obj.nowCursor);
             data = obj.streamHandle.data(obj.timeIndex(t0),:);
             X = data(obj.superIndex(:,1));
             Y = data(obj.superIndex(:,2));

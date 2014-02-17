@@ -465,17 +465,43 @@ classdef hedManager
             % same as stringMatchesQueryString() but acts on an array of HED strings and one query
             % string.
             
-            answerArray = false(length(hedStringArray), 1);
+%             answerArray = false(length(hedStringArray), 1);
+%             if nargout > 1
+%                 matchedTagArray = cell(length(hedStringArray), 1);
+%             end;
+%             for i=1:length(hedStringArray)
+%                 if nargout > 1
+%                     [answerArray(i), matchedTagArray{i}] =  obj.stringMatchesQueryString(hedStringArray{i}, queryHedString);
+%                 else
+%                     answerArray(i) =  obj.stringMatchesQueryString(hedStringArray{i}, queryHedString);
+%                 end;
+%             end;
+            
+            
+            % first reduce to a possible subset of solutions with the first loop by calling strfind on
+            % cells.
+            answerArray = true(length(hedStringArray), 1);
+            queryHedTagsToMatch = obj.separateIntoTags(queryHedString);
+            for j = 1:length(queryHedTagsToMatch)
+                answerArray = answerArray & ~cellfun(@isempty,strfind(hedStringArray,queryHedTagsToMatch{j}));
+            end
+            
+            % next, perform StringMatchesQueryString only on the 'true'
+            % indices of the string array.
             if nargout > 1
                 matchedTagArray = cell(length(hedStringArray), 1);
             end;
-            for i=1:length(hedStringArray)
+            
+            candidates = find(answerArray);
+            for j = 1:length(candidates)
+                i = candidates(j);
                 if nargout > 1
                     [answerArray(i), matchedTagArray{i}] =  obj.stringMatchesQueryString(hedStringArray{i}, queryHedString);
                 else
                     answerArray(i) =  obj.stringMatchesQueryString(hedStringArray{i}, queryHedString);
                 end;
-            end;
+            end
+            
         end;
     end;
 end

@@ -145,8 +145,10 @@ classdef streamBrowserHandle < browserHandle
             
             % find now cursor index
             obj.nowCursor = nowCursor;
-            [~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-obj.windowWidth/2)));  
-            [~,t2] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor+obj.windowWidth/2)));  
+            %[~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-obj.windowWidth/2)));  
+            %[~,t2] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor+obj.windowWidth/2)));  
+            t1 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),(obj.nowCursor-obj.windowWidth/2));
+            t2 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),(obj.nowCursor+obj.windowWidth/2));
             data = obj.streamHandle.data(obj.timeIndex(t1:t2),obj.channelIndex);
             
             cla(obj.axesHandle);
@@ -194,8 +196,16 @@ classdef streamBrowserHandle < browserHandle
             
             % find now cursor index
             obj.nowCursor = nowCursor;
-            [~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-obj.windowWidth/2)));  
-            [~,t2] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor+obj.windowWidth/2)));  
+            
+            %[~,t1] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor-obj.windowWidth/2)));
+            %[~,t2] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - (obj.nowCursor+obj.windowWidth/2)));  
+            %[~,t1] = min(abs(obj.timeStamp - (obj.nowCursor-obj.windowWidth/2)));  
+            %[~,t2] = min(abs(obj.timeStamp - (obj.nowCursor+obj.windowWidth/2)));  
+            
+            
+            t1 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),(obj.nowCursor-obj.windowWidth/2));
+            t2 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),(obj.nowCursor+obj.windowWidth/2));
+            
             if t1==t2, return;end
             dt = length(t1:t2)/2;
             
@@ -295,7 +305,7 @@ classdef streamBrowserHandle < browserHandle
                 obj.cursorHandle.gh.Tag = 'graphics.cursorbar';
                 set(get(obj.cursorHandle.gh,'DisplayHandle'),'Visible','off')
             end
-            % obj.roiObj.paint;
+            % obj.roiObj.paint; 
         end
         %%
         function plotStep(obj,step)

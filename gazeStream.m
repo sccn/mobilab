@@ -6,12 +6,16 @@
 % Author: Alejandro Ojeda, SCCN, INC, UCSD, Oct-2012
 
 classdef gazeStream < dataStream
+    properties
+        videoFile
+    end
     properties(Dependent)
         eyeRadius          % Returns the radius of the pupil.
         
         eyePosition        % Returns the xyz position of the eye.
         
         gazePosition       % Returns the xyz position of the point the subject is looking at.
+        
     end
     properties(Hidden = true, Constant)
         convert2phaseSpace = 1e-5;
@@ -20,6 +24,7 @@ classdef gazeStream < dataStream
         function obj = gazeStream(header)
             if nargin < 1, error('Not enough input parameters.');end
             obj@dataStream(header);
+            obj.videoFile = '';
         end
         %%
         function eyeRadius    = get.eyeRadius(obj),    eyeRadius    = obj.mmfObj.Data.x(:,9);end
@@ -35,11 +40,13 @@ classdef gazeStream < dataStream
         %%
         function browserObj = gazeStreamBrowser(obj,defaults)
             % Displays gaze position data in a browser as a heat map.
-            if nargin < 2, defaults.browser = @gazeStreamBrowserHandle;end
-            if ~isstruct(defaults), clear defaults, defaults.browser = @gazeStreamBrowserHandle;end
+            if nargin < 2, defaults.browser = @gazePositionOnScreenBrowserHandle; defaults.imageFlag = 1; end
             browserObj = defaults.browser(obj,defaults);
         end
+        
+        
     end
+    
     methods(Hidden)
         function jmenu = contextMenu(obj) 
             menuItem = javax.swing.JMenuItem('Plot');
@@ -47,7 +54,7 @@ classdef gazeStream < dataStream
             jmenu = javax.swing.JPopupMenu;
             jmenu.add(menuItem);
             %--
-            menuItem = javax.swing.JMenuItem('Plot heat map');
+            menuItem = javax.swing.JMenuItem('Plot gaze position on screen');
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'gazeStreamBrowser',-1});
             jmenu.add(menuItem);
             %---------
@@ -70,6 +77,13 @@ classdef gazeStream < dataStream
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj.container,'deleteItem',obj.container.findItem(obj.uuid)});
 
              
+        end
+    end
+    
+    methods(Static)
+        function [methodsInCell,callbacks] = methods2bePublished
+            methodsInCell = {'Plot'};
+            callbacks = {'gazeStreamBrowser'};
         end
     end
 end

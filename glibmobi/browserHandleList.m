@@ -124,13 +124,14 @@ classdef browserHandleList < handle
                     case 'mocap',        browserType = 'mocapBrowser';
                     case 'wii',          browserType = 'streamBrowser';
                     case 'audioStream',  browserType = 'audioStream';
+                    case 'markerStream', browserType = 'markerStream';
                     case 'videoStream1', browserType = 'videoStream1';
                     case 'videoStream',  browserType = 'videoStream1';
                     case 'sceneStream',  browserType = 'sceneStream';
                     case 'pcaMocap',     browserType = 'projectionBrowser';
                     case 'pcdStream',    browserType = 'pcdBrowserHandle';
                     case 'coreTimeFrequencyObject', browserType = 'spectrogramBrowser';
-                    otherwise            browserType = 'streamBrowser';
+                    otherwise,           browserType = 'streamBrowser';
                 end
             end
             if strcmp(browserType,'segmentedDataStreamBrowser') || strcmp(browserType,'segmentedMocapBrowser')
@@ -163,6 +164,8 @@ classdef browserHandleList < handle
                 elseif isstruct(obj.list{it}.streamHandle)
                     [~,t1] = min(abs(obj.list{it}.streamHandle.timeStamp-obj.startTime));
                     [~,t2] = min(abs(obj.list{it}.streamHandle.timeStamp-obj.endTime));
+                    %t1 = binary_findClosest(obj.list{it}.streamHandle.timeStamp,obj.startTime);
+                    %t2 = binary_findClosest(obj.list{it}.streamHandle.timeStamp,obj.endTime);
                 else
                     [t1,t2] = obj.list{it}.streamHandle.getTimeIndex([obj.startTime obj.endTime]);
                 end
@@ -189,6 +192,7 @@ classdef browserHandleList < handle
                     case 'mocapBrowser',                  obj.list{end+1} = mocapBrowserHandle(dStreamObj,defaults);
                     case 'videoStream1',                  obj.list{end+1} = videoStreamBrowserHandle1(dStreamObj,defaults);
                     case 'audioStream',                   obj.list{end+1} = audioBrowserHandle(dStreamObj,defaults);
+                    case 'markerStream',                  defaults.partOfMultiStream = 1; obj.list{end+1} = timelineBrowserHandle(dStreamObj,defaults);    
                     case 'sceneStream',                   obj.list{end+1} = sceneBrowserHandle(dStreamObj,defaults);
                     case 'generalizedCoordinatesBrowser', obj.list{end+1} = generalizedCoordinatesBrowserHandle(dStreamObj,defaults);
                     case 'phaseSpaceBrowser',             obj.list{end+1} = phaseSpaceBrowserHandle(dStreamObj,defaults);
@@ -210,7 +214,8 @@ classdef browserHandleList < handle
             end
             pos = get(obj.list{end}.figureHandle,'position');
             if length(obj.list) == 1
-                set(obj.list{end}.figureHandle,'position',[0 1,pos(3:4)]);
+                set(obj.list{end}.figureHandle,'Position',[0.1 0.5 pos(3:4)]);
+                %set(obj.list{end}.figureHandle,'position',[0 1,pos(3:4)]);
             else
                 pos2 = get(obj.list{end-1}.figureHandle,'position');
                 set(obj.list{end}.figureHandle,'position',[pos2(1)+1.01*pos2(3) pos2(2) pos(3:4)]);
