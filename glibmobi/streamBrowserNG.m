@@ -50,16 +50,13 @@ handles.output = hObject;
 guidata(hObject, handles);
 browserObj = varargin{1};
 
-path = fileparts(which('eeglab'));
-path = [path filesep 'plugins' filesep 'mobilab' filesep 'skin'];
-if ~exist(path,'dir')
-    path = fileparts(which('streamBrowserNG.m'));
-    if isempty(path), path = pwd;end
-end
-
 try
     mobilab = browserObj.streamHandle.container.container;
-catch %#ok 
+    path = [mobilab.path filesep 'skin'];
+    if ~exist(path,'dir')
+        path = [fileparts(fileparts(which('streamBrowserNG.m'))) filesep 'skin'];
+    end
+catch 
     % takes MoBILAB default colors (I hard coded this because at the end eegplotNG will be absorbed)
     mobilab.preferences.gui.buttonColor = [1 1 1];
     mobilab.preferences.gui.backgroundColor = [0.93 0.96 1];
