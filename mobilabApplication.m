@@ -235,7 +235,7 @@ classdef mobilabApplication < handle
                 
                 hTools = uimenu('Label','Tools','Parent',figureHandle);
                 uimenu(hTools,'Label','MultiStream browser','Callback','mobilab.msBrowser;');
-                uimenu(hTools,'Label','Copy and Import folders (batch mode)','Callback','mobilab.copyImportFolder;');
+                %uimenu(hTools,'Label','Copy and Import folders (batch mode)','Callback','mobilab.copyImportFolder;');
                 %uimenu(hTools,'Label','Mocap workflow','Callback','mobilab.mocapWorkflow;');
                 %uimenu(hTools,'Label','Mocap events editor','Callback','mobilab.eventsEditor;');
                 
