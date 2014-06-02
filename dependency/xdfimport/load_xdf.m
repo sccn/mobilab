@@ -161,7 +161,7 @@ opts = cell2struct(varargin(2:2:end),varargin(1:2:end),2);
 if ~isfield(opts,'OnChunk')
     opts.OnChunk = []; end
 if ~isfield(opts,'Verbose')
-    opts.Verbose = true; end
+    opts.Verbose = false; end
 if ~isfield(opts,'HandleClockSynchronization')
     opts.HandleClockSynchronization = true; end
 if ~isfield(opts,'HandleClockResets')
@@ -471,10 +471,10 @@ if opts.HandleJitterRemoval
         
         if ~isempty(temp(k).time_stamps) && temp(k).srate
             
-           
-            if strcmp(streams{k}.info.desc.synchronization.can_drop_samples, 'true')
+   
+            if isfield(streams{k}.info.desc, 'synchronization') && strcmp(streams{k}.info.desc.synchronization.can_drop_samples, 'true')
                 temp(k).time_stamps = droppedFramesCorrection(temp(k).time_stamps,temp(k).srate, opts.FrameRateAccuracy);            
-            else
+           else
             
                 % identify breaks in the data
                 diffs = diff(temp(k).time_stamps);
