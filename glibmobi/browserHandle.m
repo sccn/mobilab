@@ -22,7 +22,8 @@ classdef browserHandle < handle
         speed
     end
     properties(Hidden=true)
-        timerMult = 0.008;
+        %timerMult = 0.008;
+        timerMult = 0.01;
     end
     %%
     methods

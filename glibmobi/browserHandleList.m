@@ -21,7 +21,8 @@ classdef browserHandleList < handle
         endTime
     end
     properties(Constant,Hidden=true)
-        timerMult = 0.008;
+        %timerMult = 0.008;
+        timerMult = 0.1;
     end
     methods
         function obj = browserHandleList(master)

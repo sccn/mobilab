@@ -153,13 +153,9 @@ end
 function pushbutton1_Callback(hObject, eventdata, handles)
 try
     browserListObj = get(handles.figure1,'userData');
-    if strcmp(browserListObj.timerObj.Running,'on')
-        is_timer_running = 'on';
+    is_timer_running = browserListObj.timerObj.Running;
+    if strcmp(is_timer_running,'on')
         stop(browserListObj.timerObj);
-        pause(0.01)
-        disp 'timer stop'
-    else
-        is_timer_running = 'off';
     end
     mobilab = evalin('base','mobilab');
     allDataStreams = mobilab.allStreams;
@@ -192,7 +188,6 @@ try
     end
     if strcmp(is_timer_running,'on')
         start(browserListObj.timerObj);
-        disp 'timer resume'
     end
 catch ME
     sendEmailReport(ME);

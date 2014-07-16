@@ -477,6 +477,7 @@ classdef dataSourceXDF < dataSource
                         obj.addItem(header);
                         if isfield(streams{stream_count},'tmpfile'), java.io.File(streams{stream_count}.tmpfile).delete();end
                         streams{stream_count}.time_series = [];
+                        streams{stream_count}.time_stamps = [];
                         mismatchFlag = false;
                     catch ME
                         fprintf(fLog,'%s. \n',ME.message);
