@@ -260,7 +260,7 @@ classdef browserHandleList < handle
                 if strcmp(get(obj.timerObj,'Running'),'on'), stop(obj.timerObj);end
             end
             N = length(obj.list);
-            if N, figure(obj.list{1}.figureHandle);end 
+            %if N, figure(obj.list{1}.figureHandle);end 
             for it=1:N, obj.list{it}.plotThisTimeStamp(newNowCursor);end
             if N
                 obj.nowCursor = obj.list{it}.nowCursor;

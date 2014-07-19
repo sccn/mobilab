@@ -154,12 +154,13 @@ function pushbutton1_Callback(hObject, eventdata, handles)
 try
     browserListObj = get(handles.figure1,'userData');
     if strcmp(browserListObj.timerObj.Running,'on')
-        is_timer_running = 'on';
-        stop(browserListObj.timerObj);
+        resume_timer = true;
+        % stop(browserListObj.timerObj);
+        browserListObj.play;
         pause(0.01)
         disp 'timer stop'
     else
-        is_timer_running = 'off';
+        resume_timer = false;
     end
     mobilab = evalin('base','mobilab');
     allDataStreams = mobilab.allStreams;
@@ -190,8 +191,9 @@ try
         latency = allDataStreams.item{itemIndex}.getTimeIndex(latency);
         allDataStreams.item{itemIndex}.event = allDataStreams.item{itemIndex}.event.addEvent(latency,label);  
     end
-    if strcmp(is_timer_running,'on')
-        start(browserListObj.timerObj);
+    if resume_timer
+        %start(browserListObj.timerObj);
+        browserListObj.play;
         disp 'timer resume'
     end
 catch ME
