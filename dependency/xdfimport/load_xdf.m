@@ -1,3 +1,4 @@
+
 function [streams,fileheader] = load_xdf(filename,varargin)
 % Import an XDF file.
 % [Streams,FileHeader] = load_xdf(Filename, Options...)
@@ -472,7 +473,9 @@ if opts.HandleJitterRemoval
         if ~isempty(temp(k).time_stamps) && temp(k).srate
             
    
-            if isfield(streams{k}.info.desc, 'synchronization') && strcmp(streams{k}.info.desc.synchronization.can_drop_samples, 'true')
+            if isfield(streams{k}.info.desc, 'synchronization') && ... 
+                isfield(streams{k}.info.desc.synchronization, 'can_drop_samples') && ...
+                strcmp(streams{k}.info.desc.synchronization.can_drop_samples, 'true')        
                 temp(k).time_stamps = droppedFramesCorrection(temp(k).time_stamps,temp(k).srate, opts.FrameRateAccuracy);            
            else
             
@@ -527,57 +530,14 @@ end
 
 % copy the information into the output
 for k=1:length(temp)
-    streams{k}.time_series = temp(k).time_series;
-    streams{k}.time_stamps = temp(k).time_stamps;
-end
-
-% ====================================================
-% === correct for stream lags by timing spec sheet ===
-% ====================================================
-
-if opts.CorrectStreamLags
-    done = false;
-    % search all streams for a timing sheet
-    for k=1:length(streams)
-        if strcmp(streams{k}.info.name,'TimingSheet') && strcmp(streams{k}.info.type,'Metadata')
-            if done
-                disp('Found multiple timing sheets; note that this is a recipe for error.');
-            else
-                % found a timing sheet
-                if isfield(streams{k}.info.desc,'timing') && isfield(streams{k}.info.desc.timing,'stream')
-                    records = streams{k}.info.desc.timing.stream;
-                    % for all contained stream records...
-                    for r=1:length(records)
-                        rec = records{r};
-                        if ~isfield(rec,'uncompensated_lag')
-                            continue; end
-                        % find all matching streams
-                        for s = 1:length(streams)
-                            if (~isfield(rec,'name') || strcmp(streams{s}.info.name,rec.name)) && ...
-                               (~isfield(rec,'type') || strcmp(streams{s}.info.type,rec.type)) && ...
-                               (~isfield(rec,'source_id') || strcmp(streams{s}.info.type,rec.source_id)) && ...
-                               (~isfield(rec,'session_id') || strcmp(streams{s}.info.type,rec.session_id)) && ...
-                               (~isfield(rec,'uid') || strcmp(streams{s}.info.type,rec.uid))
-                                % found a match: correct time stamps
-                                lag = rec.uncompensated_lag;
-                                disp(['Correcting time stamps of stream ' num2str(s) ' (' streams{s}.info.name '); lag=' num2str(1000*lag) 'ms.']);
-                                if ~isfield(streams{s}.info,'compensated_lag')
-                                    streams{s}.info.compensated_lag = 0;
-                                else
-                                    disp('  WARNING: reverting previous compensation from conflicting timing sheet.');
-                                end
-                                streams{s}.time_stamps = streams{s}.time_stamps - lag + streams{s}.info.compensated_lag;
-                                streams{s}.info.compensated_lag = lag;
-                            end
-                        end
-                    end
-                else
-                    disp('Found timing sheet without <timing> field: ignoring...');
-                end
-                done = true;
-            end
-        end
+    offset_mean = 0;
+    if opts.CorrectStreamLags && ...
+        isfield(streams{k}.info.desc, 'synchronization') && ... 
+        isfield(streams{k}.info.desc.synchronization, 'offset_mean')
+                offset_mean = str2num(streams{k}.info.desc.synchronization.offset_mean);        
     end
+    streams{k}.time_series = temp(k).time_series;
+    streams{k}.time_stamps = temp(k).time_stamps - offset_mean;
 end
 
 
