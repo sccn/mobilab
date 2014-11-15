@@ -67,13 +67,14 @@ classdef browserHandle < handle
             set(obj.cursorHandle.tb,'ClickedCallback',@(src, event)enableCursor(obj, [], event),'TooltipString','Cursor','State','off');
             
             preferences = get_mobilab_preferences;
-            
+            if ~isMatlab2014b()          
+                set(obj.axesHandle,'drawmode','fast');
+            end
             set(obj.axesHandle,'FontSize',obj.font.size,'FontWeight',obj.font.weight);
             set(obj.timeTexttHandle,'FontSize',obj.font.size,'FontWeight',obj.font.weight,'ForegroundColor',preferences.gui.fontColor);
             set(obj.timeTexttHandle,'String',['Current latency = ' num2str(obj.nowCursor,4) ' sec']);
             set(obj.figureHandle,'name',['MoBILAB ' class(obj) ': ' obj.streamHandle.name]);
             set(obj.sliderHandle,'Value',obj.nowCursor);
-            
             set(findobj(obj.figureHandle,'tag','connectLine'),'Visible','off');
             set(findobj(obj.figureHandle,'tag','deleteLine'),'Visible','off');
             if isa(obj.streamHandle,'segmentedStreamInContinuousTime') && ~isa(obj,'cometBrowserHandle2')
@@ -125,6 +126,9 @@ classdef browserHandle < handle
                 set(findobj(obj.figureHandle,'Tag','listbox1'),'Visible','on')
                 set(findobj(obj.figureHandle,'tag','text4'),'Visible','on');
                 set(findobj(obj.figureHandle,'tag','text5'),'Visible','on');
+            end
+            if isMatlab2014b()
+                set(findobj(obj.figureHandle,'Tag','uipanel6'),'Visible','off')
             end
         end
         %%

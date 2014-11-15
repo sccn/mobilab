@@ -98,5 +98,5 @@ catch ME
         end
         if exist(allDataStreams.dataSourceLocation,'file'), delete(allDataStreams.dataSourceLocation);end
     end
-    errordlg2(ME.message);
+    errordlg(ME.message);
 end

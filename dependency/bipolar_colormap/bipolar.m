@@ -84,7 +84,7 @@ elseif n < 0.5
         ];
 elseif n > 0.5
     if isempty(interp)
-        interp = 'cubic'; % seems to work better with bright neutral colors
+        interp = 'pchip'; % seems to work better with bright neutral colors
     end
     cm = [
         0 0 1

@@ -1,4 +1,4 @@
-function [J,alpha,beta,T] = dynamicLoreta(Ut,Y,s2,V,iLV,L,alpha,beta,options)
+function [J,alpha,beta,T,history] = dynamicLoreta(Ut,Y,s2,iLV,L,options,alpha,beta)
 
 %[J,varargout] = dynamicLoreta(V,varargin)
 %
@@ -30,74 +30,91 @@ function [J,alpha,beta,T] = dynamicLoreta(Ut,Y,s2,V,iLV,L,alpha,beta,options)
 
 
 
-if nargin < 6, error('Not enough input arguments.');end
-if nargin < 9
-    options.maxTol = 1e-3;
-    options.maxIter = 100;
-    options.verbose = true;
+if nargin < 5, error('Not enough input arguments.');end
+if nargin < 6
+    options.maxTol   = 1e-3;
+    options.maxIter  = 100;
     options.gridSize = 100;
+    options.verbose  = true;
+    options.history  = true;
+    options.useGPU   = false;
+    options.initNoiseFactor = 0.001;
+end
+if options.history
+    [history.alpha, history.beta, history.err] = deal(nan(1,options.maxIter));
+else
+    history = [];
 end
 
 
 s = s2.^(0.5);
 n = length(s);
-p = size(L,1);
+p = length(s);
+
+alpha_vec = zeros(options.maxIter,1);
+beta_vec  = zeros(options.maxIter,1);
+gcv_vec   = zeros(options.maxIter,1);
+err_win   = 3;
 
 % Initialize hyperparameters
-if nargin < 8
+if nargin < 7 || isempty(alpha)
     UtY = Ut*Y;
     tol = max([n p])*eps(max(s));
     lambda2 = logspace(log10(tol),log10(max(s)),options.gridSize);
     gcv = zeros(options.gridSize,1);
-    parfor k=1:options.gridSize
+    for k=1:options.gridSize
         d = lambda2(k)./(s2+lambda2(k));
-        f = diag(d)*UtY;
+        f = mean(diag(d)*UtY,2);
         gcv(k) = dot(f,f,1)/sum(d)^2;
     end
     loc = getMinima(gcv);
     if isempty(loc), loc = 1;end
     loc = loc(end);
     lambda2 = lambda2(loc);
-     
-    alpha = 0.001*(Y(:)'*Y(:))/n;
+         
+    alpha = options.initNoiseFactor*(Y(:)'*Y(:))/n;
     beta = alpha*lambda2;
+    
+    alpha_vec(1) = alpha;
+    beta_vec(1)  = beta;
+    gcv_vec(1)   = gcv(loc);
 end
-err       = inf;
-aic_old   = inf;
-alpha_old = alpha;
-beta_old  = beta;
-for it=1:options.maxIter
-    if err < options.maxTol, break;end
+
+for it=2:options.maxIter
         
-    % computing sigma
-    H = Ut'*diag(alpha*s2./(alpha*s2+beta))*Ut;    
-    SSE = mean(sum((Y - H*Y).^2));
-    JtJ = mean(Y'*Ut*diag(((alpha*s)./(alpha*s2+beta)).^2)*Ut'*Y);
+    % computing hat matrix, mse, and ||L*J_hat||^2
+    H        = Ut'*diag(alpha*s2./(alpha*s2+beta))*Ut;
+    mse      = mean(sum((Y - H*Y).^2));
+    norm_JtJ = trace(Y'*Ut*diag(((alpha*s)./(alpha*s2+beta)).^2)*Ut'*Y);
     
     % computing gamma
-    gamma = sum((alpha*s2)./(alpha*s2+beta));
+    gamma = p-beta*sum(1./(alpha*s2+beta));
     
-    % computing AIC
-    aic = -2*log(SSE) + 2*gamma;
-    if aic > aic_old,
-        alpha = alpha_old;
-        beta = beta_old;
-        break;
-    end
+    % computing GCV
+    gcv = mse/(1-trace(H)/n)^2;
+    gcv_vec(it) = gcv;   
     
     % updating hyperparameters
-    alpha = 1/(SSE/(n-gamma));
-    beta  = gamma/JtJ;
+    alpha = n-gamma;
+    beta  = gamma/(norm_JtJ+eps); % adding eps for numerical stability
     
-    err = 0.5*abs(alpha_old-alpha) + 0.5*abs(beta_old-beta);
-    if options.verbose
-        disp([num2str(it) ' => alpha: ' num2str(alpha) '  beta: ' num2str(beta) ' df: ' num2str(gamma) ' hyperp. error: ' num2str(err) ' sse: ' num2str(SSE) ' aic: ' num2str(aic)]);
+    alpha_vec(it) = alpha;
+    beta_vec(it)  = beta;
+    if it-err_win < 1
+        err = 0.5*std(alpha_vec(1:it)) + 0.5*std(beta_vec(1:it));
+    else
+        err = 0.5*std(alpha_vec(it-err_win:it)) + 0.5*std(beta_vec(it-err_win:it));
     end
-    aic_old = aic;
-    alpha_old = alpha;
-    beta_old  = beta;
+    if options.history
+        history.alpha(it) = alpha;
+        history.beta(it)  = beta;
+        history.err(it)   = err;
+    end
+    if options.verbose
+        disp([num2str(it-1) ' => alpha: ' num2str(alpha) '  beta: ' num2str(beta) ' df: ' num2str(gamma) ' hyperp. error: ' num2str(err) ' gcv: ' num2str(gcv)]);
+    end
     
-    
+    if err < options.maxTol, break;end 
 end
 if it == options.maxIter, warning('Maximum iteration reached. Failed to converge.');end
 
@@ -108,11 +125,11 @@ J = T*Y;
 % standardized Loreta
 E = sum(Y-H*Y,2);
 sigma = E'*E/(n-trace(H));
-dT = 1./sqrt(dot(T,T,2));
+dT = 1./(sqrt(dot(T,T,2))+eps); % adding eps for numerical stability
 S = 1./sigma*dT;
 S = S./std(eps+S);
-T = bsxfun(@times,T,S);%sqrt(p)*
-J = bsxfun(@times,J,S);%sqrt(p)*
+T = bsxfun(@times,T,S);
+J = bsxfun(@times,J,S);
 end
 
 

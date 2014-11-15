@@ -126,5 +126,5 @@ catch ME
         N = length(allDataStreams.item);
         for it=1:N, if exist(allDataStreams.item{it}.binFile,'file'), java.io.File(allDataStreams.item{it}.binFile).delete();end;end
     end
-    errordlg2(ME.message);
+    errordlg(ME.message);
 end

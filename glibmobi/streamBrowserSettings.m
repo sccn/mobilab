@@ -255,7 +255,7 @@ try
     set(handles.figure1,'userData',userData);
     uiresume
 catch ME
-    errordlg2(ME.message);
+    errordlg(ME.message);
 end
 
 % --- Executes on button press in pushbutton2.

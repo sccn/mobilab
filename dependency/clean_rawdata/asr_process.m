@@ -99,7 +99,11 @@ for i=1:splits
         [Xcov,state.cov] = moving_average(N,reshape(bsxfun(@times,reshape(X,1,C,[]),reshape(X,C,1,[])),C*C,[]),state.cov);
         % extract the subset at which we intend to update
         update_at = min(1:stepsize:(size(Xcov,2)+stepsize-1),size(Xcov,2));
-        Xcov = gather(reshape(Xcov(:,update_at),C,C,[]));
+        try
+            Xcov = gather(reshape(Xcov(:,update_at),C,C,[]));
+        catch
+            Xcov = reshape(Xcov(:,update_at),C,C,[]);
+        end
         % do the reconstruction in intervals of length stepsize (or less if at chunk boundaries)
         [last_n,last_R,last_trivial] = deal(0,eye(C),true);        
         for j=1:length(update_at)
@@ -137,8 +141,10 @@ state.carry = state.carry(:,(end-P+1):end);
 
 % finalize outputs
 outdata = data(:,1:(end-P));
-state.iir = gather(state.iir);
-state.cov = gather(state.cov);
+try
+    state.iir = gather(state.iir);
+    state.cov = gather(state.cov);
+end
 outstate = state;
 
 

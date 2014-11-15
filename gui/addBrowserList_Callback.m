@@ -3,5 +3,5 @@ if isMultipleCall, return;end
 try
     MultiStreamBrowser(obj); 
 catch ME
-    errordlg2(ME.message)
+    errordlg(ME.message)
 end

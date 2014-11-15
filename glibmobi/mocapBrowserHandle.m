@@ -125,6 +125,7 @@ classdef mocapBrowserHandle < browserHandle
      
             createGraphicObjects@browserHandle(obj);
             box(obj.axesHandle,'off');
+            axis(obj.axesHandle,'vis3d')
             
             % find now cursor index
             obj.nowCursor = nowCursor;

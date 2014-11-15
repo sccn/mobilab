@@ -36,6 +36,10 @@ classdef headModel < handle
             
             ind = find(ismember(varargin(1:2:length(varargin)-1),'surfaces'));
             if ~isempty(ind), obj.surfaces = varargin{ind*2};end
+            if ~isempty(obj.surfaces)
+                [~,~,e] = fileparts(obj.surfaces);
+                if isempty(e), obj.surfaces = [obj.surfaces,'.mat'];end
+            end
             
             ind = find(ismember(varargin(1:2:length(varargin)-1),'atlas'));
             if ~isempty(ind)
@@ -127,6 +131,7 @@ classdef headModel < handle
             % box on;
             hold off;
             axis equal
+            axis vis3d
             grid on;
         end
         %%
@@ -998,22 +1003,34 @@ classdef headModel < handle
     end
     methods(Static)
         function obj = loadFromFile(file)
-            load(file,'-mat');
-            if ~isempty(metadata.surfData) %#ok
-                surfData = metadata.surfData.surfData; %#ok
-                [~,filename] = fileparts(tempname);
-                metadata.surfaces = [getHomeDir filesep '.' filename '.mat'];
+            metadata = load(file,'-mat');
+            if isfield(metadata,'metadata')
+                metadata = metadata.metadata;
+            end
+            if ~isempty(metadata.surfData)
+                surfData = metadata.surfData;
+                if isfield(surfData,'surfData'), surfData = surfData.surfData;end%#ok
+                % [~,filename] = fileparts(tempname);
+                % metadata.surfaces = [getHomeDir filesep '.' filename '.mat'];
+                metadata.surfaces = tempname;
                 save(metadata.surfaces,'surfData');
             end
-            if ~isempty(metadata.leadField)
-                [~,filename] = fileparts(tempname);
-                metadata.leadFieldFile = [getHomeDir filesep '.' filename '.mat'];
-                K = metadata.leadField.K; %#ok
+            if isfield(metadata,'leadField') && ~isempty(metadata.leadField)
+                % [~,filename] = fileparts(tempname);
+                % metadata.leadFieldFile = [getHomeDir filesep '.' filename '.mat'];
+                metadata.leadFieldFile = tempname;
+                if isfield(metadata.leadField,'K')
+                    K = metadata.leadField.K; %#ok
+                else
+                    K = metadata.leadField; %#ok
+                end
                 if isfield(metadata.leadField,'L')
                     L = metadata.leadField.L; %#ok
                     save(metadata.leadFieldFile,'K','L');
                 else save(metadata.leadFieldFile,'K');
                 end
+            else
+                metadata.leadFieldFile = [];
             end
             obj = headModel('channelSpace',metadata.channelSpace,'fiducials',metadata.fiducials,'surfaces',metadata.surfaces,...
                 'atlas',metadata.atlas,'leadFieldFile',metadata.leadFieldFile,'label',metadata.label);

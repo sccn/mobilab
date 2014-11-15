@@ -238,7 +238,7 @@ startMark = get(handles.listbox3,'string');
 endMark = get(handles.listbox5,'string');
 
 if any([isempty(startMark) isempty(endMark)])
-    errordlg2('Select first the ''start'' and ''end'' events');
+    errordlg('Select first the ''start'' and ''end'' events');
     return
 end
 if isempty(segmentName), segmentName = [startMark{1} '_' endMark{1}];end
@@ -272,7 +272,7 @@ startMark = get(handles.listbox3,'string');
 endMark = get(handles.listbox5,'string');
 
 if any([isempty(startMark) isempty(endMark)])
-    errordlg2('Select first the ''start'' and ''end'' events');
+    errordlg('Select first the ''start'' and ''end'' events');
     return
 end
 if isempty(segmentName), segmentName = [startMark{1} '_' endMark{1}];end
@@ -344,7 +344,7 @@ for it=1:length(allDataStreams.item)
         break
     end
 end
-if isempty(segmentObjIndex), errordlg2('Cannot find the ''segmentList'' object in the dataSource.');return;end
+if isempty(segmentObjIndex), errordlg('Cannot find the ''segmentList'' object in the dataSource.');return;end
 try
     index = allDataStreams.item{segmentObjIndex}.findItem(name);
     allDataStreams.item{segmentObjIndex}.item(index) = [];
@@ -480,7 +480,7 @@ for it=1:length(allDataStreams.item)
         break
     end
 end
-if isempty(segmenListObjIndex), errordlg2('Cannot find the list of segments inside the dataSource object.');return;end
+if isempty(segmenListObjIndex), errordlg('Cannot find the list of segments inside the dataSource object.');return;end
 segmentIndex = allDataStreams.item{segmenListObjIndex}.findItem(segmentName);
 hwait = waitbar(0,'Creating new objects...');
 set(hwait,'color',[0.66 0.76 1]);

@@ -119,8 +119,6 @@ classdef streamBrowserHandle < browserHandle
             createGraphicObjects@browserHandle(obj);
             set(obj.figureHandle,'RendererMode','manual')
             set(obj.figureHandle,'Renderer','opengl')
-            % set(obj.figureHandle,'Renderer','zbuffer')
-            set(obj.axesHandle,'drawmode','fast');
             view(obj.axesHandle,[0 90]);
             if isempty(obj.makeSegmentHandle) && 0
                 mobilab = obj.streamHandle.container.container;
@@ -163,21 +161,26 @@ classdef streamBrowserHandle < browserHandle
             try delete(obj.cursorHandle.gh);end %#ok
             obj.cursorHandle.ghIndex = floor(obj.numberOfChannelsToPlot/2+1);
             tg = obj.gObjHandle(obj.cursorHandle.ghIndex);
-            obj.cursorHandle.gh = graphics.cursorbar(tg,'Parent',obj.axesHandle);
-            obj.cursorHandle.gh.CursorLineColor = 'r';%[.9,.3,.6]; % default=[0,0,0]='k'
-            obj.cursorHandle.gh.CursorLineStyle = '-.';       % default='-'
-            obj.cursorHandle.gh.CursorLineWidth = 2.5;        % default=1
-            obj.cursorHandle.gh.Orientation = 'vertical';     % =default
-            obj.cursorHandle.gh.TargetMarkerSize = 12;        % default=8
-            obj.cursorHandle.gh.TargetMarkerStyle = 'none';      % default='s' (square)
-            set(obj.cursorHandle.gh.BottomHandle,'MarkerSize',8)
-            set(obj.cursorHandle.gh.TopHandle,'MarkerSize',8)
-            obj.cursorHandle.gh.visible = 'off';
-            set(obj.cursorHandle.gh,'UpdateFcn',@updateCursor);
-            obj.cursorHandle.gh.ShowText = 'on';
-            obj.cursorHandle.gh.Tag = 'graphics.cursorbar';
-            set(get(obj.cursorHandle.gh,'DisplayHandle'),'Visible','off')
-            
+            try
+                obj.cursorHandle.gh = graphics.cursorbar(tg,'Parent',obj.axesHandle);
+                obj.cursorHandle.gh.CursorLineColor = 'r';%[.9,.3,.6]; % default=[0,0,0]='k'
+                obj.cursorHandle.gh.CursorLineStyle = '-.';       % default='-'
+                obj.cursorHandle.gh.CursorLineWidth = 2.5;        % default=1
+                obj.cursorHandle.gh.Orientation = 'vertical';     % =default
+                obj.cursorHandle.gh.TargetMarkerSize = 12;        % default=8
+                obj.cursorHandle.gh.TargetMarkerStyle = 'none';      % default='s' (square)
+                set(obj.cursorHandle.gh.BottomHandle,'MarkerSize',8)
+                set(obj.cursorHandle.gh.TopHandle,'MarkerSize',8)
+                obj.cursorHandle.gh.visible = 'off';
+                set(obj.cursorHandle.gh,'UpdateFcn',@updateCursor);
+                obj.cursorHandle.gh.ShowText = 'on';
+                obj.cursorHandle.gh.Tag = 'graphics.cursorbar';
+                set(get(obj.cursorHandle.gh,'DisplayHandle'),'Visible','off')
+            catch ME
+                disp(ME.message)
+                disp('cursorbar functionality needs to be ported over MATLAB 2014b.')
+                obj.cursorHandle.gh = [];
+            end
             obj.plotThisTimeStamp(nowCursor);
         end
         %%

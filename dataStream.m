@@ -898,7 +898,7 @@ classdef dataStream < coreStreamObject
                 if ~ischar(plotType), plotType = '2D';end
                 
                 if strcmp(plotType,'2D')
-                    h = plot(frequency,10*log10(psdData),'ButtonDownFcn','get(gco,''userData'')','LineSmoothing','on');
+                    h = plot(frequency,10*log10(psdData),'ButtonDownFcn','get(gco,''userData'')');
                     tmpLabels = obj.label(channels(:));
                     set(h(:),{'userData'},flipud(tmpLabels(:)));
                     ylabel('Power/frequency (dB/Hz)')
@@ -908,7 +908,7 @@ classdef dataStream < coreStreamObject
                     color = lines(length(channels));
                     One = ones(length(frequency),1);
                     for it=1:length(channels), plot3(frequency,it*One,10*log10(psdData(:,it)),'Color',color(it,:),'ButtonDownFcn',...
-                            ['disp(''' obj.label{channels(it)} ''')'],'LineSmoothing','on');end
+                            ['disp(''' obj.label{channels(it)} ''')'],'LineSmoothing','on');end    
                     zlabel('Power/frequency (dB/Hz)')
                     ylabel('Channels')
                     set(gca,'YTickLabel',obj.label(channels),'YTick',1:length(channels))
@@ -920,6 +920,7 @@ classdef dataStream < coreStreamObject
                     set(h(:),{'userData'},flipud(tmpLabels(:)));
                     ylabel('Power/frequency (dB/Hz)')
                 end
+                if ~isMatlab2014b(), set(h,'LineSmoothing','on');end
                 xlabel('Frequency (Hz)')
                 title([Hs.estimationMethod ' Power Spectral Density Estimate']);
                 grid on;

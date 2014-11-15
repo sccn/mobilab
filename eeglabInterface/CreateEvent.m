@@ -198,7 +198,7 @@ try
     end
 catch ME
     sendEmailReport(ME);
-    errordlg2(ME.message);
+    errordlg(ME.message);
 end
 
 
@@ -222,6 +222,6 @@ for it=1:length(allDataStreams.item)
         count = count+1;
     end
 end
-if count == 1, errordlg2('Run PCA on mocap data first.');return;end
+if count == 1, errordlg('Run PCA on mocap data first.');return;end
 %EventsEditor2;
 mobilab.eventsEditor;

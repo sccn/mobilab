@@ -94,7 +94,7 @@ if ~exist([rootDir filesep dataSourceName '_MoBI'],'dir')
     catch ME
         mobiDataDirectory = [];
         uiresume;
-        errordlg2(ME.message);
+        errordlg(ME.message);
     end
 elseif ~isempty(dir(mobiDataDirectory))
     choice = questdlg2(...

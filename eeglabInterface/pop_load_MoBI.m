@@ -22,7 +22,7 @@ if ~exist(mobiDataDirectory,'dir')
     suffix = '_MoBI';
     suffixLength = length(suffix);
     if ~strcmp(mobiDataDirectory(end-suffixLength+1:end),suffix)
-        errordlg2([repmat(' ',1,18) 'This is not a _MoBI folder' repmat(' ',1,18)],'Error loading MoBILAB dataSource');
+        errordlg([repmat(' ',1,18) 'This is not a _MoBI folder' repmat(' ',1,18)],'Error loading MoBILAB dataSource');
         return
     end
 end
@@ -72,5 +72,5 @@ try
         allDataStreams.export2eeglab(dataObjIndex,eventObjIndex);
     %end
 catch ME
-    errordlg2(ME.message,'pop_load_MoBI')
+    errordlg(ME.message,'pop_load_MoBI')
 end

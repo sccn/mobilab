@@ -550,13 +550,16 @@ classdef eeg < dataStream & headModel
                 end
                 
                 EEG = cobj.EEGstructure;
-                
+                EEG.data = double(EEG.data);
                 existCleaningCombo = exist('clean_artifacts','file');
                 if ~existCleaningCombo, addpath(genpath([obj.container.container.path filesep 'dependency' filesep 'clean_rawdata']));end
                 EEG = clean_artifacts(EEG,channel_crit,burst_crit,window_crit,highpass,channel_crit_excluded,channel_crit_maxbad_time,...
                     burst_crit_refmaxbadchns,burst_crit_reftolerances,window_crit_tolerances,flatline_crit);
                 if ~existCleaningCombo, rmpath(genpath([obj.container.container.path filesep 'dependency' filesep 'clean_rawdata']));end
                 
+                if ~isfield(EEG.etc,'clean_channel_mask')
+                    EEG.etc.clean_channel_mask = 1:obj.numberOfChannels;
+                end
                 cobj.mmfObj.Data.x(EEG.etc.clean_sample_mask,EEG.etc.clean_channel_mask) = EEG.data';
                 cobj.artifactMask(~EEG.etc.clean_sample_mask,:) = 1;
                 
@@ -657,7 +660,8 @@ classdef eeg < dataStream & headModel
             EEG.etc.mobi.sessionUUID = obj.sessionUUID;
             
             try ALLEEG = evalin('base','ALLEEG');
-            catch ALLEEG = [];%#ok
+            catch
+                ALLEEG = [];
             end
                         
             if isempty(obj.event.label)
@@ -667,7 +671,11 @@ classdef eeg < dataStream & headModel
                     assignin('base','ALLEEG',ALLEEG);
                     assignin('base','CURRENTSET',CURRENTSET);
                     assignin('base','EEG',EEG);
-                    evalin('base','eeglab redraw');
+                    try
+                        evalin('base','eeglab redraw');
+                    catch ME
+                        disp(ME.message)
+                    end
                 end
                 return;
             end
@@ -1363,7 +1371,7 @@ classdef eeg < dataStream & headModel
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'removeSubspace',-1});
             jmenu.add(menuItem);
             %--
-            menuItem = javax.swing.JMenuItem('Artifact rejection');
+            menuItem = javax.swing.JMenuItem('Artifact rejection pipeline (ASR)');
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'artifactsRejection',-1});
             jmenu.add(menuItem);
             %--

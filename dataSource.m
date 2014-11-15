@@ -438,7 +438,9 @@ classdef dataSource < handle
                     end
                     if updateGui
                         assignin('base','EEG',EEG);
-                        evalin('base','eeglab(''redraw'');');
+                        try
+                            evalin('base','eeglab(''redraw'');');
+                        end
                     end
                     return;
                 end
@@ -544,14 +546,18 @@ classdef dataSource < handle
             pop_saveset( EEG, [name '.set'],path);
             EEG = pop_loadset( [name '.set'],path);
             if nargout < 1 && updateGui
-                try ALLEEG = evalin('base','ALLEEG');
-                catch ALLEEG = [];%#ok
+                try 
+                    ALLEEG = evalin('base','ALLEEG');
+                catch
+                    ALLEEG = [];
                 end
                 [ALLEEG,EEG,CURRENTSET] = eeg_store(ALLEEG, EEG);
                 assignin('base','ALLEEG',ALLEEG);
                 assignin('base','CURRENTSET',CURRENTSET);
                 assignin('base','EEG',EEG);
-                evalin('base','eeglab(''redraw'');');
+                try
+                    evalin('base','eeglab(''redraw'');');
+                end
             end
         end
     end

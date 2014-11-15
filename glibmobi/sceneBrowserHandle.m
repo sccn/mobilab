@@ -60,7 +60,6 @@ classdef sceneBrowserHandle < browserHandle
         function createGraphicObjects(obj,nowCursor)
             
             createGraphicObjects@browserHandle(obj);
-            set(obj.axesHandle,'drawmode','fast');
             
             %obj.kernel = fspecial('gaussian',obj.kernelSize,obj.kernelSize);
             obj.kernel = fspecial('disk',obj.kernelSize);

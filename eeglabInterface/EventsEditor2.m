@@ -73,7 +73,7 @@ for it=1:length(allDataStreams.item)
     streamNames{it,1} = allDataStreams.item{it}.name; %#ok
     streamUUIDs{it,1} = allDataStreams.item{it}.uuid; %#ok
 end
-if count == 1, errordlg2('Run PCA on mocap data first.');return;end
+if count == 1, errordlg('Run PCA on mocap data first.');return;end
 if length(streamNames) == 1, streamNames = streamNames{1};end
 if ~exist('segStreamNames','var'), segStreamNames = {''};end
 set(handles.popupmenu3,'String',segStreamNames,'userData',segStreamUUIDs,'Value',1);

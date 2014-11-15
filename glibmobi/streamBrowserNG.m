@@ -93,7 +93,11 @@ ylabel(handles.axes1,'');
 browserObj.axesHandle = handles.axes1;
 browserObj.timeTexttHandle = handles.text6;
 browserObj.sliderHandle = handles.slider3;
-hListener = handle.listener(handles.slider3,'ActionEvent',@slider3_Callback);
+try
+    hListener = handle.listener(handles.slider3,'ActionEvent',@slider3_Callback);
+catch
+    hListener = addlistener(handles.slider3,'ContinuousValueChange',@slider3_Callback);
+end
 setappdata(browserObj.sliderHandle,'sliderListeners',hListener);
 
 set( handles.listbox1,'Value',1);

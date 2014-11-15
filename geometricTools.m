@@ -108,7 +108,7 @@ classdef geometricTools
                 D(D == 0) = 1;
                 W(it,loc(1:Nneig)) = normpdf(D(loc(1:Nneig)),0,h);
             end
-            W = bsxfun(@rdivide,W,sum(W)+eps);
+            %W = bsxfun(@rdivide,W,sum(W)+eps);
         end
         %%
         function D = isInConvexHull(X,Xi)
@@ -224,8 +224,12 @@ classdef geometricTools
         %%
         function [normals,faces] = getSurfaceNormals(vertices,faces,normalsIn)
             if nargin < 3, normalsIn = true;end
-            h = figure('visible','off');h2 = patch('vertices',vertices,'faces',fliplr(faces));
+            h = figure('visible','off');
+            h2 = patch('vertices',vertices,'faces',fliplr(faces));
             normals = get(h2,'vertexnormals');close(h);
+            if isempty(normals)
+                normals = vertices;
+            end
             normals = normals./(sqrt(sum(normals.^2,2))*[1 1 1]);
             area1 = geometricTools.getSurfaceArea(vertices,faces);
             area2 = geometricTools.getSurfaceArea(vertices+normals,faces);

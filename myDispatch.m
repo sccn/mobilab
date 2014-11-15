@@ -19,5 +19,5 @@ try
     end
 catch ME
     if ~strcmp(ME.identifier,'MoBILAB:attempt_to_delete_read_only_object'), sendEmailReport(ME);end
-    errordlg2(ME.message);
+    errordlg(ME.message);
 end

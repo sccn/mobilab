@@ -112,7 +112,11 @@ try
         set(handles.text6,'String',num2str(browserListObj.nowCursor));
         set(handles.text7,'String',num2str(browserListObj.endTime));
         set(handles.text8,'String',['Current latency = ' num2str(browserListObj.nowCursor) ' sec']);
-        hListener = handle.listener(handles.slider1,'ActionEvent',@slider1_Callback);
+        try
+            hListener = handle.listener(handles.slider1,'ActionEvent',@slider1_Callback);
+        catch
+            hListener = addlistener(handles.slider1,'ContinuousValueChange',@slider1_Callback);
+        end
         setappdata(handles.slider1,'sliderListeners',hListener);
 
         set(handles.load,'Visible','off');
@@ -136,7 +140,7 @@ catch ME
         warndlg2(ME.message);
     else
         sendEmailReport(ME);
-        errordlg2(ME.message);
+        errordlg(ME.message);
     end
 end
 
@@ -152,8 +156,8 @@ varargout{1} = handles.output;
 function load_Callback(hObject, eventdata, handles)
 mobilab = handles.mobilab;
 try
-    hFigure = mobilab.isGuiActive;
-    if hFigure
+    [isactive,hFigure] = mobilab.isGuiActive;
+    if isactive
         position = get(hFigure,'Position');
         %close(mobilab.isGuiActive);
         treeHandle = mobilab.gui('add2Browser_Callback');
@@ -165,7 +169,7 @@ try
     set(treeHandle,'Name','Right click on objects to add them to the Browser');
 catch ME
     sendEmailReport(ME);
-    errordlg2(ME.message);
+    errordlg(ME.message);
 end
 
 
@@ -176,7 +180,7 @@ try
     browserListObj.plotStep(-browserListObj.step);
 catch ME
     sendEmailReport(ME);
-    errordlg2(ME.message);
+    errordlg(ME.message);
 end
 
 
@@ -198,7 +202,7 @@ try
     end
 catch ME
     sendEmailReport(ME);
-    errordlg2(ME.message);
+    errordlg(ME.message);
 end
 
 
@@ -210,7 +214,7 @@ try
     browserListObj.plotStep(browserListObj.step);
 catch ME
     sendEmailReport(ME);
-    errordlg2(ME.message);
+    errordlg(ME.message);
 end
 
 
@@ -231,7 +235,7 @@ try
     browserListObj.changeSettings;
 catch ME
     sendEmailReport(ME);
-    errordlg2(ME.message);
+    errordlg(ME.message);
 end
 
 
@@ -367,7 +371,7 @@ try
     browserListObj.plotThisTimeStamp(newNowCursor);
 catch ME
     sendEmailReport(ME);
-    errordlg2(ME.message);
+    errordlg(ME.message);
 end
 
 % --- Executes during object creation, after setting all properties.
@@ -669,7 +673,7 @@ try
     evalin('base','eeglab(''redraw'')');
 catch ME
     sendEmailReport(ME);
-    errordlg2(ME.message);
+    errordlg(ME.message);
 end
 
 
@@ -699,7 +703,7 @@ end
 % --- Executes on button press in createEvent.
 function createEvent_Callback(hObject, eventdata, handles)
 browserListObj = get(handles.figure1,'userData');
-if isempty(browserListObj.list), errordlg2('Load up some data into the browser first.');return;end
+if isempty(browserListObj.list), errordlg('Load up some data into the browser first.');return;end
 browserListObj.ceHandle = CreateEvent(browserListObj);
 
 

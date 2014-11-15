@@ -75,7 +75,6 @@ classdef topographyBrowserHandle < browserHandle
             createGraphicObjects@browserHandle(obj);
             set(obj.figureHandle,'RendererMode','manual')
             set(obj.figureHandle,'Renderer','opengl')
-            set(obj.axesHandle,'drawmode','fast');
             box(obj.axesHandle,'off');
             
             load(obj.streamHandle.surfaces);
@@ -137,7 +136,7 @@ classdef topographyBrowserHandle < browserHandle
             data = obj.streamHandle.data(obj.timeIndex(t0),obj.channelIndex)';
             data = double(data);
             val = obj.interpolator*data;
-            mx = max(abs(val));
+            mx = max(abs(val))+eps;
             set(obj.hScalp,'FaceVertexCData',val);
             set(obj.axesHandle,'Clim',[-mx mx]);
             set(obj.timeTexttHandle,'String',['Current latency = ' num2str(obj.nowCursor,4) ' sec']);

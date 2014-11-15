@@ -114,8 +114,8 @@ function pushbutton1_Callback(hObject, eventdata, handles)
 userData = get(handles.figure1,'userData');
 
 tmp = str2double(get(handles.edit4,'String'));
-if ~isnumeric(tmp), errordlg2('Inhibition window must be a scalar.');end
-if tmp <=0, errordlg2('Inhibition window must be a scalar.');end
+if ~isnumeric(tmp), errordlg('Inhibition window must be a scalar.');end
+if tmp <=0, errordlg('Inhibition window must be a scalar.');end
 userData.inhibitedWindowLength = tmp;
 
 figure1 = userData.figure1;

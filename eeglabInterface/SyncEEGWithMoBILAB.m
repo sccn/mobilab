@@ -72,7 +72,7 @@ set(handles.popupmenu1,'userData',userData);
 set(handles.popupmenu1,'String',userData.name);
 
 
-if isempty(mobilab.allStreams), errordlg2('Load some data first.');end
+if isempty(mobilab.allStreams), errordlg('Load some data first.');end
 
 
 
@@ -84,17 +84,17 @@ varargout{1} = handles.output;
 % --- Executes on button press in pushbutton3.
 function pushbutton3_Callback(hObject, eventdata, handles)
 setFile = get(handles.edit1,'string');
-if ~exist(setFile,'file'), errordlg2('The .set file doesn''t exist.');return;end
+if ~exist(setFile,'file'), errordlg('The .set file doesn''t exist.');return;end
 
 userData = get(handles.popupmenu1,'userData');
 uuid = userData.uuid{get(handles.popupmenu1,'Value')};
 
-if ~isa(uuid,'java.util.UUID'), errordlg2('Cannot find the parent stream in MoBILAB''s tree.');return;end
+if ~isa(uuid,'java.util.UUID'), errordlg('Cannot find the parent stream in MoBILAB''s tree.');return;end
 
 mobilab = handles.mobilab;
 
 itemIndex = mobilab.allStreams.findItem(uuid);
-if isempty(itemIndex), errordlg2('Cannot find the parent stream in MoBILAB''s tree.');return;end
+if isempty(itemIndex), errordlg('Cannot find the parent stream in MoBILAB''s tree.');return;end
 
 clear userData
 userData.file = setFile;

@@ -379,7 +379,7 @@ classdef eegplotNGHandle < browserHandle
         function changeChannelColor(obj,newColor,index)
             if nargin < 2, warndlg2('You must enter the index of the channel you would like change the color.');end
             ind = ismember(obj.channelIndex, index);
-            if ~any(ind), errordlg2('Index exceeds the number of channels.');end
+            if ~any(ind), errordlg('Index exceeds the number of channels.');end
             if length(newColor) == 3
                 obj.color(ind,:) = ones(sum(ind),1)*newColor;
             end

@@ -64,8 +64,8 @@ classdef mobilabApplication < handle
         end
         %%
         function delete(obj)
-            figureHandle = obj.isGuiActive;
-            if figureHandle, delete(figureHandle);end
+            [isActive,figureHandle] = obj.isGuiActive;
+            if isActive, delete(figureHandle);end
             %warning off all
             %rmpath(genpath([obj.path filesep 'dependency']));
             %warning on all
@@ -199,19 +199,20 @@ classdef mobilabApplication < handle
             reDraw = any(obj.preferences.gui.fontColor ~= oldGui.fontColor);
             reDraw = reDraw | any(obj.preferences.gui.backgroundColor ~= oldGui.backgroundColor);
             reDraw = reDraw | any(obj.preferences.gui.buttonColor ~= oldGui.buttonColor);
-            if obj.isGuiActive && reDraw, close(obj.isGuiActive); obj.gui;end
+            [isActive,figureHandle] = obj.isGuiActive();
+            if isActive && reDraw, close(figureHandle); obj.gui;end
         end
         %%
         function figureHandle = gui(obj,callback)
             if nargin < 2, callback = 'dispNode_Callback';end
             
-            figureHandle = obj.isGuiActive;
+            [isActive,figureHandle] = obj.isGuiActive();
             if length(figureHandle) > 1, 
                 try close(figureHandle(2:end));end;%#ok
                 figureHandle = figureHandle(1);
             end 
             
-            if ~figureHandle
+            if ~isActive
                 figureHandle = figure('MenuBar','none','Toolbar','None','NumberTitle','off','Tag','mobilabApplicationGUI','Visible','off',...
                     'Units','Pixels','Color',obj.preferences.gui.backgroundColor);
                 position = get(figureHandle,'Position');
@@ -270,10 +271,14 @@ classdef mobilabApplication < handle
                 set(figureHandle,'Name','MoBILAB (Load some data to start)','Visible','on');
                 delete(findobj(figureHandle,'type','axes'));
                 drawnow;
-                
+                warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
                 jFrame = get(handle(figureHandle),'JavaFrame');
-                % jRootPane = jFrame.fFigureClient.getWindow;
-                jRootPane = jFrame.fHG1Client.getWindow;
+                try
+                    jRootPane = jFrame.fHG1Client.getWindow;
+                catch
+                    jRootPane = jFrame.fHG2Client.getWindow;
+                end
+                    
                 obj.statusBar = com.mathworks.mwswing.MJStatusBar;
                 javaObjectEDT(obj.statusBar);
                 
@@ -308,7 +313,11 @@ classdef mobilabApplication < handle
                 case 'add2eventseditor2_callback'
                     funcHandle = @add2EventsEditor2_Callback;
                 case 'add2browser_callback'
-                    funcHandle = @MultiStreamBrowser;
+                    if isMatlab2014b
+                        funcHandle = @MultiStreamBrowser2014b;
+                    else
+                        funcHandle = @MultiStreamBrowser;
+                    end
                 otherwise
                     funcHandle = @disp;
             end
@@ -343,7 +352,11 @@ classdef mobilabApplication < handle
                         contextMenuItems{it} = javax.swing.JPopupMenu;
                         menuItem = javax.swing.JMenuItem('Plot in MS Browser');
                         javaObjectEDT(menuItem);
-                        set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@MultiStreamBrowser; obj.allStreams.item{it}});
+                        if isMatlab2014b
+                            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@MultiStreamBrowser2014b; obj.allStreams.item{it}});
+                        else
+                            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@MultiStreamBrowser; obj.allStreams.item{it}});
+                        end
                         contextMenuItems{it}.add(menuItem);
                     else
                         contextMenuItems{it} = obj.allStreams.item{it}.contextMenu;
@@ -378,7 +391,8 @@ classdef mobilabApplication < handle
                 renderer.setLeafIcon(jImageIcon);
                 javax.swing.ToolTipManager.sharedInstance().registerComponent(jTree);
                 jTree.setCellRenderer(renderer);
-                set(jTree,'userData',callbacks);
+                %set(jTree,'userData',callbacks);
+                set(figureHandle,'userData',callbacks)
                 jScrollPane = com.mathworks.mwswing.MJScrollPane(jTree);
                 javaObjectEDT(jScrollPane)
                 jScrollPane.setBackground(java.awt.Color(obj.preferences.gui.backgroundColor(1),...
@@ -409,9 +423,13 @@ classdef mobilabApplication < handle
                 set(figureHandle,'Visible','on');
                 
                 drawnow;
+                warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
                 jFrame = get(handle(figureHandle),'JavaFrame');
-                % jRootPane = jFrame.fFigureClient.getWindow;
-                jRootPane = jFrame.fHG1Client.getWindow;
+                try
+                    jRootPane = jFrame.fHG1Client.getWindow;
+                catch
+                    jRootPane = jFrame.fHG2Client.getWindow;
+                end
                 javaObjectEDT(jRootPane);
                 obj.statusBar = com.mathworks.mwswing.MJStatusBar;
                 javaObjectEDT(obj.statusBar)
@@ -435,7 +453,11 @@ classdef mobilabApplication < handle
         %%
         function msBrowserHandle = msBrowser(obj)
             if isempty(obj.allStreams) || ~isvalid(obj.allStreams), error('Load some data first');end
-            msBrowserHandle = MultiStreamBrowser(obj);
+            if isMatlab2014b
+                msBrowserHandle = MultiStreamBrowser2014b(obj);
+            else
+                msBrowserHandle = MultiStreamBrowser(obj);
+            end
         end
         %%
         function copyImportFolder(obj,source,destination)
@@ -560,6 +582,7 @@ classdef mobilabApplication < handle
             persistent hwait;
             if nargin < 2, msg = 'Do not press Ctrl+C ... ';end
             if isempty(flag), flag = true;end
+            if isMatlab2014b, return;end
             if ~obj.isGuiActive
                 if flag, disp(msg);else disp('Done!');end
                 flag = ~flag;
@@ -567,16 +590,23 @@ classdef mobilabApplication < handle
             end
             
             if flag
-                try  
-                jFrame = get(handle(obj.isGuiActive),'JavaFrame');
-                jWindow = jFrame.fHG1Client.getWindow;
-                hwait = com.mathworks.mlwidgets.dialog.ProgressBarDialog.createHeavyweightInternalProgressBar(jWindow,' ',[]);
-                hwait.setProgressStatusLabel(msg);
-                hwait.setSpinnerVisible(false);
-                hwait.setCancelButtonVisible(false);
-                hwait.setVisible(true);
-                hwait.setCircularProgressBar(true);
-                drawnow;
+                try
+                    [~,figureHandle] = obj.isGuiActive();
+                    isMatlab2014b
+                    warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
+                    jFrame = get(handle(figureHandle),'JavaFrame');
+                    try
+                        jWindow = jFrame.fHG1Client.getWindow;
+                    catch
+                        jWindow = jFrame.fHG2Client.getWindow;
+                    end
+                    hwait = com.mathworks.mlwidgets.dialog.ProgressBarDialog.createHeavyweightInternalProgressBar(jWindow,' ',[]);
+                    hwait.setProgressStatusLabel(msg);
+                    hwait.setSpinnerVisible(false);
+                    hwait.setCancelButtonVisible(false);
+                    hwait.setVisible(true);
+                    hwait.setCircularProgressBar(true);
+                    drawnow;
                 end
             else
                 try hwait.dispose;end %#ok
@@ -635,7 +665,7 @@ classdef mobilabApplication < handle
                     suffix = '_MoBI';
                     suffixLength = length(suffix);
                     if ~strcmp(mobiDataDirectory(end-suffixLength+1:end),suffix)
-                        errordlg2('This is not a valid _MoBI folder');
+                        errordlg('This is not a valid _MoBI folder');
                         return
                     end
                     obj.allStreams = dataSourceMoBI(mobiDataDirectory);
@@ -681,22 +711,23 @@ classdef mobilabApplication < handle
                 obj.allStreams = importFun(source,mobiDataDirectory);
                 if obj.isGuiActive, obj.gui;end
             catch ME
-                errordlg2(ME.message);
+                errordlg(ME.message);
             end
         end
         %%
         function refresh(obj,~)
-            figureHandle = obj.isGuiActive;
-            if figureHandle, return;end
+            [isActive,figureHandle] = obj.isGuiActive;
+            if isActive, return;end
             close(figureHandle);
             obj.gui;
         end
     end
     methods(Static)
         %%
-        function h = isGuiActive
+        function [isActive,h] = isGuiActive
+            isActive = true;
             h = findobj(0, 'Tag','mobilabApplicationGUI');
-            if isempty(h), h = false;end
+            if isempty(h), isActive = false;end
         end
     end
 end
@@ -739,7 +770,9 @@ if eventData.isMetaDown
 else
     if isempty(count), count = 1;t=now;end
     if count == 2 && (now - t)*1e3 < th
-        callbacks = get(hTree,'userData');
+        %callbacks = get(hTree,'userData');
+        hFigure = findobj('Name','MoBILAB');
+        callbacks = get(hFigure,'userData');
         if isempty(callbacks), return;end
         funcHandle = callbacks{index}{1};
         arg = callbacks{index}{2};

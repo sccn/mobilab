@@ -371,7 +371,7 @@ index = get(handles.popupmenu8,'value');
 allDataStreams = evalin('base','allDataStreams');
 dataObjectIndex = allDataStreams.findItem(name{index});
 
-if ~any(ismember(channels,1:allDataStreams.item{dataObjectIndex}.numberOfChannels)), errordlg2('Channel out of range.');return;end
+if ~any(ismember(channels,1:allDataStreams.item{dataObjectIndex}.numberOfChannels)), errordlg('Channel out of range.');return;end
 
 name = get(handles.popupmenu5,'string');
 index = get(handles.popupmenu5,'value');
@@ -381,7 +381,7 @@ startMark = get(handles.listbox3,'string');
 endMark = get(handles.listbox5,'string');
 
 if any([isempty(startMark) isempty(endMark)])
-    errordlg2('Select first the ''start'' and ''end'' events');
+    errordlg('Select first the ''start'' and ''end'' events');
     return
     %startMark = str2double(get(handles.edit2,'string'));
     %endMark = str2double(get(handles.edit3,'string'));
@@ -620,7 +620,7 @@ index = get(handles.popupmenu8,'value');
 allDataStreams = evalin('base','allDataStreams');
 dataObjectIndex = allDataStreams.findItem(name{index});
 
-if ~any(ismember(channels,1:allDataStreams.item{dataObjectIndex}.numberOfChannels)), errordlg2('Channel out of range.');return;end
+if ~any(ismember(channels,1:allDataStreams.item{dataObjectIndex}.numberOfChannels)), errordlg('Channel out of range.');return;end
 
 name = get(handles.popupmenu5,'string');
 index = get(handles.popupmenu5,'value');
@@ -630,7 +630,7 @@ startMark = get(handles.listbox3,'string');
 endMark = get(handles.listbox5,'string');
 
 if any([isempty(startMark) isempty(endMark)])
-    errordlg2('Select first the ''start'' and ''end'' events');
+    errordlg('Select first the ''start'' and ''end'' events');
     return
     %startMark = str2double(get(handles.edit2,'string'));
     %endMark = str2double(get(handles.edit3,'string'));
