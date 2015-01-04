@@ -410,16 +410,25 @@ classdef geometricTools
             end
         end
         %%
-        function Yi = spSplineInterpolator(X,Y,Xi,plotFlag)
-            % Computes the spherical spline interpolator based on Perrin et al. (1989)
+        function X = projectOntoUnitarySphere(X)
+            [~,X(:,1),X(:,2),X(:,3)] = geometricTools.projectOnSphere(X(:,1),X(:,2),X(:,3));
+            [azimuth,elevation,r] = cart2sph(X(:,1),X(:,2),X(:,3));
+            [X(:,1),X(:,2),X(:,3)] = sph2cart(azimuth,elevation,elevation*0+1);
+        end
+        %%
+        function [Yi,W] = spSplineInterpolator(X,Y,Xi,plotFlag)
+            % Computes the spherical spline interpolator based on Perrin, F., 
+            % Pernier, J., Bertrand, O., Echallier, J.F. (1990). Corrigenda 
+            % EEG 02274. Electroencephalography and Clinical Neurophysiology, 76, 565.
             
             if nargin < 4, plotFlag = false;end
-                        
-            X = geometricTools.correctOrigin(X);
-            X = bsxfun(@rdivide,X,sqrt(sum(X.^2,2)));
-            
-            Xi = geometricTools.correctOrigin(Xi);
-            Xi = bsxfun(@rdivide,Xi,sqrt(sum(Xi.^2,2)));
+            %X0 = mean(X);
+            %X  = bsxfun(@minus,X,X0);
+            %Xi  = bsxfun(@minus,Xi,X0);
+            X  = geometricTools.projectOntoUnitarySphere(X);
+            Xi = geometricTools.projectOntoUnitarySphere(Xi);
+            %X  = bsxfun(@rdivide,X,sqrt(sum(X.^2,2)));
+            %Xi = bsxfun(@rdivide,Xi,sqrt(sum(Xi.^2,2)));
             
             %-- 
             M = size(X,1);
@@ -428,127 +437,41 @@ classdef geometricTools
             
             % Solving eq. 4 of Perrin et al. (1989)
             COS_X  = geometricTools.cosines(X,X);
-            COS_Xi = geometricTools.cosines(X,Xi);
+            COS_Xi = geometricTools.cosines(Xi,X);
             
             % Solving eq. 3 of Perrin et al. (1989)
             Gx  = geometricTools.sphericalSpline(COS_X);
             Gxi = geometricTools.sphericalSpline(COS_Xi);
             
             % Solving eq. 2 Perrin et al. (1989)
-            % [C,c0] = geometricTools.spline_coefficients(Gx,Y);
-            C = ridgeGCV(Y,[Gx ones(M,1)],eye(M+1));
-            
-            % Interpolating with the spherical harmonics
-            Yi = [Gxi One]* C;       
-            
-            % Plot the input & projected electrode positions on a sphere
-            if plotFlag
-                %[r,x,y,z] = geometricTools.projectOnSphere(X(:,1),X(:,2),X(:,3),0,0,0);
-                figure('NumberTitle','off','Name','Electrode Placements');
-                set(gca,'Projection','perspective','DataAspectRatio',[1 1 1]); hold on
-                %plot3(x,y,z,'b.'); 
-                plot3(X(:,1),X(:,2),X(:,3),'ro');plot3(Xi(:,1),Xi(:,2),Xi(:,3),'k.')
-                legend('input xyz','projected head','Location','BestOutside');
-                Nf = 72;
-                [Xs,Ys,Zs]=sphere(Nf);
-                Xsp = [Xs(:) Ys(:) Zs(:)];
-                W = geometricTools.localGaussianInterpolator(Xi,Xsp,3);
-                Ysp = W*Yi;
-                surf(Xs,Ys,Zs,reshape(Ysp,[Nf Nf]+1),'EdgeColor','none');
-                view(2); rotate3d; axis tight; hold off;
-            end
-        end
-        %%
-        function [Xi,Yi] = spSplineInterpolator2D(X,Y,Xi,plotFlag)
-            % Computes the spherical spline interpolator based on Perrin et al. (1989)
-            
-            if nargin < 4, plotFlag = false;end
+            [C,~,~,T] = ridgeGCV([Y;0],[Gx ones(M,1);ones(1,M) 0],eye(M+1));
                         
-            X = geometricTools.correctOrigin(X);
-            X = bsxfun(@rdivide,X,sqrt(sum(X.^2,2)));
+            % Interpolating with the spherical harmonics
+            Yi = [Gxi One]* C;
             
-            Xi = geometricTools.correctOrigin(Xi);
-            Xi = bsxfun(@rdivide,Xi,sqrt(sum(Xi.^2,2)));
-            
-            M = size(X,1);
-            
-            % Solving eq. 4 of Perrin et al. (1989)
-            COS_X  = geometricTools.cosines(X,X);
-            COS_Xi = geometricTools.cosines(X,Xi);
-            
-            % Solving eq. 3 of Perrin et al. (1989)
-            Gx  = geometricTools.sphericalSpline(COS_X);
-            Gxi = geometricTools.sphericalSpline(COS_Xi);
-            
-            % Solving eq. 2 Perrin et al. (1989)
-            C = ridgeGCV(Y,[Gx ones(M,1)],eye(M+1));
-            c0 = C(end);
-            C = C(1:end-1);
-            
-            % Interpolate on the sphere
-            Yi = c0 + Gxi* C;
-            
-            Nf = 72;
-            [xs,ys,zs]=sphere(Nf);
-            Xs = [xs(:) ys(:) zs(:)];    
-            W = geometricTools.localGaussianInterpolator(Xi,Xs,3);
-            Ys = W*Yi;
-            
+            W = [Gxi One]* T(:,1:end-1);
             
             % Plot the input & projected electrode positions on a sphere
             if plotFlag
-                figure('NumberTitle','off','Name','Electrode Placements');
-                set(gca,'Projection','perspective','DataAspectRatio',[1 1 1]); hold on
-                
-                patch(Xi(:,1),ys,zs,reshape(Ys,[Nf Nf]+1),'EdgeColor','none','facealpha',0.7);
-                surf(xs,ys,zs,reshape(Ys,[Nf Nf]+1),'EdgeColor','none','facealpha',0.7);
-                view(2); rotate3d; axis tight; hold off;
-                
-                %plot3(x,y,z,'b.'); 
-                %plot3(X(:,1),X(:,2),X(:,3),'ro');plot3(Xi(:,1),Xi(:,2),Xi(:,3),'k.')
-                %legend('input xyz','projected head','Location','BestOutside');
-                Nf = 72;
-                [Xs,Ys,Zs]=sphere(Nf);
-                %Zs = 1+0*Zs;
-                Xsp = [Xs(:) Ys(:) Zs(:)];
-                W = geometricTools.localGaussianInterpolator(Xi,Xsp,3);
-                Ysp = W*Yi;
-                surf(Xs,Ys,Zs,reshape(Ysp,[Nf Nf]+1),'EdgeColor','none');
-                view(2); rotate3d; axis tight; hold off;
+                geometricTools.plot_on_sphere(X,Y,Xi,Yi);
             end
         end
         %%
-        function Gx = sphericalSpline(Cosine)
+        function Gx = sphericalSpline(x)
             % sphericalSpline solves eq. 3 of Perrin et al. (1989)
             % g(COS) = 1/4pi * sum[n=1:inf] (( (2*n+1)/( n^m * (n+1)^m ) ) * Pn(COS));
             
             m = 4;
             N = 16;    % gives accuracy of 10^-6
-            P = legendre(N,Cosine);
-            % P = LEGENDRE(N,X) computes the associated Legendre functions
-            % of degree N and order m = 0, 1, ..., N, evaluated for each element
-            % of X.
-            % In general, P has one more dimension than X.
-            % Each element P(m+1,i,j,k,...) contains the associated Legendre
-            % function of degree N and order m evaluated at X(i,j,k,...).
             
-            ndim = ndims(P);
-            switch ndim
-                case 2, P = P(2:N+1,:);
-                case 3, P = P(2:N+1,:,:);
-                case 4, P = P(2:N+1,:,:,:);
-                otherwise
+            P = cat(3, ones(size(x)), x);
+            Gx = 3 / 2 ^ m * P(:, :, 2);
+            for n = 2:N
+                P(:, :, 3) = ((2 * n - 1) * x .* P(:, :, 2) - (n - 1) * P(:, :, 1)) / n;
+                P = P(:,:,[2 3 1]);
+                Gx = Gx + (2 * n + 1) / (n ^ m * (n + 1) ^ m) * P(:, :, 2);
             end
-            k = (1/4 * pi);
-            Series = zeros(N,1);
-            [N1,N2] = size(Cosine);
-            for n = 1:N,  Series(n,1) = (2*n + 1) / ( n^m * (n+1)^m );end
-            if min([N1 N2]) == 1
-                Gx = k * ( Series' * P );
-            else
-                Gx = zeros(N2,N1);
-                for it = 1:N2, Gx(it,:) = k * ( Series' * P(:,:,it) );end
-            end
+            Gx = Gx / (4 * pi);
         end
         %%
         function [r,x,y,z] = projectOnSphere(X,Y,Z,xo,yo,zo)
@@ -577,9 +500,9 @@ classdef geometricTools
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             % initialise centroid, unless input parameters defined
-            if nargin > 4, xo = 0;end
-            if nargin > 5, yo = 0;end
-            if nargin > 6, zo = 0;end
+            if nargin < 4, xo = 0;end
+            if nargin < 5, yo = 0;end
+            if nargin < 6, zo = 0;end
             
             % Initialise r0 as a rough guess at the sphere radius
             rX = (max(X) - min(X)) / 2;
@@ -629,6 +552,38 @@ classdef geometricTools
             Cos = 1-Cos/2;
             Cos(Cos > 1) = 1-eps;
             Cos(Cos < -1) = -1+eps;
+        end
+        function plot_on_sphere(X,Y,Xi,Yi)
+            [~,X(:,1), X(:,2), X(:,3)]  = geometricTools.projectOnSphere(X(:,1), X(:,2), X(:,3));
+            [~,Xi(:,1),Xi(:,2),Xi(:,3)] = geometricTools.projectOnSphere(Xi(:,1),Xi(:,2),Xi(:,3));
+            X  = bsxfun(@rdivide,X,sqrt(sum(X.^2,2)));
+            Xi = bsxfun(@rdivide,Xi,sqrt(sum(Xi.^2,2)));
+            
+            Xt = [X;Xi];
+            Yt = [Y;Yi];
+            Xt = bsxfun(@rdivide,Xt,sqrt(sum(Xt.^2,2)));
+            Xi = bsxfun(@rdivide,Xi,sqrt(sum(Xi.^2,2)));
+            Ne = size(X,1);
+            Nf = 72;
+            [Xs,Ys,Zs]=sphere(Nf);
+            Xsp = [Xs(:) Ys(:) Zs(:)];
+            Fsp = geometricTools.localGaussianInterpolator(Xt,Xsp,Ne,0.2);
+            
+            
+            %[J,lambdaOpt,~,iFsp] = ridgeGCV(Yt,Fsp',eye(size(Xsp,1)),100,1);
+            %J = iFsp*Yt;
+            Ysp = Fsp*Yt;
+            figure('NumberTitle','off','Name','Electrode Placements');
+            set(gca,'Projection','perspective','DataAspectRatio',[1 1 1]); hold on
+            %plot3(x,y,z,'b.');
+            plot3(X(:,1),X(:,2),X(:,3),'ro');
+            plot3(Xi(:,1),Xi(:,2),Xi(:,3),'k.')
+            legend('input xyz','projected head','Location','BestOutside');
+            surf(Xs,Ys,Zs,reshape(Ysp,[Nf Nf]+1),'specularstrength',0.1,'facealpha',0.9,'linestyle','none');
+            camlight
+            camlight headlight
+            view(2); rotate3d;
+            axis vis3d
         end
     end
 end
