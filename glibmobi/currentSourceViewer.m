@@ -117,7 +117,7 @@ classdef currentSourceViewer < handle
                 'SpecularExponent',50,'SpecularStrength',0.5,'Parent',obj.hAxes);
             camlight(0,180)
             camlight(0,0)
-            mx = 0.9*max(abs(Jm(:,1)));
+            mx = 0.9*max(abs(Jm(:)));
             
             % scalp
             if isempty(V)
@@ -163,7 +163,7 @@ classdef currentSourceViewer < handle
                 case 'sensorsOff'
                     set(obj.hSensors,'Visible','off');
                 case 'scalpOn'
-                    val = obj.scalpData(:,obj.pointer);
+                    val = obj.scalpData(:);
                     mx = 0.9*max(abs(val));
                     set(obj.hCortex,'FaceAlpha',0.15);
                     if strcmp(get(obj.hVector,'Visible'),'on')
@@ -174,7 +174,7 @@ classdef currentSourceViewer < handle
                     if isempty(val), return;end
                     set(get(obj.hScalp,'Parent'),'Clim',[-mx mx]);
                 case 'scalpOff'
-                    val = obj.sourceMagnitud(:,obj.pointer);
+                    val = obj.sourceMagnitud(:);
                     mx = 0.9*max(abs(val));
                     set(obj.hScalp,'Visible','off');
                     set(obj.hCortex,'Visible','on','FaceAlpha',1);
@@ -213,14 +213,14 @@ classdef currentSourceViewer < handle
             val = obj.sourceMagnitud(:,obj.pointer);
             set(obj.hCortex,'FaceVertexCData',val);
             mx = 0.9*max(abs(val));
-            if strcmp(get(obj.hCortex,'Visible'),'on'), set(get(obj.hCortex,'Parent'),'Clim',[-mx mx]);end
+            %if strcmp(get(obj.hCortex,'Visible'),'on'), set(get(obj.hCortex,'Parent'),'Clim',[-mx mx]);end
             if isprop(obj.streamObj,'name'), objName = [obj.streamObj.name ': '];else objName = '';end
             set(obj.hFigure,'Name',[objName num2str(obj.pointer) '/' num2str(size(obj.sourceMagnitud,2))]);
             if isempty(obj.scalpData), drawnow;return;end
             val = obj.scalpData(:,obj.pointer);
             set(obj.hScalp,'FaceVertexCData',val);
             mx = 0.9*max(abs(val));
-            if strcmp(get(obj.hScalp,'Visible'),'on'), set(get(obj.hScalp,'Parent'),'Clim',[-mx mx]);end
+            %if strcmp(get(obj.hScalp,'Visible'),'on'), set(get(obj.hScalp,'Parent'),'Clim',[-mx mx]);end
             try %#ok
                 set(obj.hVector,'UData',obj.sourceOrientation(:,1,obj.pointer),'VData',obj.sourceOrientation(:,2,obj.pointer),'WData',obj.sourceOrientation(:,3,obj.pointer));
             end
@@ -232,14 +232,14 @@ classdef currentSourceViewer < handle
             val = obj.sourceMagnitud(:,obj.pointer);
             set(obj.hCortex,'FaceVertexCData',val);
             mx = 0.9*max(abs(val));
-            if strcmp(get(obj.hCortex,'Visible'),'on'), set(get(obj.hCortex,'Parent'),'Clim',[-mx mx]);end
+            %if strcmp(get(obj.hCortex,'Visible'),'on'), set(get(obj.hCortex,'Parent'),'Clim',[-mx mx]);end
             if isprop(obj.streamObj,'name'), objName = [obj.streamObj.name ': '];else objName = '';end
             set(obj.hFigure,'Name',[objName num2str(obj.pointer) '/' num2str(size(obj.sourceMagnitud,2))]);
             if isempty(obj.scalpData), drawnow;return;end
             val = obj.scalpData(:,obj.pointer);
             set(obj.hScalp,'FaceVertexCData',val);
             mx = 0.9*max(abs(val));
-            if strcmp(get(obj.hScalp,'Visible'),'on'), set(get(obj.hScalp,'Parent'),'Clim',[-mx mx]);end
+            %if strcmp(get(obj.hScalp,'Visible'),'on'), set(get(obj.hScalp,'Parent'),'Clim',[-mx mx]);end
             try %#ok
                 set(obj.hVector,'UData',obj.sourceOrientation(:,1,obj.pointer),'VData',obj.sourceOrientation(:,2,obj.pointer),'WData',obj.sourceOrientation(:,3,obj.pointer));
             end
@@ -254,12 +254,12 @@ classdef currentSourceViewer < handle
             set(obj.hFigure,'Name',[objName num2str(obj.pointer) '/' num2str(size(obj.sourceMagnitud,2))]);
             set(obj.hCortex,'FaceVertexCData',val);
             mx = 0.9*max(abs(val));
-            if strcmp(get(obj.hCortex,'Visible'),'on'), set(get(obj.hCortex,'Parent'),'Clim',[-mx mx]);end
+            %if strcmp(get(obj.hCortex,'Visible'),'on'), set(get(obj.hCortex,'Parent'),'Clim',[-mx mx]);end
             if isempty(obj.scalpData), drawnow;return;end
             val = obj.scalpData(:,obj.pointer);
             set(obj.hScalp,'FaceVertexCData',val);
             mx = 0.9*max(abs(val));
-            if strcmp(get(obj.hScalp,'Visible'),'on'), set(get(obj.hScalp,'Parent'),'Clim',[-mx mx]);end
+            %if strcmp(get(obj.hScalp,'Visible'),'on'), set(get(obj.hScalp,'Parent'),'Clim',[-mx mx]);end
         end
     end
 end
