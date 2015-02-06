@@ -416,10 +416,12 @@ classdef mobilabApplication < handle
                 guiMenu.add(guiMenuItem);
                 set(handle(guiMenuItem,'CallbackProperties'), 'ActionPerformedCallback', {@refresh_Callback,obj});
                 
-                % I'll work around this warning in the future
-                warning off %#ok
-                set(jTree, 'MousePressedCallback', {@mousePressedCallback,cat(1,{guiMenu;rootMenu},contextMenuItems)});
-                warning on; %#ok
+                try
+                    set(handle(jTree,'CallbackProperties'), 'MousePressedCallback', {@mousePressedCallback,cat(1,{guiMenu;rootMenu},contextMenuItems)});
+                catch ME
+                    disp(ME.message)
+                    set(jTree, 'MousePressedCallback', {@mousePressedCallback,cat(1,{guiMenu;rootMenu},contextMenuItems)});
+                end
                 set(figureHandle,'Visible','on');
                 
                 drawnow;
