@@ -27,7 +27,12 @@ addpath(genpath([p filesep 'eeglabInterface']));
 addpath(genpath([p filesep 'glibmobi']));
 addpath(genpath([p filesep 'gui']));
 
-h = findobj(fig,'Label','Import data');
+% JRI 7/3/14 -- original code was finding two "Import Data" menus (the one we want
+%   plus one from LIMO plugin. So, need to be more specific: 
+%   find the Import Data menu within the top-level File menu
+
+filemenu = findobj(fig,'Label','File','type','uimenu','parent',fig);
+h = findobj(filemenu,'Label','Import data');
 
 % uimenu( h, 'label', 'From file (.xdf, .xdfz, .drf)', 'callback','allDataStreams = pop_load_file_mobilab;');
 % uimenu( h, 'label', 'From folder (concat LSL or DataRiver files)', 'callback','allDataStreams = pop_load_folder_mobilab;');
