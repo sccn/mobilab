@@ -80,8 +80,21 @@ classdef dataSourceXDF < dataSource
                         rmThis(stream_count) = true;
                         seeLogFile = true;
                     end
-                    
                 end
+                
+                uuid_list = cell(length(streams),1);
+                tmp_names = cell(length(streams),1);
+                for stream_count=1:length(streams)
+                    uuid_list{stream_count} = char(streams{stream_count}.info.uid);
+                    tmp_names{stream_count} = lower(streams{stream_count}.info.name);
+                end
+                [~,loc1,~] = intersect(uuid_list,unique(uuid_list));
+                rep_streams = setdiff(1:length(streams),loc1);
+                if ~isempty(rep_streams)
+                    warning('MoBILAB:repeatedStream',['Streams ' num2str(rep_streams) ' are repeated, their first instance will be ignored. This probably happened because there are LSL streams of the same name running in the background.']);
+                    rmThis(rep_streams) = 1;
+                end
+               
                 if any(rmThis)
                     tmp = streams(rmThis);
                     for k=1:length(tmp), if isfield(tmp{k},'tmpfile') && exist(tmp{k}.tmpfile,'file'), java.io.File(tmp{k}.tmpfile).delete();end;end
