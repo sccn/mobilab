@@ -90,25 +90,26 @@ classdef geometricTools
         %%
         function Yi = ridgeInterpolation(vertices,faces,elec,Y)
             L = geometricTools.getSurfaceLaplacian(vertices,faces);
-            K = geometricTools.localGaussianInterpolator(vertices,elec,6,1);
+            K = geometricTools.localGaussianInterpolator(vertices,elec,1);
             K = full(K);
             Yi = ridgeGCV(Y,K,L,100,0);
         end
         %%
-        function W = localGaussianInterpolator(X,Xi,Nneig,h)
-            if nargin < 3, Nneig = 16;end
-            if nargin < 4, h = 16;end
+        function J = simulateGaussianSource(X,X0,h)
+            if nargin < 3, h = 0.1;end
+            J = geometricTools.localGaussianInterpolator(X,X0,h)';
+        end
+        function W = localGaussianInterpolator(X,Xi,h,normalize)
+            if nargin < 3, h = 0.1;end
+            if nargin < 4, normalize = false;end
             N = size(Xi,1);
             M = size(X,1);
-            W = sparse(N,M);
+            W = zeros(N,M);
             for it=1:N
-                d = bsxfun(@minus,X,Xi(it,:));
-                D = sqrt(sum(( d ).^2,2));
-                [~,loc] = sort(D);
-                D(D == 0) = 1;
-                W(it,loc(1:Nneig)) = normpdf(D(loc(1:Nneig)),0,h);
+                d = sum(bsxfun(@minus,X,Xi(it,:)).^2,2);
+                W(it,:) = exp(-d/(2*h^2));
             end
-            %W = bsxfun(@rdivide,W,sum(W)+eps);
+            if normalize, W = bsxfun(@rdivide,W,sum(W,2)+eps);end
         end
         %%
         function D = isInConvexHull(X,Xi)
@@ -149,7 +150,7 @@ classdef geometricTools
                     Yi(:,it) = F(Xi(:,1),Xi(:,2),Xi(:,3));
                 end
             end
-            W = geometricTools.localGaussianInterpolator(Xi,Xi,8,16);
+            W = geometricTools.localGaussianInterpolator(Xi,Xi,16);
             Yi = W*Yi;
         end
         %%
@@ -176,7 +177,7 @@ classdef geometricTools
                     indices = faces(ind,:);
                     indices = indices(:);
                     indices(indices==it) = [];
-                    W = geometricTools.localGaussianInterpolator(vertices(indices,:),vertices(it,:),length(indices),10);
+                    W = geometricTools.localGaussianInterpolator(vertices(indices,:),vertices(it,:),10);
                     sVertices(it,:) = sum((1./W)*vertices(indices,:),1)./sum(1./W);
                 end
                 return;
@@ -262,7 +263,24 @@ classdef geometricTools
             areas = area;
             area = sum(area);
         end
-        %%
+        function L = getSurfaceLaplacian1(vertices,faces)
+            % LAPLACES Calculates a Discrete Surface Laplacian Matrix
+            %          for a triangulated surface
+            
+            Nv = size(vertices,1);
+            Nf = size(faces,1);
+            L = spalloc(Nv,Nv,3*Nf);
+            %L = speye(Nvtx);
+            for fi=1:Nf
+                for k=1:3
+                    kk = mod(k,3)+1;
+                    L(faces(fi,k),faces(fi,kk)) = sqrt( sum((vertices(faces(fi,k),:)-vertices(faces(fi,kk),:)).^2,2));
+                end
+            end
+            L(L>0) = 1./L(L>0);
+            L = (L+L')/2;
+            L = L - spdiags(sum(L,2),0,Nv,Nv);
+        end
         function L = getSurfaceLaplacian(vertices,faces)
             % LAPLACES Calculates a Discrete Surface Laplacian Matrix
             %          for a triangulated surface
@@ -275,7 +293,7 @@ classdef geometricTools
             % Nelson Trujillo Barreto
             % Pedro antonio Valdes Hernandez
             % Cuban Neuroscience Center
-
+            
             Cortex.vertices = vertices;
             Cortex.faces = faces;
             vtx = Cortex.vertices;
@@ -293,7 +311,9 @@ classdef geometricTools
                     
                     [indi,indj]=find(nei_tri_j==nei_j(k)); %#ok
                     nei_tri_jk = nei_tri_j(indi,:);
-                    if size(nei_tri_jk,1) < 2, break;end
+                    if size(nei_tri_jk,1) < 2,
+                        break;
+                    end
                     nei_k_lr = setxor(nei_tri_jk(1,:),nei_tri_jk(2,:));
                     
                     rk2 = sum((rj-vtx(nei_j(k),:)).^2);
@@ -326,6 +346,9 @@ classdef geometricTools
             d = diag(L);
             ind = find(d==0);
             if ~isempty(ind), for it=1:length(ind), L(ind(it),ind(it)) = 1;end;end
+            %th = prctile(nonzeros(L),[0.1 99.9]);
+            %L(L>th(2)) = 0;
+            %L(L<th(1)) = 0;
         end
         %%
         function [nei,nei_tri] = get_neis(P)
@@ -342,7 +365,25 @@ classdef geometricTools
                 nei{i} = setdiff(unique(P.faces(r,:)),i);
             end
         end
-        %%
+        function [Nei_faces,Nei_vertices] = get_neis1(P)
+            n = size(P.vertices,1);
+            Nei_faces = cell(n,1);
+            Nei_vertices = cell(n,1);
+            % hbar = waitbar(0,'calculating neigs...');
+            for i = 1:n
+                [r,c] = find(P.faces == i); %#ok
+                tmp = P.faces(r,:)';
+                tmp(tmp == i) = [];
+                m = length(tmp)/2;
+                Nei_faces{i} = reshape(tmp,2,m)';
+                for j = 1:m
+                    Nei_vertices{i}{j} = P.vertices(Nei_faces{i}(j,:),:);
+                end
+                waitbar(i/n,hbar);
+            end
+            close(hbar);
+        end
+       %%
         function [nVertices,nFaces] = openSurface(vertices,faces,rmIndices)
             nVertices = vertices;
             vertices(rmIndices,:) = [];
@@ -356,13 +397,18 @@ classdef geometricTools
             nVertices = vertices;
         end
         %%
+        function [nVertices,nFaces] = getSurfaceROI(vertices,faces,roiIndices)
+            rmIndices = setdiff(1:size(vertices,1),roiIndices);
+            [nVertices,nFaces] = geometricTools.openSurface(vertices,faces,rmIndices);
+        end
+        %%
         function yi = interpOnSurface(vertices,faces,elec,y,method)
             if nargin < 5, method = 'spline';end
             switch method
                 case 'ridge'
                     yi = geometricTools.ridgeInterpolation(vertices,faces,elec,y);
                 case 'linear'
-                    W = geometricTools.localGaussianInterpolator(elec,vertices,6,32);
+                    W = geometricTools.localGaussianInterpolator(elec,vertices,32);
                     yi = W*y;
                 case 'spline'
                     yi = geometricTools.spSplineInterpolator(elec,y,vertices);
@@ -567,7 +613,7 @@ classdef geometricTools
             Nf = 72;
             [Xs,Ys,Zs]=sphere(Nf);
             Xsp = [Xs(:) Ys(:) Zs(:)];
-            Fsp = geometricTools.localGaussianInterpolator(Xt,Xsp,Ne,0.2);
+            Fsp = geometricTools.localGaussianInterpolator(Xt,Xsp,0.2);
             
             
             %[J,lambdaOpt,~,iFsp] = ridgeGCV(Yt,Fsp',eye(size(Xsp,1)),100,1);

@@ -49,9 +49,10 @@ UtY = U'*Y;
 tol = max([n p])*eps(max(s));
 lambda2 = logspace(log10(tol),log10(max(s)),nlambda);
 gcv = zeros(nlambda,1);
-parfor it=1:nlambda
+for it=1:nlambda
     d = lambda2(it)./(s2+lambda2(it));
-    f = diag(d)*UtY(:,1);
+    %f = diag(d)*UtY(:,1);
+    f = mean(diag(d)*UtY,2);
     gcv(it) = dot(f,f,1)/sum(d)^2;
 end
 loc = getMinima(gcv);
@@ -74,6 +75,7 @@ J = bsxfun(@rdivide,J,std(J));
 
 try %#ok
     th = prctile(J,threshold);
+    th = mean(th,2);
     %if any(threshold > 1), threshold = threshold/100;end
     %th = tinv(threshold,length(J)-1);
     if length(th) == 2

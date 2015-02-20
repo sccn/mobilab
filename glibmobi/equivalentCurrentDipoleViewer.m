@@ -20,22 +20,30 @@ classdef equivalentCurrentDipoleViewer < handle
         xyz
     end
     methods
-        function obj = equivalentCurrentDipoleViewer(streamObj,xyz,ecd,figureTitle)
+        function obj = equivalentCurrentDipoleViewer(streamObj,xyz,ecd,dipoleLabel,figureTitle)
             if nargin < 2, error('Not enough input arguments.');end
             N = size(xyz,1);
             if nargin < 3, ecd = ones(N,3);end
-            if nargin < 4, figureTitle = '';end
-            if isa(streamObj,'pcdStream'), channelLabels = streamObj.parent.label;else channelLabels = streamObj.getChannelLabels;end
-            
+            if nargin < 4, dipoleLabel = [];end
+            if nargin < 5, figureTitle = '';end
+            if isa(streamObj,'pcdStream'),
+                channelLabels = streamObj.parent.label;
+            else
+                channelLabels = streamObj.channelLabel;
+            end
+            if size(ecd,2) == 1
+                ecd = [ecd,ecd,ecd]/3;
+            end
             obj.streamObj = streamObj; 
             load(obj.streamObj.surfaces);
             color = [0.93 0.96 1];
             
-            mPath = which('mobilabApplication');
-            if isempty(mPath)
-                 path = fileparts(which('equivalentCurrentDipoleViewer'));
-            else path = fullfile(fileparts(mPath),'skin');
+            path = fileparts(which('equivalentCurrentDipoleViewer'));
+            loc = strfind(path,'mobilab');
+            if ~isempty(loc)
+                path = path(1:loc+length('mobilab')-1);
             end
+            path = fullfile(path,'skin');
             
             try labelsOn  = imread([path filesep 'labelsOn.png']);
                 labelsOff = imread([path filesep 'labelsOff.png']);
@@ -44,7 +52,6 @@ classdef equivalentCurrentDipoleViewer < handle
                 scalpOn = imread([path filesep 'scalpOn.png']);
                 scalpOff = imread([path filesep 'scalpOff.png']);
             catch ME
-                ME.message = sprintf('%s\nSome icons may be missing.',ME.message);
                 ME.rethrow;
             end
             if isa(streamObj,'struct'), visible = 'off';else visible = 'on';end
@@ -84,6 +91,8 @@ classdef equivalentCurrentDipoleViewer < handle
             skinColor = [1 0.75 0.65];
             
             % dipoles
+            Norm = mean(sqrt(sum(surfData(end).vertices.^2,2)));
+            ecd = 0.1*Norm*ecd/norm(ecd);
             for it=1:size(xyz,1)
                 [sx,sy,sz] = ellipsoid(xyz(it,1),xyz(it,2),xyz(it,3),ecd(it,1),ecd(it,2),ecd(it,3));
                 surf(obj.hAxes,sx,sy,sz,'LineStyle','none','FaceColor','y');
@@ -96,8 +105,8 @@ classdef equivalentCurrentDipoleViewer < handle
             obj.hVector = [hvx;hvy;hvz];
             
             % cortex
-            obj.hCortex = patch('vertices',surfData(3).vertices,'faces',surfData(3).faces,'FaceColor',skinColor,...
-                'FaceLighting','phong','LineStyle','none','FaceAlpha',0.7,'SpecularColorReflectance',0,...
+            obj.hCortex = patch('vertices',surfData(end).vertices,'faces',surfData(end).faces,'FaceColor',skinColor,...
+                'FaceLighting','phong','LineStyle','none','FaceAlpha',0.1,'SpecularColorReflectance',0,...
                 'SpecularExponent',50,'SpecularStrength',0.5,'Parent',obj.hAxes);
             camlight(0,180)
             camlight(0,0)
@@ -105,7 +114,11 @@ classdef equivalentCurrentDipoleViewer < handle
             % scalp
             obj.hScalp = patch('vertices',surfData(1).vertices,'faces',surfData(1).faces,'facecolor',skinColor,...
                 'facelighting','phong','LineStyle','none','FaceAlpha',0.5,'Parent',obj.hAxes,'Visible','off');
-                        
+            
+            if ~isempty(dipoleLabel)
+                xyz = 1.1*xyz;
+                for k=1:length(dipoleLabel), text('Position',xyz(k,:),'String',dipoleLabel{k},'FontSize',14,'Parent',obj.hAxes);end
+            end
             view(obj.hAxes,[90 0]);
             hold(obj.hAxes,'off');
             axis(obj.hAxes,'equal','vis3d');
@@ -138,7 +151,7 @@ classdef equivalentCurrentDipoleViewer < handle
             if strcmp(obj.dcmHandle.Enable,'off'),return;end
             if isempty(DT)
                 load(obj.streamObj.surfaces);
-                vertices = surfData(3).vertices;
+                vertices = surfData(end).vertices;
                 DT = DelaunayTri(vertices(:,1),vertices(:,2),vertices(:,3));
             end
             pos = get(event_obj,'Position');

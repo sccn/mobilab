@@ -11,6 +11,7 @@ classdef headModelViewerHandle < handle
         hCortex
         dcmHandle
         label
+        roiLabels = {};
     end
     methods
         function obj = headModelViewerHandle(streamObj,label)
@@ -42,10 +43,12 @@ classdef headModelViewerHandle < handle
             cortexOff = imread([path filesep 'cortexOff.png']);
             atlasOn = imread([path filesep 'atlasOn.png']);
             atlasOff = imread([path filesep 'atlasOff.png']);
+            roiModeOn  = imread([path filesep 'selectRoiOn.svg.png']);
+            roiModeOff  = imread([path filesep 'selectRoiOff.svg.png']);
 
             obj.hFigure = figure('Menubar','figure','ToolBar','figure','renderer','opengl','Visible','on','Color',color,'Name','Head model');
             position = get(obj.hFigure,'position');
-            set(obj.hFigure,'position',[position(1:2) 587 417]);
+            set(obj.hFigure,'position',[position(1:2) 632 490]);
 
             obj.hAxes = axes('Parent',obj.hFigure);
             
@@ -56,7 +59,6 @@ classdef headModelViewerHandle < handle
             
             hcb(2) = uitoggletool(toolbarHandle,'CData',sensorsOn,'Separator','off','HandleVisibility','off','TooltipString','Sensors On/Off','userData',{sensorsOn,sensorsOff},'State','on');
             set(hcb(2),'OnCallback',@(src,event)rePaint(obj,hcb(2),'sensorsOn'),'OffCallback',@(src, event)rePaint(obj,hcb(2),'sensorsOff'));
-            
             
             hcb(3) = uitoggletool(toolbarHandle,'CData',scalpOn,'Separator','off','HandleVisibility','off','TooltipString','Scalp On/Off','userData',{scalpOn,scalpOff},'State','on');
             set(hcb(3),'OnCallback',@(src,event)rePaint(obj,hcb(3),'scalpOn'),'OffCallback',@(src, event)rePaint(obj,hcb(3),'scalpOff'));
@@ -69,6 +71,9 @@ classdef headModelViewerHandle < handle
             
             hcb(6) = uitoggletool(toolbarHandle,'CData',atlasOn,'Separator','off','HandleVisibility','off','TooltipString','Atlas On/Off','userData',{atlasOn,atlasOff},'State','on');
             set(hcb(6),'OnCallback',@(src,event)rePaint(obj,hcb(6),'atlasOn'),'OffCallback',@(src, event)rePaint(obj,hcb(6),'atlasOff'));
+            
+            hcb(7) = uitoggletool(toolbarHandle,'CData',roiModeOn,'Separator','on','HandleVisibility','off','TooltipString','ROI mode On/Off','userData',{roiModeOn,roiModeOff},'State','off');
+            set(hcb(7),'OnCallback',@(src,event)rePaint(obj,hcb(7),'roiModeOn'),'OffCallback',@(src, event)rePaint(obj,hcb(7),'roiModeOff'));
             
             obj.dcmHandle = datacursormode(obj.hFigure);
             obj.dcmHandle.SnapToDataVertex = 'off';
@@ -105,23 +110,17 @@ classdef headModelViewerHandle < handle
                     'MarkerEdgeColor','k','MarkerFaceColor','K');
                 obj.hLabels(end+1) = text('Position',1.1*obj.streamObj.fiducials.inion,'String','Ini','FontSize',12,'FontWeight','bold','Color','k','Parent',obj.hAxes);
             end
-            
             load(obj.streamObj.surfaces);
-            %h2 = figure('Visible','off'); normals = get(patch(surfData(3)),'VertexNormals'); close(h2)
-            %colors = abs(normals./(repmat(sqrt(dot(normals,normals,2)),1,3)+eps));
-            
+           
             % cortex
             if ~isempty(obj.streamObj.atlas),
-                obj.hCortex = patch('vertices',surfData(3).vertices,'faces',surfData(3).faces,'FaceVertexCData',obj.streamObj.atlas.colorTable,...
+                obj.hCortex = patch('vertices',surfData(end).vertices,'faces',surfData(end).faces,'FaceVertexCData',obj.streamObj.atlas.colorTable,...
                     'FaceColor','interp','FaceLighting','phong','LineStyle','none','FaceAlpha',1,'SpecularColorReflectance',0,...
                     'SpecularExponent',50,'SpecularStrength',0.5,'Parent',obj.hAxes);
-                % obj.hCortex = patch('vertices',surfData(3).vertices,'faces',surfData(3).faces,'FaceVertexCData',obj.streamObj.atlas.colorTable,...
-                %     'facelighting','phong','LineStyle','none','LineWidth',.005,'EdgeColor',[.3 .3 .3],...
-                %     'AmbientStrength',.4,'FaceLighting','phong','FaceAlpha',1,'Parent',obj.hAxes);
                 camlight(0,180)
                 camlight(0,0)
             else
-                obj.hCortex = patch('vertices',surfData(3).vertices,'faces',surfData(3).faces,'facecolor','green',...
+                obj.hCortex = patch('vertices',surfData(end).vertices,'faces',surfData(end).faces,'facecolor','green',...
                     'FaceLighting','gouraud','LineStyle','-','LineWidth',.005,'EdgeColor',[.3 .3 .3],'AmbientStrength',.4,...
                     'FaceAlpha',1,'SpecularColorReflectance',0,'SpecularExponent',50,'SpecularStrength',0.5,'Parent',obj.hAxes);
             end
@@ -136,13 +135,9 @@ classdef headModelViewerHandle < handle
             
             camlight(0,180)%,'infinite') gouraud
             camlight(0,0)
-            
             view(obj.hAxes,[90 0]);
-            
-            % box on;
             hold(obj.hAxes,'off');
             axis(obj.hAxes,'equal','vis3d');
-            %grid(obj.hAxes,'on');
             axis(obj.hAxes,'off')
             set(obj.hFigure,'Visible','on','userData',obj);
             rotate3d
@@ -182,21 +177,30 @@ classdef headModelViewerHandle < handle
                     set(obj.hCortex,'FaceVertexCData',obj.streamObj.atlas.colorTable,'LineStyle','none','FaceColor','interp');
                 case 'atlasOff'
                     set(obj.hCortex,'FaceColor',[ 0 1 0],'LineStyle','-');
+                case 'roiModeOn'
+                    set(obj.dcmHandle,'UpdateFcn',@(src,event)showLabel(obj,event,true));
+                    obj.roiLabels = {};
+                case 'roiModeOff'
+                    set(obj.dcmHandle,'UpdateFcn',@(src,event)showLabel(obj,event,false));
             end
         end
         %%
-        function output_txt = showLabel(obj,event_obj)
+        function output_txt = showLabel(obj,event_obj, storeLabel)
             persistent DT
             if strcmp(obj.dcmHandle.Enable,'off'),return;end
+            if nargin < 3, storeLabel = true;end
             if isempty(DT)
                 load(obj.streamObj.surfaces);
-                vertices = surfData(3).vertices;
-                DT = DelaunayTri(vertices(:,1),vertices(:,2),vertices(:,3));
+                vertices = surfData(end).vertices;
+                %DT = DelaunayTri(vertices(:,1),vertices(:,2),vertices(:,3));
+                DT = delaunayTriangulation(vertices(:,1),vertices(:,2),vertices(:,3));
             end
             pos = get(event_obj,'Position');
             loc = nearestNeighbor(DT, pos);
             output_txt = obj.streamObj.atlas.label{obj.streamObj.atlas.colorTable(loc)};
-            %updateCursor(obj.dcmHandle,pos);
+            
+            % store label in cell array
+            if storeLabel, obj.roiLabels = unique([obj.roiLabels(:); output_txt]);end
         end
     end
 end

@@ -73,6 +73,7 @@ classdef eegplotNGHandle < browserHandle
             obj.streamHandle.container.container.preferences.gui.backgroundColor = [0.93 0.96 1]; % default eeglab's color: [0.66 0.76 1]
             obj.streamHandle.container.container.preferences.gui.buttonColor = [1 1 1];
             obj.streamHandle.container.container.preferences.gui.fontColor = [0 0 0.4];
+            obj.streamHandle.container.container.path = fileparts(which('runmobilab'));
             
             if isfield(EEG.event,'type')
                 type = {EEG.event.type};
@@ -170,7 +171,7 @@ classdef eegplotNGHandle < browserHandle
             set(obj.zoomHandle,'ButtonDownFilter',@(src,event)zoom(obj),'Enable','off','UIContextMenu',hcm);
             
             if isempty(obj.makeSegmentHandle)
-                p = fileparts(which('mobilab'));
+                p = fileparts(which('runmobilab'));
                 if isempty(p)
                     p = fileparts(which('eeglab'));
                     p = [p filesep 'plugins' filesep 'mobilab'];

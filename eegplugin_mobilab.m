@@ -16,16 +16,12 @@
 
 function eegplugin_mobilab(fig,try_strings, catch_strings)
 
-p = fileparts(which('mobilab'));
+p = fileparts(which('runmobilab'));
 if isempty(p)
     p = fileparts(which('eeglab'));
     p = [p filesep 'plugins' filesep 'mobilab'];
 end
-% addpath(genpath([p filesep 'dependency']));
-addpath([p filesep 'dependency' filesep 'Hed']);
-addpath(genpath([p filesep 'eeglabInterface']));
-addpath(genpath([p filesep 'glibmobi']));
-addpath(genpath([p filesep 'gui']));
+addpath(p);
 
 % JRI 7/3/14 -- original code was finding two "Import Data" menus (the one we want
 %   plus one from LIMO plugin. So, need to be more specific: 
