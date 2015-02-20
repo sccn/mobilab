@@ -1,0 +1,6 @@
+# data files
+*.set
+*.fdt
+
+# autosaved files
+*~
