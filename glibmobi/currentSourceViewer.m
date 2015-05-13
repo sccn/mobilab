@@ -20,6 +20,7 @@ classdef currentSourceViewer < handle
         scalpData
         pointer
         clim
+        figureName = '';
     end
     methods
         function obj = currentSourceViewer(streamObj,J,V,figureTitle,channelLabels)
@@ -58,7 +59,12 @@ classdef currentSourceViewer < handle
                 ME.rethrow;
             end
             if isa(streamObj,'struct'), visible = 'off';else visible = 'on';end
-            obj.hFigure = figure('Menubar','figure','ToolBar','figure','renderer','opengl','Visible',visible,'Color',color,'Name',figureTitle);
+            if isprop(streamObj,'name')
+                obj.figureName = [streamObj.name '-> ' figureTitle];
+            else
+                obj.figureName = figureTitle;
+            end 
+            obj.hFigure = figure('Menubar','figure','ToolBar','figure','renderer','opengl','Visible',visible,'Color',color,'Name',obj.figureName);
             position = get(obj.hFigure,'Position');
             set(obj.hFigure,'Position',[position(1:2) 1.06*position(3:4)]);
             obj.hAxes = axes('Parent',obj.hFigure);         
@@ -151,8 +157,7 @@ classdef currentSourceViewer < handle
             catch 
                 warning('Bipolar colormap is missing, fallback with jet.')
             end
-            if isprop(streamObj,'name'), objName = [streamObj.name ': '];else objName = '';end
-            set(obj.hFigure,'Visible',visible,'userData',obj,'Name',[objName num2str(1) '/' num2str(size(obj.sourceMagnitud,2))]);
+            set(obj.hFigure,'Visible',visible,'userData',obj,'Name',[obj.figureName '  ' num2str(1) '/' num2str(size(obj.sourceMagnitud,2))]);
             rotate3d
             drawnow
         end
@@ -233,8 +238,7 @@ classdef currentSourceViewer < handle
             if obj.pointer < 1, obj.pointer = 1;end
             val = obj.sourceMagnitud(:,obj.pointer);
             set(obj.hCortex,'FaceVertexCData',val);
-            if isprop(obj.streamObj,'name'), objName = [obj.streamObj.name ': '];else objName = '';end
-            set(obj.hFigure,'Name',[objName num2str(obj.pointer) '/' num2str(size(obj.sourceMagnitud,2))]);
+            set(obj.hFigure,'Name',[obj.figureName '  ' num2str(obj.pointer) '/' num2str(size(obj.sourceMagnitud,2))]);
             if isempty(obj.scalpData), drawnow;return;end
             val = obj.scalpData(:,obj.pointer);
             set(obj.hScalp,'FaceVertexCData',val);
@@ -248,8 +252,7 @@ classdef currentSourceViewer < handle
             if obj.pointer > n, obj.pointer = n;end
             val = obj.sourceMagnitud(:,obj.pointer);
             set(obj.hCortex,'FaceVertexCData',val);
-            if isprop(obj.streamObj,'name'), objName = [obj.streamObj.name ': '];else objName = '';end
-            set(obj.hFigure,'Name',[objName num2str(obj.pointer) '/' num2str(size(obj.sourceMagnitud,2))]);
+            set(obj.hFigure,'Name',[obj.figureName '  ' num2str(obj.pointer) '/' num2str(size(obj.sourceMagnitud,2))]);
             if isempty(obj.scalpData), drawnow;return;end
             val = obj.scalpData(:,obj.pointer);
             set(obj.hScalp,'FaceVertexCData',val);
@@ -263,8 +266,7 @@ classdef currentSourceViewer < handle
             if obj.pointer < 1, obj.pointer = 1;end
             if obj.pointer > size(obj.sourceMagnitud,2), obj.pointer = size(obj.sourceMagnitud,2);end
             val = obj.sourceMagnitud(:,obj.pointer);
-            if isprop(obj.streamObj,'name'), objName = [obj.streamObj.name ': '];else objName = '';end
-            set(obj.hFigure,'Name',[objName num2str(obj.pointer) '/' num2str(size(obj.sourceMagnitud,2))]);
+            set(obj.hFigure,'Name',[obj.figureName '  ' num2str(obj.pointer) '/' num2str(size(obj.sourceMagnitud,2))]);
             set(obj.hCortex,'FaceVertexCData',val);
             if isempty(obj.scalpData), drawnow;return;end
             val = obj.scalpData(:,obj.pointer);
