@@ -7,7 +7,7 @@
 # to load OpenMEEG's settings for an external project.
 
 # The OpenMEEG source tree.
-SET(OpenMEEG_SOURCE_DIR "/pipol/pipol/pipol7/openmeeg-release-2.1")
+SET(OpenMEEG_SOURCE_DIR "/home/openmeeg/agramfor/pipol/pipol17/openmeeg")
 
 # The OpenMEEG include file directories.
 SET(OpenMEEG_INCLUDE_DIRS "/usr/local/include/openmeeg")

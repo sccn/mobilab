@@ -225,26 +225,16 @@ classdef geometricTools
         %%
         function [normals,faces] = getSurfaceNormals(vertices,faces,normalsIn)
             if nargin < 3, normalsIn = true;end
-            h = figure('visible','off');
-            h2 = patch('vertices',vertices,'faces',fliplr(faces));
-            normals = get(h2,'vertexnormals');close(h);
-            if isempty(normals)
-                normals = vertices;
-            end
-            normals = normals./(sqrt(sum(normals.^2,2))*[1 1 1]);
+            normals = geometricTools.get_normals(vertices,faces);
             area1 = geometricTools.getSurfaceArea(vertices,faces);
             area2 = geometricTools.getSurfaceArea(vertices+normals,faces);
             if area2 < area1% && normalsIn
                 faces = fliplr(faces);
-                h = figure('visible','off');h2 = patch('vertices',vertices,'faces',fliplr(faces));
-                normals = get(h2,'vertexnormals');close(h);
-                normals = normals./(sqrt(sum(normals.^2,2))*[1 1 1]);
+                normals = geometricTools.get_normals(vertices,faces);
             end
             if normalsIn
                 faces = fliplr(faces);
-                h = figure('visible','off');h2 = patch('vertices',vertices,'faces',fliplr(faces));
-                normals = get(h2,'vertexnormals');close(h);
-                normals = normals./(sqrt(sum(normals.^2,2))*[1 1 1]);
+                normals = geometricTools.get_normals(vertices,faces);
             end
         end
         %%
@@ -577,6 +567,21 @@ classdef geometricTools
         end 
     end
     methods(Static,Hidden=true)
+        %%
+        function normals = get_normals(vertices,faces)
+            if exist('triangulation','class')
+                T = triangulation(faces,vertices);
+                normals = T.vertexNormal();
+            else
+                h = figure('visible','off');
+                h2 = patch('vertices',vertices,'faces',fliplr(faces));
+                normals = get(h2,'vertexnormals');close(h);
+                if isempty(normals)
+                    normals = vertices;
+                    normals = normals./(sqrt(sum(normals.^2,2))*[1 1 1]);
+                end
+            end
+        end
         %%
         function f = fit2sphere(r, X, Y, Z, xo, yo, zo)
             S = (X-xo).^2  +  (Y-yo).^2  +  (Z-zo).^2  -  r^2;

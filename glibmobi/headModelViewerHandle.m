@@ -12,6 +12,7 @@ classdef headModelViewerHandle < handle
         dcmHandle
         label
         roiLabels = {};
+        DT = [];
     end
     methods
         function obj = headModelViewerHandle(streamObj,label)
@@ -186,17 +187,15 @@ classdef headModelViewerHandle < handle
         end
         %%
         function output_txt = showLabel(obj,event_obj, storeLabel)
-            persistent DT
             if strcmp(obj.dcmHandle.Enable,'off'),return;end
             if nargin < 3, storeLabel = true;end
-            if isempty(DT)
+            if isempty(obj.DT)
                 load(obj.streamObj.surfaces);
                 vertices = surfData(end).vertices;
-                %DT = DelaunayTri(vertices(:,1),vertices(:,2),vertices(:,3));
-                DT = delaunayTriangulation(vertices(:,1),vertices(:,2),vertices(:,3));
+                obj.DT = delaunayTriangulation(vertices(:,1),vertices(:,2),vertices(:,3));
             end
             pos = get(event_obj,'Position');
-            loc = nearestNeighbor(DT, pos);
+            loc = nearestNeighbor(obj.DT, pos);
             output_txt = obj.streamObj.atlas.label{obj.streamObj.atlas.colorTable(loc)};
             
             % store label in cell array

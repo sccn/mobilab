@@ -118,8 +118,6 @@ tau2 = sigma2/lambda2;
 % parameters's estimation
 T = iLV*diag(s./(s2+lambda2))*Ut;
 J = T*Y;
-J = bsxfun(@minus,J,mean(J));
-J = bsxfun(@rdivide,J,std(J));
 end
 
 %--

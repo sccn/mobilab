@@ -199,6 +199,12 @@ classdef headModel < handle
             if ~exist(headModelFile,'file'), error('The file you''ve entered does not exist.');end
             
             template = load(headModelFile);
+            if isfield(template,'metadata')
+                tmp = headModel.loadFromFile(headModelFile);
+                template = template.metadata;
+                load(tmp.surfaces)
+                template.surfData = surfData;
+            end
             gTools = geometricTools;
             th = norminv(0.90);
             % mapping source to target spaces: S->T
@@ -302,15 +308,15 @@ classdef headModel < handle
             end
             
             % fixing topological defects
-            try obj.container.container.statusBar.setText('Fixing topological defects...');end %#ok
-            dmax = ones(Ns-1,1)*5;
-            dmax(1) = 8;
-            dmax = dmax*scale;
-            ind = fliplr(1:Ns);
-            for it=1:Ns-1
-                surfData(ind(it+1)).vertices = gTools.repareIntersectedSurface(surfData(ind(it)),surfData(ind(it+1)),dmax(it));
-                try obj.statusbar(it+5);end %#ok
-            end
+%             try obj.container.container.statusBar.setText('Fixing topological defects...');end %#ok
+%             dmax = ones(Ns-1,1)*5;
+%             dmax(1) = 8;
+%             dmax = dmax*scale;
+%             ind = fliplr(1:Ns);
+%             for it=1:Ns-1
+%                 surfData(ind(it+1)).vertices = gTools.repareIntersectedSurface(surfData(ind(it)),surfData(ind(it+1)),dmax(it));
+%                 try obj.statusbar(it+5);end %#ok
+%             end
             
             ind =  obj.channelSpace(:,3) > min(surfData(1).vertices(:,3));
             T = gTools.nearestNeighbor(surfData(1).vertices,obj.channelSpace);
@@ -385,29 +391,46 @@ classdef headModel < handle
             if nargin < 2, error('Reference head model is missing.');end
             if nargin < 3, individualHeadModelFile = ['surfaces_' num2str(round(1e5*rand)) '.mat'];end
             if nargin < 4, regType = 'bspline';end
-            if isempty(obj.channelSpace) || isempty(obj.label) || isempty(obj.fiducials), error('Channel space or fiducials are missing.');end
+            if isempty(obj.channelSpace) || isempty(obj.label), error('Channel space or labels are missing.');end
             if ~exist(headModelFile,'file'), error('The file you''ve entered does not exist.');end
-                       
+            
             template = load(headModelFile);
+            if isfield(template,'metadata')
+                tmp = headModel.loadFromFile(headModelFile);
+                template = template.metadata;
+                load(tmp.surfaces)
+                template.surfData = surfData;
+            end
             surfData = template.surfData;
             gTools = geometricTools;
             th = norminv(0.90);
             % mapping source to target spaces: S->T
             % target space: template
-            T = [template.fiducials.nasion;...
-                template.fiducials.lpa;...
-                template.fiducials.rpa;...
-                template.fiducials.vertex];
             
-            % source space: individual geometry
-            S = [obj.fiducials.nasion;...
-                obj.fiducials.lpa;...
-                obj.fiducials.rpa];
-            
-            % estimates vertex if is missing
-            if isfield(obj.fiducials,'vertex')
-                if numel(obj.fiducials.vertex) == 3
-                    S = [S;obj.fiducials.vertex];
+            try
+                T = [template.fiducials.nasion;...
+                    template.fiducials.lpa;...
+                    template.fiducials.rpa;...
+                    template.fiducials.vertex];
+                
+                % source space: individual geometry
+                S = [obj.fiducials.nasion;...
+                    obj.fiducials.lpa;...
+                    obj.fiducials.rpa];
+                
+                % estimates vertex if is missing
+                if isfield(obj.fiducials,'vertex')
+                    if numel(obj.fiducials.vertex) == 3
+                        S = [S;obj.fiducials.vertex];
+                    else
+                        point = 0.5*(obj.fiducials.lpa + obj.fiducials.rpa);
+                        point = ones(50,1)*point;
+                        point(:,3) = linspace(point(3),1.5*max(obj.channelSpace(:,3)),50)';
+                        [~,d] = gTools.nearestNeighbor(obj.channelSpace,point);
+                        [~,loc] = min(d);
+                        point = point(loc,:);
+                        S = [S;point];
+                    end
                 else
                     point = 0.5*(obj.fiducials.lpa + obj.fiducials.rpa);
                     point = ones(50,1)*point;
@@ -417,21 +440,18 @@ classdef headModel < handle
                     point = point(loc,:);
                     S = [S;point];
                 end
-            else
-                point = 0.5*(obj.fiducials.lpa + obj.fiducials.rpa);
-                point = ones(50,1)*point;
-                point(:,3) = linspace(point(3),1.5*max(obj.channelSpace(:,3)),50)';
-                [~,d] = gTools.nearestNeighbor(obj.channelSpace,point);
-                [~,loc] = min(d);
-                point = point(loc,:);
-                S = [S;point];
-            end
-            
-            if isfield(obj.fiducials,'inion')
-                if numel(obj.fiducials.vertex) == 3
-                    S = [S;obj.fiducials.inion];
-                    T = [T;template.fiducials.inion];
+                
+                if isfield(obj.fiducials,'inion')
+                    if numel(obj.fiducials.vertex) == 3
+                        S = [S;obj.fiducials.inion];
+                        T = [T;template.fiducials.inion];
+                    end
                 end
+            catch
+                disp('Fiducials are missing in the individual head model, selecting the common set of points based on the channel labels.')
+                [~,loc1,loc2] = intersect(obj.getChannelLabels,template.label,'stable');
+                S = obj.channelSpace(loc1,:);
+                T = template.channelSpace(loc2,:);
             end
             if isa(obj,'eeg')
                 obj.initStatusbar(1,8,'Co-registering...');
@@ -444,10 +464,11 @@ classdef headModel < handle
             if isa(obj,'eeg'), obj.statusbar(1);end
             
             obj.channelSpace = gTools.applyAffineMapping(obj.channelSpace,Aff);
-            obj.fiducials.lpa = gTools.applyAffineMapping(obj.fiducials.lpa,Aff);
-            obj.fiducials.rpa = gTools.applyAffineMapping(obj.fiducials.rpa,Aff);
-            obj.fiducials.nasion = gTools.applyAffineMapping(obj.fiducials.nasion,Aff);
-            
+            try
+                obj.fiducials.lpa = gTools.applyAffineMapping(obj.fiducials.lpa,Aff);
+                obj.fiducials.rpa = gTools.applyAffineMapping(obj.fiducials.rpa,Aff);
+                obj.fiducials.nasion = gTools.applyAffineMapping(obj.fiducials.nasion,Aff);
+            end
             if ~strcmp(regType,'affine')
                 % b-spline co-registration (only fiducial landmarks)
                 options.Verbose = true;
@@ -754,6 +775,25 @@ classdef headModel < handle
             if isa(obj,'coreStreamObject'), saveProperty(obj,'leadFieldFile',obj.leadFieldFile);end
             disp('Done.')
         end
+       %%
+       function [Ut, s2,iLV, Kstd, ind, rmIndices] = svd4sourceLoc(obj, structName, rmIndices)
+           if isempty(obj.surfaces) || isempty(obj.leadFieldFile), error('Head model or leadfield are missing.');end
+           if nargin < 2
+               structName = {'Thalamus_L' 'Thalamus_R'};
+               disp('Undefined structure to remove. Opening the surface by the Thalamus.')
+           end
+           if nargin < 3, rmIndices = [];end
+           [~,K,L,rmIndices] = getSourceSpace4PEB(obj,structName, rmIndices);
+           Kstd = bsxfun(@rdivide,K,std(K,[],1)+eps);
+           [U,S,V] = svd(Kstd/L,'econ');
+           Ut = U';
+           iLV = L\V;
+           s = diag(S);
+           s2 = s.^2;
+           load(obj.surfaces);
+           n = size(surfData(end).vertices,1);
+           ind = setdiff(1:n, rmIndices);
+       end
        %%
         function [sourceSpace,K,L,rmIndices] = getSourceSpace4PEB(obj,structName, rmIndices)
             if isempty(obj.surfaces) || isempty(obj.leadFieldFile), error('Head model or leadfield are missing.');end

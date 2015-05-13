@@ -135,7 +135,7 @@ classdef currentSourceViewer < handle
             view(obj.hAxes,[90 0]);
             
             disp('Calibrating the color scale...')
-            mxsrc = obj.getRobustLimits(obj.sourceMagnitud(:),10);
+            mxsrc = obj.getRobustLimits(obj.sourceMagnitud(:),1);
             mxscp = obj.getRobustLimits(obj.scalpData,1);
             obj.clim = struct('source',[-mxsrc mxsrc],'scalp',[-mxscp mxscp]);
             disp('Done.')
