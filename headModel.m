@@ -795,6 +795,24 @@ classdef headModel < handle
            ind = setdiff(1:n, rmIndices);
        end
        %%
+       function [Ut, s2,V, K, Klb, P] = svd4sourceLocLB(obj)
+           if isempty(obj.surfaces) || isempty(obj.leadFieldFile), error('Head model or leadfield are missing.');end
+           if isempty(obj.surfaces) || isempty(obj.leadFieldFile), error('Head model or leadfield are missing.');end
+           load(obj.surfaces,'-mat');
+           sourceSpace = surfData(end); %#ok
+           load(obj.leadFieldFile,'-mat');
+           %--
+           % [fv1, fv2, ind1, ind2] = geometricTools.splitBrainHemispheres(sourceSpace);
+           [P,E] = ALB_spectrum(surfData(end).vertices,surfData(end).faces, struct('n_eigenvalues',128));
+           P(:,E<0.1) = [];
+           %--
+           Klb = K*P;
+           [U,S,V] = svd(Klb,'econ');
+           Ut = U';
+           s = diag(S);
+           s2 = s.^2;
+       end
+       %%
         function [sourceSpace,K,L,rmIndices] = getSourceSpace4PEB(obj,structName, rmIndices)
             if isempty(obj.surfaces) || isempty(obj.leadFieldFile), error('Head model or leadfield are missing.');end
             if nargin < 2
