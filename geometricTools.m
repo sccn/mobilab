@@ -95,6 +95,36 @@ classdef geometricTools
             Yi = ridgeGCV(Y,K,L,100,0);
         end
         %%
+        function [d,points_path] = getGeodesicDistance(vertices,faces,a,b,verb)
+            if nargin < 5, verb = false;end
+            points_path = zeros(size(vertices));
+            Max_Iter = size(vertices,1);
+            A = geometricTools.getAdjacencyMatrix(vertices,faces);
+            point = a;
+            [d,loc] = min(sum(bsxfun(@minus,vertices,point).^2,2));
+            point = vertices(loc,:);
+            points_path(1,:) = point;
+            if all(point == b)
+                points_path(2,:) = b;
+                points_path = points_path(1:2,:);
+                return
+            end
+            for it=2:Max_Iter
+                neig = vertices(A(loc,:)>0,:);
+                [mx,loc] = min(sum(bsxfun(@minus,neig,b).^2,2));
+                delta_d = sqrt(sum((neig(loc,:)-point).^2,2));
+                d = d+delta_d;
+                if all(point == neig(loc,:)) || all(b == neig(loc,:))
+                    break
+                end
+                if verb, fprintf('%f\n',mx);end
+                point = neig(loc,:);
+                points_path(it,:) = point;
+                [~,loc] = min(sum(bsxfun(@minus,vertices,point).^2,2));
+            end
+            points_path = points_path(1:it,:);
+            if verb, fprintf(' done\n');end
+        end
         function J = simulateGaussianSource(X,X0,h)
             if nargin < 3, h = 0.1;end
             J = geometricTools.localGaussianInterpolator(X,X0,h)';
@@ -206,6 +236,11 @@ classdef geometricTools
             rFaces = tmpFaces;
         end
         %%
+        function [vertices,faces] = repareSurface(vertices,faces)
+            [vertices,faces] = removedupnodes(vertices,faces);
+            faces = removedupelem(faces);
+            [vertices,faces]=removeisolatednode(vertices,faces);
+        end
         function verticesExt = repareIntersectedSurface(surfInt,surfOut,dmax)
             if nargin < 3, dmax = 8;end
             verticesInt = surfInt.vertices;
@@ -253,92 +288,112 @@ classdef geometricTools
             areas = area;
             area = sum(area);
         end
-        function L = getSurfaceLaplacian1(vertices,faces)
-            % LAPLACES Calculates a Discrete Surface Laplacian Matrix
-            %          for a triangulated surface
-            
+        function A = getAdjacencyMatrix(vertices,faces)
             Nv = size(vertices,1);
-            Nf = size(faces,1);
-            L = spalloc(Nv,Nv,3*Nf);
-            %L = speye(Nvtx);
-            for fi=1:Nf
-                for k=1:3
-                    kk = mod(k,3)+1;
-                    L(faces(fi,k),faces(fi,kk)) = sqrt( sum((vertices(faces(fi,k),:)-vertices(faces(fi,kk),:)).^2,2));
-                end
-            end
-            L(L>0) = 1./L(L>0);
-            L = (L+L')/2;
-            L = L - spdiags(sum(L,2),0,Nv,Nv);
+            n = sum((vertices(faces(:,[1 2 3]),:)-vertices(faces(:,[2 3 1]),:)).^2,2);
+            A = sparse(faces(:,[1 2 3]),faces(:,[2 3 1]),n,Nv,Nv);
         end
-        function L = getSurfaceLaplacian(vertices,faces)
+        function [lap,edge] = getSurfaceLaplacian(vertices,faces)
             % LAPLACES Calculates a Discrete Surface Laplacian Matrix
             %          for a triangulated surface
+            % 
+            % Wrapper to Darren Weber's mesh_laplacian.
+            [lap,edge] = geometricTools.mesh_laplacian(vertices,faces);
+        end
+        function [lap,edge] = mesh_laplacian(vertex,face)
+            % MESH_LAPLACIAN: Laplacian of irregular triangular mesh
             %
-            % Reference:
-            % [1] Huiskamp, G., 1991, Difference formulas for the surface laplacian
-            %     on a triangulated surface, Journal of Computational Physics 95,
-            %     477-496.
+            % Useage: [lap,edge] = mesh_laplacian(vertex,face)
             %
-            % Nelson Trujillo Barreto
-            % Pedro antonio Valdes Hernandez
-            % Cuban Neuroscience Center
+            % Returns 'lap', the Laplacian (2nd spatial derivative) of an
+            % irregular triangular mesh, and 'edge', the linear distances
+            % between vertices of 'face'.  'lap' and 'edge' are square,
+            % [Nvertices,Nvertices] in size, sparse in nature.
+            %
+            % It is assumed that 'vertex' contains the (x,y,z) Cartesian
+            % coordinates of each vertex and that 'face' contains the
+            % triangulation of vertex with indices into 'vertex' that
+            % are numbered from 1:Nvertices.  For information about
+            % triangulation, see 'help convhull' or 'help convhulln'.
+            %
+            % The neighbouring vertices of vertex 'i' is given by:
+            %
+            % k = find(edge(i,:));
+            %
+            % The math of this routine is given by:
+            %
+            % Oostendorp, Oosterom & Huiskamp (1989),
+            % Interpolation on a triangulated 3D surface.
+            % Journal of Computational Physics, 80: 331-343.
+            %
+            % See also, eeg_interp_scalp_mesh
+            %
             
-            Cortex.vertices = vertices;
-            Cortex.faces = faces;
-            vtx = Cortex.vertices;
-            tri = Cortex.faces;
-            [nei,nei_tri] = geometricTools.get_neis(Cortex);
-            Nvtx = size(vtx,1);
-            L = speye(Nvtx);
-            for j=1:Nvtx,
-                nei_tri_j = tri(nei_tri{j},:);
-                nei_j = nei{j};
-                PHI_jk = [];
-                rj = vtx(j,:);
-                Nj = length(nei_j);
-                for k=1:Nj,
-                    
-                    [indi,indj]=find(nei_tri_j==nei_j(k)); %#ok
-                    nei_tri_jk = nei_tri_j(indi,:);
-                    if size(nei_tri_jk,1) < 2,
-                        break;
-                    end
-                    nei_k_lr = setxor(nei_tri_jk(1,:),nei_tri_jk(2,:));
-                    
-                    rk2 = sum((rj-vtx(nei_j(k),:)).^2);
-                    rl2 = sum((rj-vtx(nei_k_lr(1),:)).^2);
-                    rr2 = sum((rj-vtx(nei_k_lr(2),:)).^2);
-                    rkl2 = sum((vtx(nei_k_lr(1),:)-vtx(nei_j(k),:)).^2);
-                    rkr2 = sum((vtx(nei_k_lr(2),:)-vtx(nei_j(k),:)).^2);
-                    
-                    cos_phi_kl = (rk2+rl2-rkl2)./sqrt(rk2.*rl2)./2;
-                    cos_phi_kr = (rk2+rr2-rkr2)./sqrt(rk2.*rr2)./2;
-                    sin_phi_kl = sqrt(1-cos_phi_kl.^2);
-                    sin_phi_kr = sqrt(1-cos_phi_kr.^2);
-                    
-                    PHI_jk = [PHI_jk (1-cos_phi_kl)./(sin_phi_kl+eps)+(1-cos_phi_kr)./(sin_phi_kr+eps)]; %#ok
-                end
-                if ~isempty(PHI_jk)
-                    rjk = sqrt(sum((vtx(nei_j,:)-repmat(rj,Nj,1)).^2,2));
-                    rj_bar = mean(rjk);
-                    
-                    theta_jk = 4*PHI_jk'./(rj_bar*sum(PHI_jk)*rjk);
-                    L(j,nei_j) = theta_jk'; %#ok
-                else
-                    L(j,nei_j) = 0;     %#ok
-                    L(j,j) = 1;         %#ok
-                end
-            end;
+            % Licence:  GNU GPL, no implied or express warranties
+            % History:  04/2002, Darren.Weber@flinders.edu.au
+            %           - initial version was inefficient and incorrect
+            %             at one point.
+            %           (c) 04/2002 Robert Oostenveld
+            %           - completely revised/reconstructed code (lapcal.m)
+            %           - agreed to release into eeg_toolbox under GNU GPL
+            %           04/2002, Darren.Weber@flinders.edu.au
+            %           - modified edge initialization from sparse to
+            %             full matrix and slightly improved speed of
+            %             calculation for edge norms
+            %           - added tic/toc timing report
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
-            L = L - speye(Nvtx,Nvtx);
-            L = L - spdiags(sum(L,2),0,Nvtx,Nvtx);
-            d = diag(L);
-            ind = find(d==0);
-            if ~isempty(ind), for it=1:length(ind), L(ind(it),ind(it)) = 1;end;end
-            %th = prctile(nonzeros(L),[0.1 99.9]);
-            %L(L>th(2)) = 0;
-            %L(L<th(1)) = 0;
+            nvertex = size(vertex,1);
+            nface = size(face,1);
+            
+            fprintf('MESH_LAPLACIAN: Calc Laplacian matrix for %5d vertices...',nvertex);
+            tic
+            
+            % the matrix 'edge' is the connectivity of all vertices
+            edge = zeros(nvertex);
+            for i=1:nface,
+                
+                % compute the length of all triangle edges (Diff is [3x3])
+                Diff = [vertex(face(i,[1 2 3]),:) - vertex(face(i,[2 3 1]),:)];
+                Norm = sqrt( sum(Diff.^2, 2) );
+                
+                edge(face(i,1),face(i,2)) = Norm(1);
+                edge(face(i,2),face(i,3)) = Norm(2);
+                edge(face(i,3),face(i,1)) = Norm(3);
+                
+                % make sure that all edges are symmetric
+                edge(face(i,2),face(i,1)) = Norm(1);
+                edge(face(i,3),face(i,2)) = Norm(2);
+                edge(face(i,1),face(i,3)) = Norm(3);
+            end
+            
+            % Using edge to identify nearest vertices, calculate
+            % the Laplacian for an irregular mesh
+            lap = zeros(nvertex);
+            for i=1:nvertex,
+                
+                k = find(edge(i,:));        % the indices of the neighbours
+                
+                ni = length(k);             % the number of neighbours
+                
+                hi = mean(edge(i,k));       % the average distance to the neighbours
+                invhi = mean(1./edge(i,k)); % the average inverse distance to the neighbours
+                
+                lap(i,i) = -(4/hi) * invhi; % Laplacian of vertex itself
+                
+                lap(i,k) =  (4/(hi*ni)) * 1./edge(i,k); % Laplacian of direct neighbours
+                
+                % Laplacian is zero for all indirect neighbours
+                % See Oostendorp, Oosterom & Huiskamp (1989, pp. 334-335)
+            end
+            
+            edge = sparse(edge);
+            lap = sparse(lap);
+            
+            t = toc;
+            fprintf('done (%6.2f sec).\n',t);
+            
+            return
         end
         %%
         function [nei,nei_tri] = get_neis(P)
@@ -373,6 +428,11 @@ classdef geometricTools
             end
             close(hbar);
         end
+       %%
+       function fv = mergeBrainHemispheres(fv1,fv2)
+           fv = struct('vertices',[fv1.vertices;fv2.vertices],'faces',...
+               [fv1.faces;fv2.faces+size(fv1.vertices,1)]);
+       end
        %%
        function [fv1,fv2, ind1, ind2] = splitBrainHemispheres(fv)
            n = size(fv.vertices,1);
@@ -419,6 +479,8 @@ classdef geometricTools
                end
            end
            fv2.faces = unique(faces,'rows');
+           %[~,ind1] = intersect(fv.vertices,fv1.vertices,'rows');
+           %[~,ind2] = intersect(fv.vertices,fv2.vertices,'rows');
        end
        %%
         function [nVertices,nFaces] = openSurface(vertices,faces,rmIndices)
