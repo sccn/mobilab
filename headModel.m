@@ -346,7 +346,7 @@ classdef headModel < handle
             disp('Done!')
         end
        %%
-        function hFigureObj = plotOnModel(obj,J,V,figureTitle)
+        function hFigureObj = plotOnModel(obj,J,V,figureTitle,autoscale)
             % Plots cortical/topographical maps onto the cortical/scalp surface.
             % 
             % Input parameters:
@@ -361,8 +361,9 @@ classdef headModel < handle
             if nargin < 2, error('Not enough input arguments');end
             if nargin < 3, V = [];end
             if nargin < 4, figureTitle = '';end
+            if nargin < 5, autoscale = false;end
             if isa(obj,'pcdStream'), channelLabels = obj.parent.label;else channelLabels = obj.label;end
-            hFigureObj = currentSourceViewer(obj,J,V,figureTitle,channelLabels);
+            hFigureObj = currentSourceViewer(obj,J,V,figureTitle,channelLabels, autoscale);
         end
        %%
         function Aff = warpChannelSpace2Template(obj,headModelFile,individualHeadModelFile,regType)
@@ -464,87 +465,45 @@ classdef headModel < handle
             if isa(obj,'eeg'), obj.statusbar(1);end
             
             obj.channelSpace = gTools.applyAffineMapping(obj.channelSpace,Aff);
-            try
+            if ~isempty(obj.fiducials)
                 obj.fiducials.lpa = gTools.applyAffineMapping(obj.fiducials.lpa,Aff);
                 obj.fiducials.rpa = gTools.applyAffineMapping(obj.fiducials.rpa,Aff);
                 obj.fiducials.nasion = gTools.applyAffineMapping(obj.fiducials.nasion,Aff);
             end
             if ~strcmp(regType,'affine')
-                % b-spline co-registration (only fiducial landmarks)
+                % b-spline co-registration (coarse warping)
                 options.Verbose = true;
                 options.MaxRef = 2;
                 Saff = gTools.applyAffineMapping(S,Aff);
                 [Def,spacing,offset] = gTools.bSplineMapping(Saff,T,obj.channelSpace,options);
                 if isa(obj,'eeg'), obj.statusbar(2);end
-                
-                % b-spline co-registration (second pass)
                 obj.channelSpace = gTools.applyBSplineMapping(Def,spacing,offset,obj.channelSpace);
-                obj.fiducials.lpa = gTools.applyBSplineMapping(Def,spacing,offset,obj.fiducials.lpa);
-                obj.fiducials.rpa = gTools.applyBSplineMapping(Def,spacing,offset,obj.fiducials.rpa);
-                obj.fiducials.nasion = gTools.applyBSplineMapping(Def,spacing,offset,obj.fiducials.nasion);
+                if ~isempty(obj.fiducials)
+                    obj.fiducials.lpa = gTools.applyBSplineMapping(Def,spacing,offset,obj.fiducials.lpa);
+                    obj.fiducials.rpa = gTools.applyBSplineMapping(Def,spacing,offset,obj.fiducials.rpa);
+                    obj.fiducials.nasion = gTools.applyBSplineMapping(Def,spacing,offset,obj.fiducials.nasion);
+                end
                 
-                T = template.surfData(1).vertices;
-                S = obj.channelSpace;
-                S(S(:,3) <= min(T(:,3)),:) = [];
-                [S,d] = gTools.nearestNeighbor(S,T);
-                z = zscore(d);
-                S(abs(z)>th,:) = [];
-                T(abs(z)>th,:) = [];
-                [Def,spacing,offset] = gTools.bSplineMapping(S,T,obj.channelSpace,options);
-                if isa(obj,'eeg'), obj.statusbar(3);end
-                
-                % b-spline co-registration (third pass)
-                obj.channelSpace = gTools.applyBSplineMapping(Def,spacing,offset,obj.channelSpace);
-                obj.fiducials.lpa = gTools.applyBSplineMapping(Def,spacing,offset,obj.fiducials.lpa);
-                obj.fiducials.rpa = gTools.applyBSplineMapping(Def,spacing,offset,obj.fiducials.rpa);
-                obj.fiducials.nasion = gTools.applyBSplineMapping(Def,spacing,offset,obj.fiducials.nasion);
-                
-                T = template.surfData(1).vertices;
-                S = obj.channelSpace;
-                S(S(:,3) <= min(T(:,3)),:) = [];
-                [S,d] = gTools.nearestNeighbor(S,T);
-                z = zscore(d);
-                S(abs(z)>th,:) = [];
-                T(abs(z)>th,:) = [];
-                Tm = 0.5*(T+S);
-                [Def,spacing,offset] = gTools.bSplineMapping(S,Tm,obj.channelSpace,options);
-                if isa(obj,'eeg'), obj.statusbar(4);end
-                
-                % apply the final transformation
-                obj.channelSpace = gTools.applyBSplineMapping(Def,spacing,offset,obj.channelSpace);
-                obj.fiducials.lpa = gTools.applyBSplineMapping(Def,spacing,offset,obj.fiducials.lpa);
-                obj.fiducials.rpa = gTools.applyBSplineMapping(Def,spacing,offset,obj.fiducials.rpa);
-                obj.fiducials.nasion = gTools.applyBSplineMapping(Def,spacing,offset,obj.fiducials.nasion);
+                % b-spline co-registration (detailed warping)
+                Npass = 4;
+                for it=2:Npass
+                    T = template.surfData(1).vertices;
+                    S = obj.channelSpace;
+                    S(S(:,3) <= min(T(:,3)),:) = [];
+                    [T,d] = gTools.nearestNeighbor(T,S);
+                    z = zscore(d);
+                    S(abs(z)>th,:) = [];
+                    T(abs(z)>th,:) = [];
+                    [Def,spacing,offset] = gTools.bSplineMapping(S,T,obj.channelSpace,options);
+                    if isa(obj,'eeg'), obj.statusbar(it);end
+                    obj.channelSpace = gTools.applyBSplineMapping(Def,spacing,offset,obj.channelSpace);
+                    if ~isempty(obj.fiducials)
+                        obj.fiducials.lpa = gTools.applyBSplineMapping(Def,spacing,offset,obj.fiducials.lpa);
+                        obj.fiducials.rpa = gTools.applyBSplineMapping(Def,spacing,offset,obj.fiducials.rpa);
+                        obj.fiducials.nasion = gTools.applyBSplineMapping(Def,spacing,offset,obj.fiducials.nasion);
+                    end
+                end
             end
-            
-            % fixing topological defects
-            if isa(obj,'eeg')
-                obj.statusbar.setText('Fixing topological defects...');
-            else
-                disp('Fixing topological defects...');
-            end
-            Ns = length(surfData);
-            dmax = ones(Ns-1,1)*5;
-            dmax(1) = 8;
-            ind = fliplr(1:Ns);
-            for it=1:Ns-1
-                surfData(ind(it+1)).vertices = gTools.repareIntersectedSurface(surfData(ind(it)),surfData(ind(it+1)),dmax(it));
-                if isa(obj,'eeg'), obj.statusbar(it+5);end
-            end
-            
-            ind =  obj.channelSpace(:,3) > min(surfData(1).vertices(:,3));
-            T = gTools.nearestNeighbor(surfData(1).vertices,obj.channelSpace);
-            channelSpace = obj.channelSpace; %#ok
-            channelSpace(ind,:) = T(ind,:);  %#ok
-            [~,loc] = unique(channelSpace,'rows');%#ok
-            indInterp = setdiff(1:size(obj.channelSpace,1),loc);
-            if ~isempty(indInterp)
-                x = setdiff(channelSpace,channelSpace(indInterp,:),'rows');%#ok
-                xi = gTools.nearestNeighbor(x,channelSpace(indInterp,:));%#ok
-                channelSpace(indInterp,:) = 0.5*(xi + channelSpace(indInterp,:));%#ok
-            end
-            obj.channelSpace = channelSpace; %#ok
-            
             if isfield(template,'atlas'), obj.atlas = template.atlas;end
             if exist(obj.surfaces,'file'), delete(obj.surfaces);end
             obj.surfaces = individualHeadModelFile;
@@ -758,15 +717,6 @@ classdef headModel < handle
             load(lfFile);
             K = linop;
             clear linop;
-            
-            %-- Remove extreme values due to numerical instability
-            z = zscore(K(:));
-            a = 0.00001;
-            ind = find(z<norminv(a) | z>norminv(1-a));
-            ind_i = setdiff(1:numel(K),ind);
-            K(ind) = interp1(ind_i,K(ind_i),ind,'nearest','extrap');
-            %--
-            
             if exist(lfFile,'file'), delete(lfFile);end
             if exist(obj.leadFieldFile,'file'), delete(obj.leadFieldFile);end
             if isa(obj,'coreStreamObject'), lfFile = fullfile(obj.container.mobiDataDirectory,['lf_' obj.name '_' obj.uuid '_' obj.sessionUUID '.mat']);end
@@ -795,20 +745,31 @@ classdef headModel < handle
            ind = setdiff(1:n, rmIndices);
        end
        %%
-       function [Ut, s2,V, K, Klb, P] = svd4sourceLocLB(obj)
+       function [Ut, s2,iHsqrtV, Klb, B, Hsqrt] = svd4sourceLocLB(obj,number_of_basis)
+           persistent P
+           if nargin < 2, number_of_basis = 128;end
            if isempty(obj.surfaces) || isempty(obj.leadFieldFile), error('Head model or leadfield are missing.');end
-           if isempty(obj.surfaces) || isempty(obj.leadFieldFile), error('Head model or leadfield are missing.');end
-           load(obj.surfaces,'-mat');
-           sourceSpace = surfData(end); %#ok
            load(obj.leadFieldFile,'-mat');
            %--
-           % [fv1, fv2, ind1, ind2] = geometricTools.splitBrainHemispheres(sourceSpace);
-           [P,E] = ALB_spectrum(surfData(end).vertices,surfData(end).faces, struct('n_eigenvalues',128));
-           P(:,E<0.1) = [];
+           %[P,E] = ALB_spectrum(sourceSpace.vertices,sourceSpace.faces, struct('n_eigenvalues',128,'alpha',50));
+           %P(:,1:2) = [];
+           
+           if isempty(P) || size(P,2) ~= number_of_basis+2
+               load(obj.surfaces,'-mat');
+               sourceSpace = surfData(end); %#ok
+               [A,C] = FEM(sourceSpace);
+               [P,~] = eigs(C,A,number_of_basis+2,'sm');
+           end
+           B = P(:,1:number_of_basis);
            %--
-           Klb = K*P;
-           [U,S,V] = svd(Klb,'econ');
+           H = B'*L'*L*B;
+           Hsqrt = chol(H);
+           %--
+           Kstd = bsxfun(@rdivide,K,std(K,[],1)+eps);
+           Klb = Kstd*B;
+           [U,S,V] = svd(Klb/Hsqrt,'econ');
            Ut = U';
+           iHsqrtV = Hsqrt\V;
            s = diag(S);
            s2 = s.^2;
        end
@@ -868,7 +829,7 @@ classdef headModel < handle
             load(obj.surfaces);
             for it=1:N
                 try indices = obj.indices4Structure(ROInames{it});
-                    xyz(it,:) = mean(surfData(end).vertices(indices,:));
+                    xyz(it,:) = median(surfData(end).vertices(indices,:));
                 end
             end
         end
@@ -958,14 +919,8 @@ classdef headModel < handle
             save(file,'metadata','-mat');
         end
         function delete(obj)
-            if exist(obj.surfaces,'file')
-                [~,filename] = fileparts(obj.surfaces);
-                if filename(1) == '.', delete(obj.surfaces);end
-            end
-            if exist(obj.leadFieldFile,'file')
-                [~,filename] = fileparts(obj.leadFieldFile);
-                if filename(1) == '.', delete(obj.leadFieldFile);end
-            end
+            if exist(obj.surfaces,'file'), delete(obj.surfaces);end
+            if exist(obj.leadFieldFile,'file'), delete(obj.leadFieldFile);end
         end
     end
     methods(Static)
@@ -973,6 +928,9 @@ classdef headModel < handle
             metadata = load(file,'-mat');
             if isfield(metadata,'metadata')
                 metadata = metadata.metadata;
+            end
+            if isfield(metadata,'surfaces') && isstruct(metadata.surfaces)
+                metadata.surfData = metadata.surfaces;
             end
             if ~isempty(metadata.surfData)
                 surfData = metadata.surfData;
@@ -1014,15 +972,15 @@ count = 1;
 lowerLabels = lower(labels);
 rmThis = false(Nl,1);
 for it=1:Nl
-    if ~isempty(strfind(lowerLabels{it},'fidnz')) || ~isempty(strfind(lowerLabels{it},'nasion')) || ~isempty(strfind(lowerLabels{it},'Nz'))
+    if ~isempty(strfind(lowerLabels{it},'fidnz')) || ~isempty(strfind(lowerLabels{it},'nasion')) || ~isempty(strfind(lowerLabels{it},'nz'))
         fiducials.nasion = elec(it,:);
         rmThis(it) = true;
         count = count+1;
-    elseif ~isempty(strfind(lowerLabels{it},'fidt9')) || ~isempty(strfind(lowerLabels{it},'lpa')) || ~isempty(strfind(lowerLabels{it},'LPA'))
+    elseif ~isempty(strfind(lowerLabels{it},'fidt9')) || ~isempty(strfind(lowerLabels{it},'lpa'))
         fiducials.lpa = elec(it,:);  
         rmThis(it) = true;
         count = count+1;
-    elseif ~isempty(strfind(lowerLabels{it},'fidt10')) || ~isempty(strfind(lowerLabels{it},'rpa')) || ~isempty(strfind(lowerLabels{it},'RPA'))
+    elseif ~isempty(strfind(lowerLabels{it},'fidt10')) || ~isempty(strfind(lowerLabels{it},'rpa'))
         fiducials.rpa = elec(it,:);
         rmThis(it) = true;
         count = count+1;
