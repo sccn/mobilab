@@ -21,20 +21,26 @@ classdef currentSourceViewer < handle
         pointer
         clim
         figureName = '';
+        autoscale = false;
+        fps = 30;
     end
     methods
-        function obj = currentSourceViewer(streamObj,J,V,figureTitle,channelLabels)
+        function obj = currentSourceViewer(streamObj,J,V,figureTitle,channelLabels,autoscale, fps)
             if nargin < 3, V = [];end
             if nargin < 4, figureTitle = '';end
             if nargin < 5
                 channelLabels = cell(size(V,1),1);
                 for it=1:length(channelLabels), channelLabels{it} = num2str(it);end
             end
+            if nargin < 6, autoscale = false;end
+            if nargin < 7, fps = 30;end
             if isempty(channelLabels)
                 channelLabels = cell(size(V,1),1);
                 for it=1:length(channelLabels), channelLabels{it} = num2str(it);end
             end
-            obj.streamObj = streamObj; 
+            obj.streamObj = streamObj;
+            obj.autoscale = autoscale;
+            obj.fps = fps;
             load(obj.streamObj.surfaces);
             color = [0.93 0.96 1];
             
@@ -55,6 +61,8 @@ classdef currentSourceViewer < handle
                 vectorOff = imread([path filesep 'vectorOff.png']);
                 prev = imread([path filesep '32px-Gnome-media-seek-backward.svg.png']);
                 next = imread([path filesep '32px-Gnome-media-seek-forward.svg.png']);
+                play = imread([path filesep '32px-Gnome-media-playback-start.svg.png']);
+                rec = imread([path filesep '32px-Gnome-media-record.svg.png']);
             catch ME
                 ME.rethrow;
             end
@@ -66,7 +74,7 @@ classdef currentSourceViewer < handle
             end 
             obj.hFigure = figure('Menubar','figure','ToolBar','figure','renderer','opengl','Visible',visible,'Color',color,'Name',obj.figureName);
             position = get(obj.hFigure,'Position');
-            set(obj.hFigure,'Position',[position(1:2) 1.06*position(3:4)]);
+            set(obj.hFigure,'Position',[position(1:2) 1.25*position(3:4)]);
             obj.hAxes = axes('Parent',obj.hFigure);         
             toolbarHandle = findall(obj.hFigure,'Type','uitoolbar');
             
@@ -82,8 +90,10 @@ classdef currentSourceViewer < handle
             hcb(4) = uitoggletool(toolbarHandle,'CData',vectorOff,'Separator','off','HandleVisibility','off','TooltipString','Vectors On/Off','userData',{vectorOn,vectorOff},'State','off');
             set(hcb(4),'OnCallback',@(src,event)rePaint(obj,hcb(4),'vectorOn'),'OffCallback',@(src, event)rePaint(obj,hcb(4),'vectorOff'));
             
-            uipushtool(toolbarHandle,'CData',prev,'Separator','off','HandleVisibility','off','TooltipString','Previous','ClickedCallback',@obj.prev);
-            uipushtool(toolbarHandle,'CData',next,'Separator','off','HandleVisibility','off','TooltipString','Next','ClickedCallback',@obj.next);
+            uipushtool(toolbarHandle,'CData',prev,'Separator','on','HandleVisibility','off','TooltipString','Previous','ClickedCallback',@obj.prev);
+            uipushtool(toolbarHandle,'CData',next,'Separator','on','HandleVisibility','off','TooltipString','Next','ClickedCallback',@obj.next);
+            uipushtool(toolbarHandle,'CData',play,'Separator','on','HandleVisibility','off','TooltipString','Play','ClickedCallback',@obj.play);
+            uipushtool(toolbarHandle,'CData',rec,'Separator','on','HandleVisibility','off','TooltipString','Play','ClickedCallback',@obj.rec);
             set(obj.hFigure,'WindowScrollWheelFcn',@(src, event)mouseMove(obj,[], event));
             
             obj.dcmHandle = datacursormode(obj.hFigure);
@@ -140,18 +150,20 @@ classdef currentSourceViewer < handle
             end
             view(obj.hAxes,[90 0]);
             
-            disp('Calibrating the color scale...')
-            mxsrc = obj.getRobustLimits(obj.sourceMagnitud(:),1);
-            mxscp = obj.getRobustLimits(obj.scalpData,1);
-            obj.clim = struct('source',[-mxsrc mxsrc],'scalp',[-mxscp mxscp]);
-            disp('Done.')
+            if ~obj.autoscale
+                disp('Calibrating the color scale...')
+                mxsrc = obj.getRobustLimits(obj.sourceMagnitud(:),0.1);
+                mxscp = obj.getRobustLimits(obj.scalpData,0.1);
+                obj.clim = struct('source',[-mxsrc mxsrc],'scalp',[-mxscp mxscp]);
+                set(obj.hAxes,'Clim',obj.clim.source);
+                disp('Done.')
+            end
             
             colorbar
             % box on;
             hold(obj.hAxes,'off');
             axis(obj.hAxes,'equal','vis3d');
             axis(obj.hAxes,'off')
-            set(obj.hAxes,'Clim',obj.clim.source);
             try
                 colormap(bipolar(512, 0.99))
             catch 
@@ -167,7 +179,7 @@ classdef currentSourceViewer < handle
                 mn = -1;
                 return
             end
-            samples = unidrnd(numel(vect),round(0.75*numel(vect)),20);
+            samples = unidrnd(numel(vect),min([1000 ,round(0.75*numel(vect))]),20);
             prc = prctile(vect(samples),[th 100-th]);
             mn = median(prc(1,:));
             mx = median(prc(2,:));
@@ -175,6 +187,8 @@ classdef currentSourceViewer < handle
                 mx = max(vect(:));
                 mn = min(vect(:));
             end
+            mx = max(abs([mx mn]));
+            mn = -mx;
         end
        %%
         function rePaint(obj,hObject,opt)
@@ -200,11 +214,15 @@ classdef currentSourceViewer < handle
                     else
                         set(obj.hScalp,'Visible','on','FaceAlpha',0.85);
                     end
-                    set(get(obj.hScalp,'Parent'),'Clim',obj.clim.scalp);
+                    if ~obj.autoscale
+                        set(get(obj.hScalp,'Parent'),'Clim',obj.clim.scalp);
+                    end
                 case 'scalpOff'
                     set(obj.hScalp,'Visible','off');
                     set(obj.hCortex,'Visible','on','FaceAlpha',1);
-                    set(get(obj.hCortex,'Parent'),'Clim',obj.clim.source);
+                    if ~obj.autoscale
+                        set(get(obj.hCortex,'Parent'),'Clim',obj.clim.source);
+                    end
                 case 'vectorOn'
                     set(obj.hVector,'Visible','on');
                     set(obj.hCortex,'FaceAlpha',0.75);
@@ -231,6 +249,40 @@ classdef currentSourceViewer < handle
             output_txt = obj.streamObj.atlas.label{obj.streamObj.atlas.colorTable(loc)};
             drawnow
             %updateCursor(obj.dcmHandle,pos);
+        end
+        %%
+        function play(obj,~,~)
+            n = size(obj.sourceMagnitud,2);
+            if obj.pointer == n
+                obj.pointer =1;
+            end
+            while obj.pointer < n
+                obj.next();
+                pause(1/obj.fps);
+            end
+        end
+        %%
+        function rec(obj,~,~)
+            [filename,filepath] = uiputfile('*.avi','Save movie as');
+            if isnumeric(filename);return;end
+            save_in = fullfile(filepath,filename);
+            n = size(obj.sourceMagnitud,2);
+            if obj.pointer == n
+                obj.pointer =1;
+            end
+            frames(n) = struct('cdata',[],'colormap',[]);
+            start_loc = obj.pointer;
+            frames(obj.pointer) = getframe(obj.hFigure);
+            while obj.pointer < n
+                obj.next();
+                frames(obj.pointer) = getframe(obj.hFigure);
+                pause(1/obj.fps);
+            end
+            frames(1:start_loc-1) = [];
+            if isempty(frames), return;end
+            disp(['Now saving movie in' save_in]);
+            movie2avi(frames, save_in, 'compression', 'None');
+            disp('Done.')
         end
         %%
         function prev(obj,~,~)

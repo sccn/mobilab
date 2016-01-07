@@ -79,7 +79,7 @@ classdef topographyBrowserHandle < browserHandle
             
             load(obj.streamHandle.surfaces);
             obj.surfData = surfData(1); %#ok
-            obj.interpolator = geometricTools.localGaussianInterpolator(obj.streamHandle.channelSpace,obj.surfData.vertices);
+            obj.interpolator = geometricTools.localGaussianInterpolator(obj.streamHandle.channelSpace,obj.surfData.vertices,32);
             if isa(obj.streamHandle,'icaStream'), obj.interpolator = obj.interpolator*obj.streamHandle.icawinv(:,obj.channelIndex);end
             
             if strcmp(obj.cmap,'bipolar'), colormap(bipolar(512, 0.99)); else colormap(obj.cmap);end

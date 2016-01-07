@@ -479,8 +479,6 @@ classdef geometricTools
                end
            end
            fv2.faces = unique(faces,'rows');
-           %[~,ind1] = intersect(fv.vertices,fv1.vertices,'rows');
-           %[~,ind2] = intersect(fv.vertices,fv2.vertices,'rows');
        end
        %%
         function [nVertices,nFaces] = openSurface(vertices,faces,rmIndices)

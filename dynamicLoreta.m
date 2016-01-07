@@ -1,4 +1,4 @@
-function [J,sigma2,tau2,T,history] = dynamicLoreta(Y, Ut, s2,iLV,sigma2,tau2, options)
+function [J,beta,alpha,T,history] = dynamicLoreta(Y, Ut, s2,iLV,beta,alpha, options,hm,ind,L)
 
 %[J,varargout] = dynamicLoreta(V,varargin)
 %
@@ -35,104 +35,90 @@ function [J,sigma2,tau2,T,history] = dynamicLoreta(Y, Ut, s2,iLV,sigma2,tau2, op
 % Author: Alejandro Ojeda, Syntrogi Inc., Jan-2014
 
 if nargin < 4, error('Not enough input arguments.');end
-if nargin < 5, sigma2 = [];end
-if nargin < 6, tau2 = [];end
+if nargin < 5, beta = [];end
+if nargin < 6, alpha = [];end
 if nargin < 7,
-    options = struct('maxTol',1e-3,'maxIter',100,'gridSize',100,'verbose',true,'history',true,'useGPU',false,'initNoiseFactor',0.001);
+    options = struct('maxTol',1e-6,'maxIter',100,'gridSize',100,'verbose',true,'history',true,'useGPU',false,'initNoiseFactor',0.001);
 end
-[history.sigma2, history.tau2, history.gcv, history.error] = deal(nan(1,options.maxIter));
+if isempty(options)
+    options = struct('maxTol',1e-6,'maxIter',100,'gridSize',100,'verbose',true,'history',true,'useGPU',false,'initNoiseFactor',0.001);
+end
+[history.beta, history.alpha, history.error, history.logE, history.df] = deal(nan(1,options.maxIter));
 error_win = 3;
-Y2 = Y.^2;
+UtY = Ut*Y;
 s = s2.^(0.5);
-n = numel(Y);
-p = numel(Y);
+m = size(iLV,1);
+n = size(Ut,1);
+t = size(Y,2);
 
 % Initialize hyperparameters
-if isempty(sigma2) || isempty(tau2)
-    UtY = Ut*Y;
-    tol = max([n p])*eps(max(s));
-    lambda2 = logspace(log10(tol),log10(max(s)),options.gridSize);
-    gcv = zeros(options.gridSize,1);
-    for k=1:options.gridSize
-        d = lambda2(k)./(s2+lambda2(k));
-        f = mean(diag(d)*UtY,2);
-        gcv(k) = dot(f,f,1)/sum(d)^2;
-    end
-    loc = getMinima(gcv);
-    if isempty(loc), loc = 1;end
-    lambda2 = lambda2(loc(end));
-    sigma2  = options.initNoiseFactor*(Y(:)'*Y(:))/n;
-    tau2    = sigma2*lambda2;
-    gcv     = gcv(loc(end));
-else
-    lambda2 = tau2/sigma2;
-    gcv = Inf;
+if isempty(beta) || isempty(alpha)
+    %lambda2 = gcv_func(UtY,s,m,options.gridSize,0);
+    %beta  = options.initNoiseFactor*(Y(:)'*Y(:))/n;
+    %alpha    = beta*lambda2;
+    beta = rand;
+    alpha = rand;
 end
-history.sigma2(1) = sigma2;
-history.tau2(1) = tau2;
-history.gcv(1) = gcv;
+history.beta(1) = beta;
+history.alpha(1) = alpha;
 history.error(1) = inf;
-
+history.logE(1) = -inf;
 
 if options.verbose
-    fprintf('Iter\tSigma2\t\tLambda2\t\tDf\t\tHyperp. Error\tGCV\n');
+    fprintf('Iter\tGamma\tAlpha\t\tBeta\t\tHyperp. Error\tlogE\n');
 end
 for it=2:options.maxIter
         
-    % Computing hat matrix and mse
-    H   = Ut'*diag(s2./(s2+lambda2))*Ut;
-    mse = mean(sum((Y - H*Y).^2));
-        
-    % Computing GCV
-    gcv = mse/(1-trace(H)/n)^2;
-    history.gcv(it) = gcv;   
-    
     % Updating hyperparameters
-    sigma2  = estimateAlpha(Y2,s2,lambda2);
-    lambda2 = estimateLambda2(Y2,sigma2);
+    %gamma = sum(beta*s2./(beta*s2+alpha));
+    gamma = sum(s./(s+alpha));
+    alpha = gamma/mean(sum(bsxfun(@times,beta*s./(beta*s2+alpha),UtY).^2));
+    %alpha = gamma./sum(sum(bsxfun(@times,beta*s./(beta*s2+alpha),UtY).^2));
     
-    history.sigma2(it) = sigma2;
-    history.tau2(it)   = sigma2/lambda2;
-    if it-error_win < 1
-        err = 0.5*std(history.sigma2(1:it)) + 0.5*std(history.tau2(1:it));
+    norm_err = sum(bsxfun(@times,alpha./(beta*s2+alpha),UtY).^2); %   ||y-y_hat||^2
+    mse = mean(norm_err);
+    beta = (n-gamma)/(mse+eps);
+    
+    
+    % Compute the log-evidence
+    E = beta/2*mse + 1/2*alpha*sum(sum(bsxfun(@times,UtY,beta*s./(beta*s2+alpha)).^2))/t;
+    logE = m/2*log(alpha) + t*n/2*log(beta) -E -t/2*sum(log(alpha+beta*s2)); -t*n/2*log(2*pi);
+        
+    history.beta(it) = beta;
+    history.alpha(it) = alpha;
+    history.df(it-1) = gamma;
+    history.logE(it) = logE;
+    if it-error_win-1 < 1
+        err = 0.5*std(history.beta(1:it)) + 0.5*std(history.alpha(1:it));
     else
-        err = 0.5*std(history.sigma2(it-error_win:it)) + 0.5*std(history.tau2(it-error_win:it));
+        err = 0.5*std(history.beta(it-error_win:it)) + 0.5*std(history.alpha(it-error_win:it));
     end
     history.error(it) = err;
     
     if options.verbose
-        %disp([num2str(it-1) ' => sigma2: ' num2str(sigma2) '  lambda2: ' num2str(lambda2) ' df: ' num2str( (1-trace(H)/n) ) ' hyperp. error: ' num2str(err) ' gcv: ' num2str(gcv)]);
-        fprintf('%i\t%e\t%e\t%e\t%e\t%e\n',it-1,sigma2,lambda2,1-trace(H)/n,err,gcv);
+        fprintf('%i\t%5g\t%e\t%e\t%e\t%e\n',it-1,gamma,alpha,beta,err,history.logE(it));
     end
     if err < options.maxTol, break;end
 end
-if it == options.maxIter, warning('Maximum iteration reached. Failed to converge.');end
+history.df(it) = sum(beta*s2./(beta*s2+alpha));
+if it == options.maxIter, 
+    warning('Maximum iteration reached. Failed to converge.');
+    [~,ind] = max(history.logE);
+    beta = history.beta(ind);
+    alpha = history.alpha(ind);
+end
 if options.verbose
     fprintf('\n')
 end
 if ~options.history
     history = [];
 end
-tau2 = sigma2/lambda2;
+% [logE,ind] = max(history.logE);
+% beta = history.beta(ind);
+% alpha = history.alpha(ind);
 
 % parameters's estimation
-T = iLV*diag(s./(s2+lambda2))*Ut;
+%T = iLV*bsxfun(@times,s./(s2+lambda2),Ut);
+T = iLV*bsxfun(@times,beta*s./(beta*s2+alpha),Ut);
 J = T*Y;
-end
-
-%--
-function sigma2 = estimateAlpha(Y2,s2,lambda2)
-sigma2 = mean(mean(bsxfun(@times,Y2,lambda2./(s2+lambda2))));
-end
-%--
-function lambda2 = estimateLambda2(Y2,sigma2)
-lambda2 = sigma2/mean(mean(Y2));
-end
-
-%---
-function indmin = getMinima(x)
-fminor = diff(x)>=0;
-fminor = ~fminor(1:end-1, :) & fminor(2:end, :);
-fminor = [0; fminor; 0];
-indmin = find(fminor);
 end

@@ -35,41 +35,11 @@ if nargin < 4, nlambda = 100;end
 if nargin < 5, plotGCV = false;end
 
 [U,S,V] = svd(K/L,'econ');
+Ut = U';
 V = L\V;
 s = diag(S);
 s2 = s.^2;
-UtY = U'*Y;
-
-tol = max([n p])*eps(max(s));
-lambda2 = logspace(log10(tol),log10(max(s)),nlambda);
-gcv = zeros(nlambda,1);
-for it=1:nlambda
-    d = lambda2(it)./(s2+lambda2(it));
-    f = diag(d)*UtY;
-    gcv(it) = dot(f,f,1)/sum(d)^2;
+[J,lambdaOpt,T] = ridgeSVD(Y,Ut, s2,V,nlambda,plotGCV);
+if nargout > 2
+    Yhat = K*J;
 end
-loc = getMinima(gcv);
-if isempty(loc), loc = 1;end
-loc = loc(end);
-lambdaOpt = lambda2(loc);
-
-T = V*diag(s./(s2+lambdaOpt))*U';
-J = T*Y;                            % J = (K'*K+lambda*L'*L)\K'*Y
-if nargout > 2, Yhat = K*J;end
-if plotGCV
-    figure;
-    semilogx(lambda2,gcv)
-    %plot(lambda2,gcv)
-    xlabel('log-lambda');
-    ylabel('GCV');
-    hold on;
-    plot(lambdaOpt,gcv(loc),'rx','linewidth',2)
-    grid on;
-end
-
-%---
-function indmin = getMinima(x)
-fminor = diff(x)>=0;
-fminor = ~fminor(1:end-1, :) & fminor(2:end, :);
-fminor = [0; fminor; 0];
-indmin = find(fminor);

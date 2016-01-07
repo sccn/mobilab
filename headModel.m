@@ -346,7 +346,7 @@ classdef headModel < handle
             disp('Done!')
         end
        %%
-        function hFigureObj = plotOnModel(obj,J,V,figureTitle,autoscale)
+        function hFigureObj = plotOnModel(obj,J,V,figureTitle,autoscale,fps)
             % Plots cortical/topographical maps onto the cortical/scalp surface.
             % 
             % Input parameters:
@@ -362,8 +362,11 @@ classdef headModel < handle
             if nargin < 3, V = [];end
             if nargin < 4, figureTitle = '';end
             if nargin < 5, autoscale = false;end
+            if nargin < 5, 
+                if isa(obj,'pcdStream'), fps = obj.samplingRate;else fps = 30;end
+            end
             if isa(obj,'pcdStream'), channelLabels = obj.parent.label;else channelLabels = obj.label;end
-            hFigureObj = currentSourceViewer(obj,J,V,figureTitle,channelLabels, autoscale);
+            hFigureObj = currentSourceViewer(obj,J,V,figureTitle,channelLabels, autoscale, fps);
         end
        %%
         function Aff = warpChannelSpace2Template(obj,headModelFile,individualHeadModelFile,regType)
@@ -726,7 +729,7 @@ classdef headModel < handle
             disp('Done.')
         end
        %%
-       function [Ut, s2,iLV, Kstd, ind, rmIndices] = svd4sourceLoc(obj, structName, rmIndices)
+       function [Ut, s2,iLV, Kstd, ind, rmIndices,K,L] = svd4sourceLoc(obj, structName, rmIndices)
            if isempty(obj.surfaces) || isempty(obj.leadFieldFile), error('Head model or leadfield are missing.');end
            if nargin < 2
                structName = {'Thalamus_L' 'Thalamus_R'};
@@ -736,8 +739,10 @@ classdef headModel < handle
            [~,K,L,rmIndices] = getSourceSpace4PEB(obj,structName, rmIndices);
            Kstd = bsxfun(@rdivide,K,std(K,[],1)+eps);
            [U,S,V] = svd(Kstd/L,'econ');
+           %[U,S,V] = svd(Kstd/L);
            Ut = U';
            iLV = L\V;
+           %iLV = V;
            s = diag(S);
            s2 = s.^2;
            load(obj.surfaces);
@@ -750,6 +755,13 @@ classdef headModel < handle
            if nargin < 2, number_of_basis = 128;end
            if isempty(obj.surfaces) || isempty(obj.leadFieldFile), error('Head model or leadfield are missing.');end
            load(obj.leadFieldFile,'-mat');
+           load(obj.surfaces,'-mat');
+           sourceSpace = surfData(end);
+           if ~exist('L','var'),
+               disp('Computing the Laplacian operator...')
+               L = geometricTools.getSurfaceLaplacian(sourceSpace.vertices,sourceSpace.faces);
+               save(obj.leadFieldFile,'K','L','-mat')
+           end
            %--
            %[P,E] = ALB_spectrum(sourceSpace.vertices,sourceSpace.faces, struct('n_eigenvalues',128,'alpha',50));
            %P(:,1:2) = [];
@@ -760,7 +772,7 @@ classdef headModel < handle
                [A,C] = FEM(sourceSpace);
                [P,~] = eigs(C,A,number_of_basis+2,'sm');
            end
-           B = P(:,1:number_of_basis);
+           B = -P(:,1:number_of_basis);
            %--
            H = B'*L'*L*B;
            Hsqrt = chol(H);
@@ -848,7 +860,7 @@ classdef headModel < handle
             dim = size(K);
             if size(surfData(end).vertices,1) == dim(2)/3, K = reshape(K,[dim(1) dim(2)/3 3]);end
             FP = sum(K(:,loc,:),3);
-            S = geometricTools.simulateGaussianSource(surfData(end).vertices,xyz,0.01);
+            S = geometricTools.simulateGaussianSource(surfData(end).vertices,xyz,16);
         end
        %%
         function hFigureObj = plotDipoles(obj,xyz,ecd,dipoleLabel,figureTitle)
@@ -862,8 +874,10 @@ classdef headModel < handle
             hFigureObj = equivalentCurrentDipoleViewer(obj,xyz,ecd,dipoleLabel,figureTitle);
         end
         function hFigureObj = plotDipolesForwardProjection(obj,xyz,figureTitle)
+            if nargin < 3, figureTitle = '';end
             [FP,S] = getForwardProjection(obj,xyz);
-            hFigureObj = obj.plotOnModel(S,FP);
+            hFigureObj = obj.plotOnModel(S,FP,figureTitle);
+            
         end
        %%
         function [sourceSpace,rmIndices] = removeStructureFromSourceSpace(obj,structName,maxNumVertices2rm, structIndices)
