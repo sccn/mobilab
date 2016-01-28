@@ -482,7 +482,7 @@ classdef dataSource < handle
             EEG.srate = streamObjList{1}.samplingRate;
             EEG.nbchan = Nchannels;
             EEG.pnts = Ntimepoints;
-            EEG.times = linspace(0,EEG.pnts-1)/EEG.srate;
+            EEG.times = 1000*linspace(0,EEG.pnts-1)/EEG.srate;% from seconds to mili-seconds
             EEG.xmin  = EEG.times(1);
             EEG.xmax  = EEG.times(end);
             EEG.trials = 1;

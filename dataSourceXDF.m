@@ -139,6 +139,9 @@ classdef dataSourceXDF < dataSource
                         if isempty(streams{stream_count}.time_stamps), timeStamp = 0;
                         else timeStamp = streams{stream_count}.time_stamps(:)'-t0;
                         end
+                        if samplingRate == 0 && length(timeStamp)
+                            samplingRate = median(1./(diff(timeStamp)));
+                        end
                         labels = cell(numberOfChannels,1);
                         channelType = cell(numberOfChannels,1);
                         unit = cell(numberOfChannels,1);
@@ -251,7 +254,7 @@ classdef dataSourceXDF < dataSource
                                 channelSpace(noLoc,:) = [];
                                 if ~isempty(noLoc) && length(noLoc) ~= numberOfChannels
                                     msg = sprintf('In %s the following sensors have no location: %s.\n',name,num2str(noLoc(:)'));
-                                    msg = sprintf('%sI will not import them, please contact Alejandro if you are not ok with this action.\n',msg);
+                                    msg = sprintf('%sMoBILAB will not import them, contact the support team for more information.\n',msg);
                                     fprintf(fLog,'%s',msg);
                                     seeLogFile = true;
                                     warning(msg); %#ok

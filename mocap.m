@@ -390,6 +390,7 @@ classdef mocap < dataStream
             if nargin < 2, order = 3;else order = varargin{1};end
             if nargin < 3, fc = 18;  else fc = varargin{2};end
             if nargin < 4, channels = 1:obj.numberOfChannels;else channels = varargin{3};end
+            if nargin < 5, filterOrder = 128;else filterOrder = varargin{4};end
             if ~isnumeric(order), error('prog:input','First argument must be the order of the derivative (1=veloc, 2=acc, 3=jerk).');end
             if ~isnumeric(fc),    error('prog:input','Second argument must be the cut off frequency.');end
             if ~isnumeric(channels), error('Invalid channel.');end
@@ -403,7 +404,7 @@ classdef mocap < dataStream
             try
                 % smooth the data by 0 phase shifting moving average
                 a = 1;
-                b = obj.firDesign(128,'lowpass',fc);
+                b = obj.firDesign(filterOrder,'lowpass',fc);
                 commandHistory.commandName = 'timeDerivative';
                 commandHistory.uuid  = obj.uuid;
                 commandHistory.varargin{2} = fc;
@@ -707,7 +708,7 @@ classdef mocap < dataStream
         %%
         function I = createEventsFromMagnitude(obj,varargin)
             % criteria: 'maxima', 'minima', 'zero crossing', '% maxima', '% minima', or 'all' (default: criteria = 'all')
-            % channel: index of the channel where search the events
+            % channel: index of the channel where to search for the events
             
             dispCommand = false;
             if  ~isempty(varargin) && length(varargin{1}) == 1 && isnumeric(varargin{1}) && varargin{1} == -1
@@ -746,7 +747,7 @@ classdef mocap < dataStream
             if Narg < 4
                 inhibitedWindowLength = obj.samplingRate;
             else
-                inhibitedWindowLength = obj.samplingRate*varargin{4};
+                inhibitedWindowLength = ceil(obj.samplingRate*varargin{4});
             end
             if Narg < 5
                 segmentObj = basicSegment([obj.timeStamp(1),obj.timeStamp(end)]);

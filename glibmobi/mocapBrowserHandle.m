@@ -160,7 +160,7 @@ classdef mocapBrowserHandle < browserHandle
             %    obj.streamHandle.container.save;
             %end
             axis(obj.axesHandle,'equal')
-            
+            obj.markerHandle = zeros(1,obj.numberOfChannelsToPlot);
             [x,y,z] = meshgrid(obj.roomSize.x,obj.roomSize.y,obj.roomSize.z(1));
             surf(obj.axesHandle,double(x),double(y),double(z),'FaceColor',obj.floorColor);
             for it=1:obj.numberOfChannelsToPlot

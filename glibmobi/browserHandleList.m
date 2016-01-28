@@ -252,6 +252,7 @@ classdef browserHandleList < handle
                 set(obj.timeTexttHandle,'String',['Current latency = ' num2str(obj.nowCursor,4) ' sec']);
                 set(obj.sliderHandle,'Value',obj.nowCursor);
             end
+            delete(findobj(obj.master,'type','axes'));
         end
         %%
         function plotThisTimeStamp(obj,newNowCursor)
@@ -261,12 +262,15 @@ classdef browserHandleList < handle
             end
             N = length(obj.list);
             %if N, figure(obj.list{1}.figureHandle);end 
-            for it=1:N, obj.list{it}.plotThisTimeStamp(newNowCursor);end
+            for it=1:N,
+                obj.list{it}.plotThisTimeStamp(newNowCursor);
+            end
             if N
                 obj.nowCursor = obj.list{it}.nowCursor;
                 set(obj.timeTexttHandle,'String',['Current latency = ' num2str(obj.nowCursor,4) ' sec']);
                 set(obj.sliderHandle,'Value',obj.nowCursor);
             end
+            delete(findobj(obj.master,'type','axes'));
         end
         function play(obj), obj.state = ~obj.state;end
         %%

@@ -719,7 +719,7 @@ classdef mobilabApplication < handle
         %%
         function refresh(obj,~)
             [isActive,figureHandle] = obj.isGuiActive;
-            if isActive, return;end
+            if ~isActive, return;end
             close(figureHandle);
             obj.gui;
         end
