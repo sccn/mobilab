@@ -311,8 +311,16 @@ classdef dataSourceXDF < dataSource
                             
                         % mocap    
                         elseif any(ismember({'mocap' 'control'},lower(streams{stream_count}.info.type))) && isempty(strfind(lower(streams{stream_count}.info.name),'wii'))
-                            if strcmp(streams{stream_count}.info.name,'PhaseSpace') && ~isempty(channelType)
-                                ind = ~cellfun(@isempty,strfind(channelType,'Position'));
+                            class = 'mocap'; % default mocap class
+                            if (~isempty(strfind(streams{stream_count}.info.name,'PhaseSpace')) || ~isempty(strfind(streams{stream_count}.info.name,'Phasespace')) || ~isempty(strfind(streams{stream_count}.info.name,'phasespace'))) && ~isempty(channelType)
+                                class = 'mocapPhasespace'; % phasespace mocap class with rigidbodies with orientation
+                                
+                                indPosition = ~cellfun(@isempty,strfind(channelType,'Position')); % find channels with position value
+                                indOrientation = ~cellfun(@isempty,strfind(channelType,'Orientation')); % find channels with orientation value
+                                ind = indPosition + indOrientation; % channels with both position and orientation
+                                ind(ind > 1) = 1; % just in case a channel name contains both strings
+%                                ind = ~cellfun(@isempty,strfind(channelType,'Orientation'));
+                                
                             elseif ~isempty(channelType)
                                 ind = ~cellfun(@isempty,strfind(channelType,'Position'));
                             else ind = true(numberOfChannels,1);
@@ -345,7 +353,7 @@ classdef dataSourceXDF < dataSource
                             metadata.animationParameters = struct('limits',[],'conn',[],'bodymodel',[]);
                             metadata.artifactMask = sparse(length(metadata.timeStamp),metadata.numberOfChannels);
                             metadata.unit = unit;
-                            metadata.class = 'mocap';
+                            metadata.class = class;
                             metadata.auxChannel = auxChannel;
                             header = metadata2headerFile(metadata);
                         
