@@ -209,7 +209,20 @@ classdef mocapPhasespace < dataStream
         end 
         %%
         function cobj = keepOnlyRigidbodies(obj,varagin)
-            disp('throwing everything away except RBs')
+            %disp('throwing everything away except RBs')
+            
+            data = obj.mmfObj.Data.x; 
+                commandHistory.commandName = 'keepOnlyRigidbodies';
+                commandHistory.uuid        = obj.uuid;
+                commandHistory.varargin = varagin;
+                cobj = obj.copyobj(commandHistory);
+                cobj.mmfObj.Data.x = obj.mmfObj.Data.x;
+                    disp('Running:');
+                    disp(['  ' cobj.history]);
+            
+            for channel=1:cobj.numberOfChannels
+                
+            end
         end
         %%
         function cobj = removeOcclusionArtifact(obj,varargin)
