@@ -48,7 +48,7 @@ if nargin < 5
 end;
 	
 if length(Prompt) ~= length(DefAns)
-	error('inputdlg2: prompt and default answer cell array must have the smae size');
+	error('inputdlg2: prompt and default answer cell array must have the same size');
 end;
 
 geometry = {};

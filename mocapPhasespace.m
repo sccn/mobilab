@@ -208,22 +208,75 @@ classdef mocapPhasespace < dataStream
             saveProperty(obj,'animationParameters',obj.animationParameters);
         end 
         %%
-        function cobj = keepOnlyRigidbodies(obj,varagin)
-            %disp('throwing everything away except RBs')
+        function cobj = throwOutChannels(obj,varargin)
+            % Throws away channels. Gives the option of keeping only rigid
+            % body channels or specify all channels to keep (in case single
+            % marker channels should be kept for other reasons)
+            %
+            % Input arguments:
+            %       method: could be nearest, linear, spline, or pchip, default: pchip
+            %       channels: channels to fix if needed, default: all
+            % 
+            % Output argument:
+            %       cobj: handle to the new object
+            %
+            % Usage:
+            %       mocapObj = mobilab.allStreams.item{ mocapItem };
+            %       method   = 'pchip';
+            %       newMocapObj = mocapObj.removeOcclusionArtifact( method);
+            %       
+            %       figure;plot(mocapObj.timeStamp, [mocapObj.data(:,1) newMocapObj.data(:,1)])
+            %       xlabel('Time (sec)');legend({mocapObj.name newMocapObj.name});
+
+            indRigid = ~cellfun(@isempty,strfind(obj.label,'Rigid')); % find channels with rigidbody
+            rigidChannels = indRigid .* [1: obj.numberOfChannels]';
+            rigidChannels = rigidChannels(rigidChannels ~= 0);
             
-            data = obj.mmfObj.Data.x; 
-                commandHistory.commandName = 'keepOnlyRigidbodies';
-                commandHistory.uuid        = obj.uuid;
-                commandHistory.varargin = varagin;
-                cobj = obj.copyobj(commandHistory);
-                cobj.mmfObj.Data.x = obj.mmfObj.Data.x;
-                    disp('Running:');
-                    disp(['  ' cobj.history]);
+             if length(varargin) == 1 && iscell(varargin{1}), varargin = varargin{1};end
+             dispCommand = false;
+
+            if ~isempty(varargin) && iscell(varargin) && isnumeric(varargin{1}) && varargin{1} == -1
+                prompt = {'Keep only rigid body channels? (''yes'', ''no'')'};
+                dlg_title = 'Input parameters';
+                num_lines = 1;
+                def = {'yes'};
+                keepOnlyRigid = inputdlg2(prompt,dlg_title,num_lines,def);
+                if isempty(varargin), return;end
+                dispCommand = true;
+            end
             
-            for channel=1:cobj.numberOfChannels
+            if strcmp(keepOnlyRigid,'yes')
+                
+                channelsToKeep = rigidChannels';
+                
+            else
+                prompt = {'Enter channels to keep (pre-entered channels are rigid body channels). ALL OTHER CHANNELS ARE THROWN OUT!'};
+                dlg_title = 'Input parameters';
+                num_lines = 1;
+                def = {num2str(rigidChannels')};
+                channelsToKeep = inputdlg2(prompt,dlg_title,num_lines,def);
+                channelsToKeep = str2num(channelsToKeep{1});
+                if isempty(varargin), return;end
+                dispCommand = true;
                 
             end
+            
+
+            
+            commandHistory.commandName = 'throwOutChannels';
+            commandHistory.uuid        = obj.uuid;
+            commandHistory.varargin{1}    = 'channelsToKeep';
+            commandHistory.varargin{2}    = channelsToKeep;%1:obj.numberOfChannels%'sdf'%channelsToKeep;
+            cobj = obj.copyobj(commandHistory);
+            cobj.mmfObj.Data.x = obj.mmfObj.Data.x(:,channelsToKeep);
+
+            if dispCommand
+                disp('Running:');
+                disp(['  ' cobj.history]);
+            end
+
         end
+       
         %%
         function cobj = removeOcclusionArtifact(obj,varargin)
             % Fills-in occluded time points. In optical mocap systems like PhaseSpace
@@ -1065,6 +1118,16 @@ classdef mocapPhasespace < dataStream
                     metadata.artifactMask = obj.artifactMask(:,channels);
                     allocateFile(metadata.binFile,metadata.precision,[length(metadata.timeStamp) obj.numberOfChannels]);
                     
+                case 'throwOutChannels'
+                    prename = 'throwOut_';
+                    metadata.name = [prename metadata.name];
+                    metadata.binFile = fullfile(path,[metadata.name '_' char(metadata.uuid) '_' metadata.sessionUUID '.bin']);
+                    channels = commandHistory.varargin{2};
+                    metadata.numberOfChannels = length(channels);
+                    metadata.label = obj.label(channels);
+                    metadata.artifactMask = obj.artifactMask(:,channels);
+                    allocateFile(metadata.binFile,metadata.precision,[length(metadata.timeStamp) length(channels)]);
+                    
                 case 'timeDerivative'
                     order = commandHistory.varargin{1};
                     if ~isnumeric(order), error('Input parameter ''order'' must be a number indicating the order of the time derivative to calculate.');end
@@ -1185,8 +1248,8 @@ classdef mocapPhasespace < dataStream
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'loadConnectedBody',-1});
             jmenu.add(menuItem);  
             %--
-            menuItem = javax.swing.JMenuItem('Keep only Rigidbodies');
-            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'keepOnlyRigidbodies',-1});
+            menuItem = javax.swing.JMenuItem('Throw out channels');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'throwOutChannels',-1});
             jmenu.add(menuItem);  
             %---------
             jmenu.addSeparator;
