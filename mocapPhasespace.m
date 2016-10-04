@@ -301,7 +301,7 @@ classdef mocapPhasespace < dataStream
             
             numberOfRigidChannels = size(rigidChannels,1);
             numberOfRigidBodies = numberOfRigidChannels / 7;
-           
+            
             commandHistory.commandName = 'unflipSigns';
             commandHistory.uuid        = obj.uuid;
             commandHistory.varargin{1}    = 'channels';
@@ -309,7 +309,7 @@ classdef mocapPhasespace < dataStream
             cobj = obj.copyobj(commandHistory);
             data = obj.mmfObj.Data.x;
             
-
+            
             disp('Running:');
             disp(['  ' cobj.history]);
             
@@ -336,57 +336,175 @@ classdef mocapPhasespace < dataStream
                 % form a matrix of quaternions for the RB and transform
                 % those values to euler angles and then back to quaternions
                 
-%                 disp('yo')
-                for dataPoint = 1:size(data,1)
+                %                 for dataPoint = 1:size(data,1)
+                %
+                %                     channelEulerRoll(dataPoint) = atan2(2*(A(dataPoint)*B(dataPoint) + C(dataPoint)*D(dataPoint)),1 - 2*(B(dataPoint)^2 + C(dataPoint)^2));
+                %                     channelEulerPitch(dataPoint) = asin(2*(A(dataPoint)*C(dataPoint) - D(dataPoint)*B(dataPoint)));
+                %                     channelEulerYaw(dataPoint) = atan2(2*(A(dataPoint)*D(dataPoint) + B(dataPoint)*C(dataPoint)),1-2*(C(dataPoint)^2+D(dataPoint)^2));
+                %
+                %                     A(dataPoint) = cos(channelEulerRoll(dataPoint)/2) * cos(channelEulerPitch(dataPoint)/2) * cos(channelEulerYaw(dataPoint)/2) + sin(channelEulerRoll(dataPoint)/2) * sin(channelEulerPitch(dataPoint)/2) * sin(channelEulerYaw(dataPoint)/2);
+                %                     B(dataPoint) = sin(channelEulerRoll(dataPoint)/2) * cos(channelEulerPitch(dataPoint)/2) * cos(channelEulerYaw(dataPoint)/2) - cos(channelEulerRoll(dataPoint)/2) * sin(channelEulerPitch(dataPoint)/2) * sin(channelEulerYaw(dataPoint)/2);
+                %                     C(dataPoint) = cos(channelEulerRoll(dataPoint)/2) * sin(channelEulerPitch(dataPoint)/2) * cos(channelEulerYaw(dataPoint)/2) + sin(channelEulerRoll(dataPoint)/2) * cos(channelEulerPitch(dataPoint)/2) * sin(channelEulerYaw(dataPoint)/2);
+                %                     D(dataPoint) = cos(channelEulerRoll(dataPoint)/2) * cos(channelEulerPitch(dataPoint)/2) * sin(channelEulerYaw(dataPoint)/2) - sin(channelEulerRoll(dataPoint)/2) * sin(channelEulerPitch(dataPoint)/2) * cos(channelEulerYaw(dataPoint)/2);
+                %
+                % %                     quaternionThisRB(dataPoint) = quaternion(A(dataPoint),B(dataPoint),C(dataPoint),D(dataPoint));
+                % %
+                % %                     eulerThisRB(dataPoint,:) = quaternionThisRB(dataPoint).EulerAngles( '123' );
+                % %
+                % %                     flippedQuaternionThisRB(dataPoint) = quaternion.eulerangles('123',eulerThisRB(dataPoint,:));
+                % %
+                % %
+                % %                     doublesFlippedQuaternionThisRB(dataPoint,:) = flippedQuaternionThisRB(dataPoint).double;
+                %
+                %
+                %                 end
+                %
+                %
+                %                 % take the values and fill the data
+                %                 data(:,channelA) = A;
+                %                 data(:,channelB) = B;
+                %                 data(:,channelC) = C;
+                %                 data(:,channelD) = D;
+                %
+                %             end
+                
+                
+                for dataPoint = 5:size(data,1)
                     
-%                 disp('yoinloop')
+                    epsilon = 0.5;
                     
-                    quaternionThisRB(dataPoint) = quaternion(A(dataPoint),B(dataPoint),C(dataPoint),D(dataPoint));
+                    Adiff = abs(A(dataPoint-1) - A(dataPoint));
+                    Adiff2 = abs(A(dataPoint-2) - A(dataPoint-1));
+                    Adiff3 = abs(A(dataPoint-3) - A(dataPoint-2));
+                    Adiff4 = abs(A(dataPoint-4) - A(dataPoint-3));
+                    AsumOfPreviousDiffs = Adiff2 + Adiff3 + Adiff4;
                     
-%                 disp('yoinloop2')
-                    eulerThisRB(dataPoint,:) = quaternionThisRB(dataPoint).EulerAngles( '123' );
+                    AflippedDataPoint = -A(dataPoint);
                     
-%                 disp('yoinloop3')
-                    flippedQuaternionThisRB(dataPoint) = quaternion.eulerangles('123',eulerThisRB(dataPoint,:));
+                    AdiffFlipped = abs(A(dataPoint-1) - AflippedDataPoint);
                     
-%                     disp('yoinloop4')
+                    AconditionMet = AdiffFlipped<Adiff;% & Adiff > AsumOfPreviousDiffs;
+                    AbigJump = AdiffFlipped> 0.5;
                     
-                    doublesFlippedQuaternionThisRB(dataPoint,:) = flippedQuaternionThisRB(dataPoint).double;
+                    Bdiff = abs(B(dataPoint-1) - B(dataPoint));
+                    Bdiff2 = abs(B(dataPoint-2) - B(dataPoint-1));
+                    Bdiff3 = abs(B(dataPoint-3) - B(dataPoint-2));
+                    Bdiff4 = abs(B(dataPoint-4) - B(dataPoint-3));
+                    BsumOfPreviousDiffs = Bdiff2 + Bdiff3 + Bdiff4;
                     
-%                 disp('yoendloop')
+                    BflippedDataPoint = -B(dataPoint);
+                    
+                    BdiffFlipped = abs(B(dataPoint-1) - BflippedDataPoint);
+                    
+                    BconditionMet = BdiffFlipped<Bdiff;% & Bdiff > BsumOfPreviousDiffs;
+                    BbigJump = BdiffFlipped> epsilon;
+                    
+                    Cdiff = abs(C(dataPoint-1) - C(dataPoint));
+                    Cdiff2 = abs(C(dataPoint-2) - C(dataPoint-1));
+                    Cdiff3 = abs(C(dataPoint-3) - C(dataPoint-2));
+                    Cdiff4 = abs(C(dataPoint-4) - C(dataPoint-3));
+                    CsumOfPreviousDiffs = Cdiff2 + Cdiff3 + Cdiff4;
+                    
+                    CflippedDataPoint = -C(dataPoint);
+                    
+                    CdiffFlipped = abs(C(dataPoint-1) - CflippedDataPoint);
+                    
+                    CconditionMet = CdiffFlipped<Cdiff;% & Cdiff > CsumOfPreviousDiffs;
+                    CbigJump = CdiffFlipped> epsilon;
+                    
+                    Ddiff = abs(D(dataPoint-1) - D(dataPoint));
+                    Ddiff2 = abs(D(dataPoint-2) - D(dataPoint-1));
+                    Ddiff3 = abs(D(dataPoint-3) - D(dataPoint-2));
+                    Ddiff4 = abs(D(dataPoint-4) - D(dataPoint-3));
+                    DsumOfPreviousDiffs = Ddiff2 + Ddiff3 + Ddiff4;
+                    
+                    DflippedDataPoint = -D(dataPoint);
+                    
+                    DdiffFlipped = abs(D(dataPoint-1) - DflippedDataPoint);
+                    
+                    DconditionMet = DdiffFlipped<Ddiff;% & Ddiff > DsumOfPreviousDiffs;
+                    DbigJump = DdiffFlipped> epsilon;
+                    
+                    
+                    
+                    if (AconditionMet+BconditionMet+CconditionMet+DconditionMet >= 2 && AbigJump+BbigJump+CbigJump+DbigJump == 0)
+                        
+                        A(dataPoint) = -A(dataPoint);
+                        B(dataPoint) = -B(dataPoint);
+                        C(dataPoint) = -C(dataPoint);
+                        D(dataPoint) = -D(dataPoint);
+                        
+                    end
+                    
+%                     data(dataPoint,diffFlipped<diff & abs(diff) > minDiff) = -data(dataPoint,diffFlipped<diff & abs(diff) > minDiff);
+%                     data(dataPoint,diffFlipped<diff & diff>sumOfPreviousDiffs) = -data(dataPoint,diffFlipped<diff & diff>sumOfPreviousDiffs);
+                    
+                    
+                end
+                
+                data(:,channelA) = A;
+                data(:,channelB) = B;
+                data(:,channelC) = C;
+                data(:,channelD) = D;
+                
+            end
+            cobj.mmfObj.Data.x = data;
+            
+        end
+        
+        
+        
+        
+        %%
+        function cobj = switchCoordinateSystem(obj,varargin)
+           
+            
+            indRigid = ~cellfun(@isempty,strfind(obj.label,'Rigid')); % find channels with rigidbody
+            rigidChannels = indRigid .* [1: obj.numberOfChannels]';
+            rigidChannels = rigidChannels(rigidChannels ~= 0);
+            
+            
+            for channel = rigidChannels'
+                
+                % checking for already present eulers
+                if ~isempty(strfind(obj.label{channel},'Euler'))
+                    error('Please attempt switching between coordinate systems only using quaternion orientation values')
+                end
+                
+            end
+            
+            % no eulers are present, therefore each RB has 7 channels:
+            % XYZABCD, from which ABCD are the quaternion values
+            
+%             numberOfRigidChannels = size(rigidChannels,1);
+%             numberOfRigidBodies = numberOfRigidChannels / 7;
+%             numberOfNewChannels = size(obj.label,1) - numberOfRigidBodies;
+            
+            % make new object
+            commandHistory.commandName = 'switchCoordinateSystem';
+            commandHistory.uuid        = obj.uuid;
+            commandHistory.varargin{1}    = 'switched';
+            commandHistory.varargin{2}    = 1:obj.numberOfChannels;
+            cobj = obj.copyobj(commandHistory);
+            
+                disp('Running:');
+                disp(['  ' cobj.history]);
+                
+            
+            data = obj.mmfObj.Data.x;
+ 
+            % now fill with data
+            for channel = 1:obj.numberOfChannels
+                
+                
+                if ~isempty(strfind(obj.label{channel},'_Z')) || ~isempty(strfind(obj.label{channel},'_A')) || ~isempty(strfind(obj.label{channel},'_B'))
+                   
+                   data(:,channel) = data(:,channel) .* -1;
                     
                 end
                 
                 
-                % take the values and fill the data
-                data(:,channelA) = doublesFlippedQuaternionThisRB(:,1);
-                data(:,channelB) = doublesFlippedQuaternionThisRB(:,2);
-                data(:,channelC) = doublesFlippedQuaternionThisRB(:,3);
-                data(:,channelD) = doublesFlippedQuaternionThisRB(:,4);
-                
             end
-            
-            
-%             for dataPoint = 5:size(data,1)
-%                 
-%                 minDiff = 0.04;
-%                 
-%                 diff = abs(data(dataPoint-1,:) - data(dataPoint,:));
-%                 diff2 = abs(data(dataPoint-2,:) - data(dataPoint-1,:));
-%                 diff3 = abs(data(dataPoint-3,:) - data(dataPoint-2,:));
-%                 diff4 = abs(data(dataPoint-4,:) - data(dataPoint-3,:));
-%                 sumOfPreviousDiffs = diff2 + diff3;% + diff4;
-%                 
-%                 flippedDataPoint = -data(dataPoint,:);
-%                 
-%                 diffFlipped = abs(data(dataPoint-1,:) - flippedDataPoint);
-%                 
-%                 
-%                data(dataPoint,diffFlipped<diff & abs(diff) > minDiff) = -data(dataPoint,diffFlipped<diff & abs(diff) > minDiff);
-%                data(dataPoint,diffFlipped<diff & diff>sumOfPreviousDiffs) = -data(dataPoint,diffFlipped<diff & diff>sumOfPreviousDiffs); 
-%                
-%                
-%             end
             
             cobj.mmfObj.Data.x = data;
             
@@ -405,7 +523,7 @@ classdef mocapPhasespace < dataStream
                 
                 % checking for already present eulers
                 if ~isempty(strfind(obj.label{rigidBody},'Euler'))
-                    error('Stupid, don''t try to convert to Euler twice, isn''t that obvious?!')
+                    error('Don''t try to convert to Euler twice... that''s kinda obvious, isn''t it?')
                 end
                 
             end
@@ -415,7 +533,12 @@ classdef mocapPhasespace < dataStream
             
             numberOfRigidChannels = size(rigidChannels,1);
             numberOfRigidBodies = numberOfRigidChannels / 7;
-            numberOfNewChannels = size(obj.label,1) - numberOfRigidBodies,1;
+            
+            if ~rem(numberOfRigidChannels, 1) == 0
+                error('Number of rigid body channels not dividable by 7 (should be 3 position and 4 quaternion values)')
+            end
+            
+            numberOfNewChannels = size(obj.label,1) - numberOfRigidBodies;
             
             % make new object
             commandHistory.commandName = 'quaternionsToEuler';
@@ -459,36 +582,53 @@ classdef mocapPhasespace < dataStream
                 C = data(:,channelC);
                 D = data(:,channelD);
                 
+                % check if values are [-1 1] - could have been messed up by
+                % interpolating
                 
-                % form a matrix of quaternions for the RB and transform
-                % those values to euler angles
+                A(A>=1) = 0.99999;
+                A(A<=-1) = -0.99999;
+                B(B>=1) = 0.99999;
+                B(B<=-1) = -0.99999;
+                C(C>=1) = 0.99999;
+                C(C<=-1) = -0.99999;
+                D(D>=1) = 0.99999;
+                D(D<=-1) = -0.99999;
                 
-                for dataPoint = 1:size(data,1)
-                    
-                    quaternionThisRB(dataPoint) = quaternion(A(dataPoint),B(dataPoint),C(dataPoint),D(dataPoint));
-                    eulerThisRB(dataPoint,:) = quaternionThisRB(dataPoint).EulerAngles( '123' );
-                    
-                end
                 
-                channelEulerX = eulerThisRB(:,1);
-                channelEulerY = eulerThisRB(:,2);
-                channelEulerZ = eulerThisRB(:,3);
+                % transform those values to euler angles
+                % see https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+                % the rotation occurs in the order yaw, pitch, roll (about body-fixed axes).
+                
+                % for some reason after filtering the quaternion values, it
+                % can happen that the transformation below results in
+                % complex numbers, whereas the real part is exactly pi (or
+                % -pi) and the complex number has some kind of "exsess"
+                % value. I don't know why this happens, but I just take the
+                % real part, since it's the most reasonable thing to do, I
+                % guess...
+
+                channelEulerRoll = real(atan2(2.*(A.*B + C.*D),1 - 2.*(B.^2 + C.^2)));       
+                channelEulerYaw = real(asin(2.*(A.*C - D.*B)));                       
+                channelEulerPitch = real(atan2(2.*(A.*D + B.*C),1-2.*(C.^2+D.^2)));           
                 
                 % actually fill new data set and labels
                 
                 newData(:,endOfNonRigidChannels+rigidBody*6-5) = data(:,rigidChannels(rigidBody*7-6));
                 newData(:,endOfNonRigidChannels+rigidBody*6-4) = data(:,rigidChannels(rigidBody*7-5));
                 newData(:,endOfNonRigidChannels+rigidBody*6-3) = data(:,rigidChannels(rigidBody*7-4));
-                newData(:,endOfNonRigidChannels+rigidBody*6-2) = channelEulerX;
-                newData(:,endOfNonRigidChannels+rigidBody*6-1) = channelEulerY;
-                newData(:,endOfNonRigidChannels+rigidBody*6) = channelEulerZ;
+                newData(:,endOfNonRigidChannels+rigidBody*6-2) = channelEulerYaw;
+                newData(:,endOfNonRigidChannels+rigidBody*6-1) = channelEulerPitch;
+                newData(:,endOfNonRigidChannels+rigidBody*6) = channelEulerRoll;
                 
                 newLabel{endOfNonRigidChannels+rigidBody*6-5} = strcat('Rigid',num2str(rigidBody),'_X');
                 newLabel{endOfNonRigidChannels+rigidBody*6-4} = strcat('Rigid',num2str(rigidBody),'_Y');
                 newLabel{endOfNonRigidChannels+rigidBody*6-3} = strcat('Rigid',num2str(rigidBody),'_Z');
-                newLabel{endOfNonRigidChannels+rigidBody*6-2} = strcat('Rigid',num2str(rigidBody),'Euler_X');
-                newLabel{endOfNonRigidChannels+rigidBody*6-1} = strcat('Rigid',num2str(rigidBody),'Euler_Y');
-                newLabel{endOfNonRigidChannels+rigidBody*6} = strcat('Rigid',num2str(rigidBody),'Euler_Z');
+                newLabel{endOfNonRigidChannels+rigidBody*6-2} = strcat('Rigid',num2str(rigidBody),'Euler_Yaw');
+                newLabel{endOfNonRigidChannels+rigidBody*6-1} = strcat('Rigid',num2str(rigidBody),'Euler_Pitch');
+                newLabel{endOfNonRigidChannels+rigidBody*6} = strcat('Rigid',num2str(rigidBody),'Euler_Roll');
+                
+%                 cobj.mmfObj.Data.x = newData;
+%             cobj.label = newLabel;
                 
             end
             
@@ -679,15 +819,18 @@ classdef mocapPhasespace < dataStream
                 dispCommand = true;
             end
             if nargin < 2, order = 3;else order = varargin{1};end
-            if nargin < 3, fc = 18;  else fc = varargin{2};end
+            if nargin < 3, fc = 5;  else fc = varargin{2};end
             if nargin < 4, channels = 1:obj.numberOfChannels;else channels = varargin{3};end
             if nargin < 5, filterOrder = 128;else filterOrder = varargin{4};end
             if ~isnumeric(order), error('prog:input','First argument must be the order of the derivative (1=veloc, 2=acc, 3=jerk).');end
             if ~isnumeric(fc),    error('prog:input','Second argument must be the cut off frequency.');end
             if ~isnumeric(channels), error('Invalid channel.');end
             if ~all(intersect(channels,1:obj.numberOfChannels)), error('Invalid channel.');end
-            Nch = length(channels);
             
+            % checking for Quaternionvalues
+            if sum(~cellfun('isempty',strfind(obj.label,'_A')))>0, error('Please transform quaternion values to euler angles before calculating time derivatives!');end
+            
+            Nch = length(channels);
             dt = 1/obj.samplingRate;
             dt = 1e3*dt; % from seconds to mili seconds
             order = unique(1:max(order));
@@ -713,8 +856,24 @@ classdef mocapPhasespace < dataStream
                         cobj.mmfObj.Data.x(1:end-1,jt) = diff(cobj.mmfObj.Data.x(:,jt),1)/dt;
                         cobj.mmfObj.Data.x(end,jt) = cobj.mmfObj.Data.x(end-1,jt);
                         
+                        % check if channel is Euler angles and if so,
+                        % correct for turns over pi or -pi respectively
+                        if strfind(obj.label{jt},'Euler')
+                            
+%                             cobj.mmfObj.Data.x(cobj.mmfObj.Data.x > 2*pi, jt) = cobj.mmfObj.Data.x(cobj.mmfObj.Data.x > 2*pi, jt) - 2*pi;
+%                             cobj.mmfObj.Data.x(cobj.mmfObj.Data.x < -2*pi, jt) = cobj.mmfObj.Data.x(cobj.mmfObj.Data.x < -2*pi, jt) + 2*pi;
+
+                            dataChannel = cobj.mmfObj.Data.x(:,jt);
+                            
+                            dataChannel(dataChannel > pi/dt) = dataChannel(dataChannel > pi/dt) - 2*pi/dt;
+                            dataChannel(dataChannel < -pi/dt) = dataChannel(dataChannel < -pi/dt) + 2*pi/dt;
+                            
+                            cobj.mmfObj.Data.x(:,jt) = dataChannel;
+                            
+                        end
+                        
                         % smoothing
-                        cobj.mmfObj.Data.x(:,jt) = filtfilt_fast(b,a,cobj.mmfObj.Data.x(:,jt));
+%                         cobj.mmfObj.Data.x(:,jt) = filtfilt_fast(b,a,cobj.mmfObj.Data.x(:,jt));
                         obj.statusbar((Nch*(it-1)+jt));
                     end
                     
@@ -1349,6 +1508,16 @@ classdef mocapPhasespace < dataStream
                     metadata.artifactMask = obj.artifactMask(:,channels);
                     allocateFile(metadata.binFile,metadata.precision,[length(metadata.timeStamp) length(channels)]);
                     
+                case 'switchCoordinateSystem'
+                    prename = 'switchCoordSys_';
+                    metadata.name = [prename metadata.name];
+                    metadata.binFile = fullfile(path,[metadata.name '_' char(metadata.uuid) '_' metadata.sessionUUID '.bin']);
+                    channels = commandHistory.varargin{2};
+                    metadata.numberOfChannels = length(channels);
+                    metadata.label = obj.label(channels);
+                    metadata.artifactMask = obj.artifactMask(:,channels);
+                    allocateFile(metadata.binFile,metadata.precision,[length(metadata.timeStamp) length(channels)]);
+                    
                 case 'unflipSigns'
                     prename = 'unflip_';
                     metadata.name = [prename metadata.name];
@@ -1496,6 +1665,10 @@ classdef mocapPhasespace < dataStream
             %--
             menuItem = javax.swing.JMenuItem('Unflip sign of channels');
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'unflipSigns',-1});
+            jmenu.add(menuItem);
+            %--
+            menuItem = javax.swing.JMenuItem('Switch between left- and right hand sided coordinate system');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'switchCoordinateSystem',-1});
             jmenu.add(menuItem);
             %--
             menuItem = javax.swing.JMenuItem('Transform Quaternions to Euler Angles');
