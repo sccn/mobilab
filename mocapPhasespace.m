@@ -468,7 +468,7 @@ classdef mocapPhasespace < dataStream
                 
                 % checking for already present eulers
                 if ~isempty(strfind(obj.label{channel},'Euler'))
-                    error('Please attempt switching between coordinate systems only using quaternion orientation values')
+                  %  error('Please attempt switching between coordinate systems only using quaternion orientation values')
                 end
                 
             end
@@ -497,7 +497,7 @@ classdef mocapPhasespace < dataStream
             for channel = 1:obj.numberOfChannels
                 
                 
-                if ~isempty(strfind(obj.label{channel},'_Z')) || ~isempty(strfind(obj.label{channel},'_A')) || ~isempty(strfind(obj.label{channel},'_B'))
+                if ~isempty(strfind(obj.label{channel},'_Z')) || ~isempty(strfind(obj.label{channel},'_B')) || ~isempty(strfind(obj.label{channel},'_C')) || ~isempty(strfind(obj.label{channel},'_Yaw')) || ~isempty(strfind(obj.label{channel},'_Pitch'))
                    
                    data(:,channel) = data(:,channel) .* -1;
                     
@@ -577,39 +577,48 @@ classdef mocapPhasespace < dataStream
                 channelD = rigidChannels(rigidBody*7);
                 
                 % take the values
-                A = data(:,channelA);
-                B = data(:,channelB);
-                C = data(:,channelC);
-                D = data(:,channelD);
+                % The orientation axes' labels in PhaseSpace are different from the
+                % ones in Wikipedia: Forward is z (Wikipedia x), sideways is x (Wikipedia y), upways is
+                % y (Wikipedia z) 
+                w = data(:,channelA);
+                z = data(:,channelB);
+                x = data(:,channelC);
+                y = data(:,channelD);
                 
                 % check if values are [-1 1] - could have been messed up by
                 % interpolating
                 
-                A(A>=1) = 0.99999;
-                A(A<=-1) = -0.99999;
-                B(B>=1) = 0.99999;
-                B(B<=-1) = -0.99999;
-                C(C>=1) = 0.99999;
-                C(C<=-1) = -0.99999;
-                D(D>=1) = 0.99999;
-                D(D<=-1) = -0.99999;
+                w(w>=1) = 0.99999;
+                w(w<=-1) = -0.99999;
+                x(x>=1) = 0.99999;
+                x(x<=-1) = -0.99999;
+                y(y>=1) = 0.99999;
+                y(y<=-1) = -0.99999;
+                z(z>=1) = 0.99999;
+                z(z<=-1) = -0.99999;
                 
                 
                 % transform those values to euler angles
                 % see https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
                 % the rotation occurs in the order yaw, pitch, roll (about body-fixed axes).
                 
+                % now since we took the different axes for the quaternions
+                % before, this has to be taken backwards to obtain the 
+                % correct values for yaw, pitch and roll
+                % -> this means that roll (rotation about x) becomes yaw, pitch (rotation about y) becomes
+                % roll and yaw (rotation about z) becomes pitch.
+                
                 % for some reason after filtering the quaternion values, it
                 % can happen that the transformation below results in
                 % complex numbers, whereas the real part is exactly pi (or
-                % -pi) and the complex number has some kind of "exsess"
+                % -pi) and the complex number has some kind of "excess"
                 % value. I don't know why this happens, but I just take the
                 % real part, since it's the most reasonable thing to do, I
                 % guess...
 
-                channelEulerRoll = real(atan2(2.*(A.*B + C.*D),1 - 2.*(B.^2 + C.^2)));       
-                channelEulerYaw = real(asin(2.*(A.*C - D.*B)));                       
-                channelEulerPitch = real(atan2(2.*(A.*D + B.*C),1-2.*(C.^2+D.^2)));           
+                channelEulerYaw = real(atan2(2.*(w.*x + y.*z),1 - 2.*(x.^2 + y.^2)));     % wikipedia roll (rotation about x)
+                channelEulerRoll = real(asin(2.*(w.*y - z.*x)));                             % wikipedia pitch (rotation about y)
+                channelEulerPitch = real(atan2(2.*(w.*z + x.*y),1-2.*(y.^2+z.^2)));          % wikipedia yaw (rotation about z)   
                 
                 % actually fill new data set and labels
                 
@@ -1654,17 +1663,21 @@ classdef mocapPhasespace < dataStream
         %%
         function jmenu = contextMenu(obj)
             jmenu = javax.swing.JPopupMenu;
-            %--
-            menuItem = javax.swing.JMenuItem('Make it dance! (Add stick figure)');
-            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'loadConnectedBody',-1});
-            jmenu.add(menuItem);
-            %--
+
             menuItem = javax.swing.JMenuItem('Throw out channels');
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'throwOutChannels',-1});
             jmenu.add(menuItem);
             %--
-            menuItem = javax.swing.JMenuItem('Unflip sign of channels');
+            menuItem = javax.swing.JMenuItem('Unflip signs of jumping quaternion channels');
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'unflipSigns',-1});
+            jmenu.add(menuItem);
+            %--
+            menuItem = javax.swing.JMenuItem('Filling-in occluded time points');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'removeOcclusionArtifact',-1});
+            jmenu.add(menuItem);
+            %--
+            menuItem = javax.swing.JMenuItem('Lowpass filter');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'lowpass',-1});
             jmenu.add(menuItem);
             %--
             menuItem = javax.swing.JMenuItem('Switch between left- and right hand sided coordinate system');
@@ -1677,16 +1690,16 @@ classdef mocapPhasespace < dataStream
             %---------
             jmenu.addSeparator;
             %---------
-            menuItem = javax.swing.JMenuItem('Filling-in occluded time points');
-            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'removeOcclusionArtifact',-1});
-            jmenu.add(menuItem);
-            %--
-            menuItem = javax.swing.JMenuItem('Lowpass filter');
-            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'lowpass',-1});
-            jmenu.add(menuItem);
-            %--
             menuItem = javax.swing.JMenuItem('Compute time derivatives');
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'timeDerivative',-1});
+            jmenu.add(menuItem);
+            %---------
+            menuItem = javax.swing.JMenuItem('Create event marker');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'createEventsFromMagnitude',-1});
+            jmenu.add(menuItem);
+            %---------
+            menuItem = javax.swing.JMenuItem('Time frequency analysis (CWT)');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'continuousWaveletTransform',-1});
             jmenu.add(menuItem);
             %---------
             jmenu.addSeparator;
@@ -1695,16 +1708,12 @@ classdef mocapPhasespace < dataStream
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'dataStreamBrowser',-1});
             jmenu.add(menuItem);
             %--
+            menuItem = javax.swing.JMenuItem('Make it dance! (Add stick figure)');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'loadConnectedBody',-1});
+            jmenu.add(menuItem);
+            %--
             menuItem = javax.swing.JMenuItem('Plot stick figure');
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'mocapBrowser',-1});
-            jmenu.add(menuItem);
-            %---------
-            menuItem = javax.swing.JMenuItem('Time frequency analysis (CWT)');
-            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'continuousWaveletTransform',-1});
-            jmenu.add(menuItem);
-            %---------
-            menuItem = javax.swing.JMenuItem('Create event marker');
-            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'createEventsFromMagnitude',-1});
             jmenu.add(menuItem);
             %---------
             jmenu.addSeparator;
