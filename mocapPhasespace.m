@@ -882,7 +882,7 @@ classdef mocapPhasespace < dataStream
                         end
                         
                         % smoothing
-%                         cobj.mmfObj.Data.x(:,jt) = filtfilt_fast(b,a,cobj.mmfObj.Data.x(:,jt));
+%                       %  cobj.mmfObj.Data.x(:,jt) = filtfilt_fast(b,a,cobj.mmfObj.Data.x(:,jt));
                         obj.statusbar((Nch*(it-1)+jt));
                     end
                     
@@ -1165,16 +1165,162 @@ classdef mocapPhasespace < dataStream
             epochObj = mocapEpoch(pdata,time,channelLabel,condition,eventInterval,subjectID,xy,derivativeLabel);
         end
         %%
-        function I = createEventsFromMagnitude(obj,varargin)
+        function addEventsFromDerivatives(obj,varargin)
+
+            dispCommand = false;
+            if  ~isempty(varargin) && length(varargin{1}) == 1 && isnumeric(varargin{1}) && varargin{1} == -1
+              
+                dispCommand = true;
+            end
+            
+            if dispCommand
+                disp('Running:');
+                disp('addEventsFromDerivatives');
+            end
+            
+            for children = 1:size(obj.children,2)
+               
+                if ~isempty(strfind(obj.children{children}.name,'vel')) || ~isempty(strfind(obj.children{children}.name,'acc')) || ~isempty(strfind(obj.children{children}.name,'jerk')) || ~isempty(strfind(obj.children{children}.name,'Dt'))
+                    
+                    derivativeEvent = obj.children{children}.event;
+                    obj.event = obj.event.addEvent(derivativeEvent.latencyInFrame,derivativeEvent.label);
+               
+                end
+            end
+            
+            if dispCommand, disp('Done.');end
+        end
+        
+        %%
+        function movementOnsetsAndEnds(obj,varargin)
+
+            dispCommand = false;
+            if  ~isempty(varargin) && length(varargin{1}) == 1 && isnumeric(varargin{1}) && varargin{1} == -1
+              
+                dispCommand = true;
+            end
+            
+            if dispCommand
+                disp('Running:');
+                disp('movementOnsetsAndEnds');
+            end
+            
+            events = obj.event;
+            maxPosition = ~cellfun(@isempty,strfind(events.label,'max'));
+            minPosition = ~cellfun(@isempty,strfind(events.label,'min'));
+            zeroCrossPosition = ~cellfun(@isempty,strfind(events.label,'zeroCross'));
+            
+            maxEvents=events;
+            minEvents=events;
+            
+            maxEvents.label(~(maxPosition+zeroCrossPosition))=[];
+            maxEvents.latencyInFrame(~(maxPosition+zeroCrossPosition))=[];
+            maxEvents.hedTag(~(maxPosition+zeroCrossPosition))=[];
+            
+            latenciesIndex = 1;
+            movementOnsetFound = 0;
+            for i = 1:size(maxEvents.label,1)-2
+                if ~isempty(strfind(maxEvents.label{i},'zeroCrossVel')) && ~isempty(strfind(maxEvents.label{i+1},'Jerk')) && ~isempty(strfind(maxEvents.label{i+2},'Acc')) %&& ~isempty(strfind(maxEvents.label{i+2},'Vel'))
+                    movementOnsetFound = 1;
+                    latencies(latenciesIndex) = maxEvents.latencyInFrame(i+1);
+                    latenciesIndex = latenciesIndex + 1;
+                end
+            end
+            
+            if movementOnsetFound
+                events = events.addEvent(latencies,'movementOnset');
+            end
+            
+            minEvents.label(~(minPosition+zeroCrossPosition))=[];
+            minEvents.latencyInFrame(~(minPosition+zeroCrossPosition))=[];
+            minEvents.hedTag(~(minPosition+zeroCrossPosition))=[];
+            
+            latenciesIndex = 1;
+            for i = 1:size(minEvents.label,1)-2
+                if ~isempty(strfind(minEvents.label{i},'zeroCrossVel')) && ~isempty(strfind(minEvents.label{i+1},'Jerk')) && ~isempty(strfind(minEvents.label{i+2},'Acc'))
+                    movementOnsetFound = 1;
+                    latencies(latenciesIndex) = minEvents.latencyInFrame(i+1);
+                    latenciesIndex = latenciesIndex + 1;
+                end
+            end
+
+            if movementOnsetFound
+                events = events.addEvent(latencies,'movementOnset');
+            end
+            
+            obj.event = events;
+            
+            if dispCommand, disp('Done.');end
+        end
+        
+        %%
+        function deleteMarkers(obj,varargin)
+
+            dispCommand = false;
+            
+            if ~isempty(varargin) && iscell(varargin) && isnumeric(varargin{1}) && varargin{1} == -1
+                prompt = {'Which markers to keep?'};
+                dlg_title = 'Input parameters';
+                num_lines = 1;
+                def = {'movementOnset movementEnd'};
+                markersToKeep = inputdlg2(prompt,dlg_title,num_lines,def)
+                if isempty(varargin), return;end
+                markersToKeep = strsplit(markersToKeep{1}, ' ')
+                dispCommand = true;
+            end
+            
+            command = 'Delete Markers, keep only:';
+            for marker = 1:size(markersToKeep,1)
+                
+                command = strcat(command, {' '}, markersToKeep(marker));
+                
+            end
+            
+            if dispCommand
+                disp('Running:');
+                disp(command);
+            end
+            
+            % determine for each unique marker if it is of the markers to keep or not
+            for uniqueLabelInd = 1:size(obj.event.uniqueLabel,1)
+               for markerInd = 1:size(markersToKeep,1)
+                   
+                    comparison(uniqueLabelInd,markerInd) = strcmp(obj.event.uniqueLabel{uniqueLabelInd},markersToKeep{markerInd});
+                       
+                end
+            end
+            comparison = sum(comparison,2);
+            
+            tempEvents = obj.event;
+            % delete markers
+            for uniqueLabelInd = 1:size(obj.event.uniqueLabel,1)
+                
+                if ~comparison(uniqueLabelInd)
+                    
+                    tempEvents = tempEvents.deleteAllEventsWithThisLabel(obj.event.uniqueLabel{uniqueLabelInd});
+                    
+                end
+                
+            end
+            
+            obj.event = tempEvents;
+            
+        end
+        
+        
+        %%
+        function createEventsFromMagnitude(obj,varargin)
             % criteria: 'maxima', 'minima', 'zero crossing', '% maxima', '% minima', or 'all' (default: criteria = 'all')
             % channel: index of the channel where to search for the events
             
             dispCommand = false;
             if  ~isempty(varargin) && length(varargin{1}) == 1 && isnumeric(varargin{1}) && varargin{1} == -1
                 prefObj = [...
-                    PropertyGridField('channel',1,'DisplayName','Marker','Category','Main','Description','Mocap marker.')...
+                    PropertyGridField('channel',1,'DisplayName','Channel','Category','Main','Description','Channel number. Enter desired channel to generate marker from and hit return.')...
                     PropertyGridField('criteria','maxima','Type',PropertyType('char', 'row', {'maxima', 'minima','zero crossing'}),'DisplayName','Criteria','Category','Main','Description','Criterion for making the event, could be: maxima, minima, zero crossing.')...
-                    PropertyGridField('eventType','max','DisplayName','Marker name','Category','Main','Description','Name of the new event marker.')...
+                    PropertyGridField('correctSign',1,'DisplayName','Correct sign criteria','Category','Main','Description','Enter if max/min criteria should only be fulfilled if sign is pos/neg and hit return.')...
+                    PropertyGridField('eventType','max','DisplayName','Marker name','Category','Main','Description','Enter the name of the new event marker and hit return.')...
+                    PropertyGridField('inhibitionWindow',0.1,'DisplayName','Inhibition window length','Category','Main','Description','Enter the length of the inhibition window and hit return. Is multiplied by sampling rate!')...
                     ];
                 
                 hFigure = figure('MenuBar','none','Name','Create event marker','NumberTitle', 'off','Toolbar', 'none','Units','pixels','Color',obj.container.container.preferences.gui.backgroundColor,...
@@ -1196,6 +1342,8 @@ classdef mocapPhasespace < dataStream
                 varargin{1} = val.channel;
                 varargin{2} = val.criteria;
                 varargin{3} = val.eventType;
+                varargin{4} = val.inhibitionWindow;
+                varargin{5} = val.correctSign;
                 dispCommand = true;
             end
             
@@ -1208,10 +1356,11 @@ classdef mocapPhasespace < dataStream
             else
                 inhibitedWindowLength = ceil(obj.samplingRate*varargin{4});
             end
-            if Narg < 5
+            if Narg < 5, correctSign = 0;   else correctSign = varargin{5}; end
+            if Narg < 6
                 segmentObj = basicSegment([obj.timeStamp(1),obj.timeStamp(end)]);
             else
-                segmentObj = varargin{5};
+                segmentObj = varargin{6};
             end
             
             if dispCommand
@@ -1231,16 +1380,27 @@ classdef mocapPhasespace < dataStream
                     otherwise,            eventType = 'noname';
                 end
             end
-            signal = obj.magnitude(:,channel);
+            %signal = obj.magnitude(:,channel);
+            signal = obj.mmfObj.data.x(:,channel);
             
-            for it=1:numberOfSegments
+            for it=1:numberOfSegments % default is 1 segment: the whole data stream
                 I = searchInSegment(signal(index(it,1):index(it,2)),criteria,inhibitedWindowLength);
+                if correctSign && (strcmp(criteria, 'maxima') || strcmp(criteria, 'minima'))
+                    if strcmp(criteria, 'minima')
+                        signal = -signal;
+                    end
+                    I(sign(signal(I))==-1)=[];
+                end
+                
                 time = obj.timeStamp(index(it,1):index(it,2));
                 latency = obj.getTimeIndex(time(I));
+                
+                
                 obj.event = obj.event.addEvent(latency,eventType);
             end
             if dispCommand, disp('Done.');end
         end
+        
     end
     
     methods(Hidden=true)
@@ -1676,12 +1836,12 @@ classdef mocapPhasespace < dataStream
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'removeOcclusionArtifact',-1});
             jmenu.add(menuItem);
             %--
-            menuItem = javax.swing.JMenuItem('Lowpass filter');
-            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'lowpass',-1});
-            jmenu.add(menuItem);
-            %--
             menuItem = javax.swing.JMenuItem('Switch between left- and right hand sided coordinate system');
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'switchCoordinateSystem',-1});
+            jmenu.add(menuItem);
+            %--
+            menuItem = javax.swing.JMenuItem('Lowpass filter');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'lowpass',-1});
             jmenu.add(menuItem);
             %--
             menuItem = javax.swing.JMenuItem('Transform Quaternions to Euler Angles');
@@ -1696,6 +1856,18 @@ classdef mocapPhasespace < dataStream
             %---------
             menuItem = javax.swing.JMenuItem('Create event marker');
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'createEventsFromMagnitude',-1});
+            jmenu.add(menuItem);
+            %---------
+            menuItem = javax.swing.JMenuItem('Add events from time derivative streams');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'addEventsFromDerivatives',-1});
+            jmenu.add(menuItem);
+            %---------
+            menuItem = javax.swing.JMenuItem('Determine movement onsets and ends');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'movementOnsetsAndEnds',-1});
+            jmenu.add(menuItem);
+            %---------
+            menuItem = javax.swing.JMenuItem('Delete Event Markers');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'deleteMarkers',-1});
             jmenu.add(menuItem);
             %---------
             menuItem = javax.swing.JMenuItem('Time frequency analysis (CWT)');

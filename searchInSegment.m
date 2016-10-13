@@ -4,15 +4,29 @@ if nargin < 3, h = 300;end
 if nargin < 4, alpha = 0.05;end
 h = round(h);
 
+% if strcmp(fun,'zero crossing')
+%     x_mx = diff(x);
+%     x_mx(end+1) = x_mx(end);
+%     x_mx = smooth(x_mx,1024);
+%     I1 = searchInSegment(x_mx,'maxima',h);
+%     I2 = searchInSegment(-x_mx,'maxima',h);
+%     I = [I1 I2];
+%     return
+% end
+
 if strcmp(fun,'zero crossing')
-    x_mx = diff(x);
-    x_mx(end+1) = x_mx(end);
-    x_mx = smooth(x_mx,1024);
-    I1 = searchInSegment(x_mx,'maxima',h);
-    I2 = searchInSegment(-x_mx,'maxima',h);
-    I = [I1 I2];
+    
+    signsOfSignal = sign(x); 
+    
+    % diff of the signs returns 2 or -2 at positions just before zero is
+    % being crossed, find finds those positions in the vector and then 1 is
+    % added to have the final positions which are just after zero has been
+    % crossed
+    I = find(diff(signsOfSignal))+1; 
+    
     return
 end
+
 if strcmp(fun,'minima'), x = -x;end
 x = x - min(x);
 t0 = 1;

@@ -120,7 +120,7 @@ classdef dataSourceXDF < dataSource
                 for stream_count=1:length(streams)
                     try
                         name = lower(streams{stream_count}.info.name);
-                        if strcmpi(name,'phasespace'), name = 'mocap';end
+                        if strcmpi(name,'phasespace'), name = 'mocapPhasespace';end
                         if strcmpi(name,'biosemi'), name = 'eeg';end
                         name(name == ' ') = '_';
                         name = [name '_' streams{stream_count}.info.hostname]; %#ok
@@ -312,7 +312,7 @@ classdef dataSourceXDF < dataSource
                         % mocap    
                         elseif any(ismember({'mocap' 'control'},lower(streams{stream_count}.info.type))) && isempty(strfind(lower(streams{stream_count}.info.name),'wii'))
                             class = 'mocap'; % default mocap class
-                            if (~isempty(strfind(streams{stream_count}.info.name,'PhaseSpace')) || ~isempty(strfind(streams{stream_count}.info.name,'Phasespace')) || ~isempty(strfind(streams{stream_count}.info.name,'phasespace'))) && ~isempty(channelType)
+                            if (~isempty(strfind(lower(streams{stream_count}.info.name),'phasespace'))) && ~isempty(channelType)
                                 class = 'mocapPhasespace'; % phasespace mocap class with rigidbodies with orientation
                                 
                                 indPosition = ~cellfun(@isempty,strfind(channelType,'Position')); % find channels with position value
@@ -356,6 +356,11 @@ classdef dataSourceXDF < dataSource
                             metadata.class = class;
                             metadata.auxChannel = auxChannel;
                             header = metadata2headerFile(metadata);
+                            
+                        % rigidBody    
+%                         elseif ~isempty(strfind(lower(streams{stream_count}.info.type),'rigidbody'))
+%                             disp('rigidBody data stream fround!')
+                            
                         
                         % audiocontrol    
                         elseif ~isempty(strfind(lower(streams{stream_count}.info.type),'audiocontrol'))
