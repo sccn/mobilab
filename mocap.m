@@ -398,9 +398,10 @@ classdef mocap < dataStream
             Nch = length(channels);
             
             dt = 1/obj.samplingRate;
-            dt = 1e3*dt; % from seconds to mili seconds
+            dt = 1e3*dt; % from seconds to milliseconds
             order = unique(1:max(order));
             N = max(order);
+            fc = min([fc obj.samplingRate/4]);
             try
                 % smooth the data by 0 phase shifting moving average
                 a = 1;

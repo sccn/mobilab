@@ -313,11 +313,7 @@ classdef mobilabApplication < handle
                 case 'add2eventseditor2_callback'
                     funcHandle = @add2EventsEditor2_Callback;
                 case 'add2browser_callback'
-                    if isMatlab2014b
-                        funcHandle = @MultiStreamBrowser2014b;
-                    else
-                        funcHandle = @MultiStreamBrowser;
-                    end
+                    funcHandle = @MultiStreamBrowser;
                 otherwise
                     funcHandle = @disp;
             end
@@ -352,11 +348,7 @@ classdef mobilabApplication < handle
                         contextMenuItems{it} = javax.swing.JPopupMenu;
                         menuItem = javax.swing.JMenuItem('Plot in MS Browser');
                         javaObjectEDT(menuItem);
-                        if isMatlab2014b
-                            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@MultiStreamBrowser2014b; obj.allStreams.item{it}});
-                        else
-                            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@MultiStreamBrowser; obj.allStreams.item{it}});
-                        end
+                        set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@MultiStreamBrowser; obj.allStreams.item{it}});
                         contextMenuItems{it}.add(menuItem);
                     else
                         contextMenuItems{it} = obj.allStreams.item{it}.contextMenu;
@@ -455,11 +447,7 @@ classdef mobilabApplication < handle
         %%
         function msBrowserHandle = msBrowser(obj)
             if isempty(obj.allStreams) || ~isvalid(obj.allStreams), error('Load some data first');end
-            if isMatlab2014b
-                msBrowserHandle = MultiStreamBrowser2014b(obj);
-            else
-                msBrowserHandle = MultiStreamBrowser(obj);
-            end
+            msBrowserHandle = MultiStreamBrowser(obj);
         end
         %%
         function copyImportFolder(obj,source,destination)
