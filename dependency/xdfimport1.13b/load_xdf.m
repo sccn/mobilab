@@ -157,8 +157,12 @@ function [streams,fileheader] = load_xdf(filename,varargin)
 %
 %                                Contains frame snapping routine to handle dropped video frames by 
 %                                Matthew Grivich.
+%                                   
+%                                Contains changes for calculating and
+%                                inserting the effective sampling rate into
+%                                the streams by Marius Klug, 01-12-2016
 %
-%                                version 1.13
+%                                version 1.13b
 LIBVERSION = '1.13';
 % check inputs
 opts = cell2struct(varargin(2:2:end),varargin(1:2:end),2);
