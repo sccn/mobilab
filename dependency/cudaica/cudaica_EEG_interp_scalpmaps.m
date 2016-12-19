@@ -5,6 +5,10 @@ function EEG = cudaica_EEG_interp_scalpmaps(EEG, channels2remove)
 %
 % Input: 
 % EEG: EEGLAB's EEG structure
+% channels2remove: array of channels to remove in order to make the data
+%                  full-rank, if left unset we will start removing channels 
+%                  starting from the bottom of the montage up until the 
+%                  data becomes full-rank.
 %
 % EEG: same structure but with the ICA fields
 % 
