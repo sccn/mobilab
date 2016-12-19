@@ -7,7 +7,7 @@ function [streams,fileheader] = load_xdf(filename,varargin)
 % information covered by the XDF 1.0 specification is imported, plus any additional meta-data
 % associated with streams or with the container file itself.
 %
-% See http://code.google.com/p/xdf/ for more information on XDF.
+% See https://github.com/sccn/xdf/ for more information on XDF.
 %
 % The function supports several further features, such as compressed XDF archives, robust
 % time synchronization, support for breaks in the data, as well as some other defects.
@@ -155,8 +155,11 @@ function [streams,fileheader] = load_xdf(filename,varargin)
 %                                Contains portions of xml2struct Copyright (c) 2010, Wouter Falkena,
 %                                ASTI, TUDelft, 21-08-2010
 %
-%                                version 1.12
-
+%                                Contains frame snapping routine to handle dropped video frames by 
+%                                Matthew Grivich.
+%
+%                                version 1.13
+LIBVERSION = '1.13';
 % check inputs
 opts = cell2struct(varargin(2:2:end),varargin(1:2:end),2);
 if ~isfield(opts,'OnChunk')
@@ -192,8 +195,6 @@ if ~isfield(opts,'FrameRateAccuracy')
 if ~exist(filename,'file')
     error(['The file "' filename '" does not exist.']); end
 
-if opts.Verbose
-    disp(['Importing XDF file ' filename '...']); end
 
 % uncompress if necessary (note: "bonus" feature, not part of the XDF 1.0 spec)
 [p,n,x] = fileparts(filename);
@@ -222,7 +223,27 @@ closer = onCleanup(@()close_file(f,filename));  % object that closes the file wh
 % not necessarily available for every platform
 have_mex = exist('load_xdf_innerloop','file');
 if ~have_mex
-    disp('NOTE: apparently you are missing a compiled binary version of the inner loop code. Using the slow MATLAB code instead.'); end
+    if opts.Verbose
+        disp(['NOTE: apparently you are missing a compiled binary version of the inner loop code.',...
+            ' Attempting to download...']);
+    end
+    
+    fname = ['load_xdf_innerloop.' mexext];
+    mex_url = ['https://github.com/sccn/xdf/releases/download/v',...
+        LIBVERSION, '/', fname];
+    [this_path, this_name, this_ext] = fileparts(mfilename('fullpath'));
+    try
+        have_mex = true;
+        websave(fullfile(this_path, fname), mex_url);
+    catch ME
+        if opts.Verbose
+            disp(['Unable to download the compiled binary version for your platform.',...
+                ' Using the slow MATLAB code instead.']);
+        end
+        have_mex = false;
+        %rethrow(ME);
+    end
+end
 
 
 % ======================
@@ -234,6 +255,8 @@ if ~strcmp(fread(f,4,'*char')','XDF:')
     error(['This is not a valid XDF file (' filename ').']); end
 
 % for each chunk...
+
+if opts.Verbose; fprintf('Now reading from %s ...', filename); end;
 while 1
     % read [NumLengthBytes], [Length]
     len = double(read_varlen_int(f));
@@ -510,7 +533,7 @@ if opts.HandleJitterRemoval
                     segments(r).t_begin = temp(k).time_stamps(range(1));
                     segments(r).t_end = temp(k).time_stamps(range(2));
                     segments(r).duration = segments(r).t_end - segments(r).t_begin;
-                    segments(r).effective_srate = segments(r).num_samples / segments(r).duration;
+                    segments(r).effective_srate = (segments(r).num_samples - 1) / segments(r).duration;
                 end
 
                 % calculate the weighted mean sampling rate over all segments
@@ -525,7 +548,7 @@ if opts.HandleJitterRemoval
 else
     % calculate effective sampling rate
     for k=1:length(temp)
-        temp(k).effective_srate = length(temp(k).time_stamps) / (temp(k).time_stamps(end) - temp(k).time_stamps(1)); end
+        temp(k).effective_srate = (length(temp(k).time_stamps) - 1) / (temp(k).time_stamps(end) - temp(k).time_stamps(1)); end
 end
 
 % copy the information into the output
