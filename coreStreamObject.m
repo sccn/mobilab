@@ -593,7 +593,13 @@ classdef coreStreamObject < handle
             
             if ~obj.isMemoryMappingActive, return;end
             if nargin < 2, defaults.browser = @streamBrowserHandle;end
-            if ~isfield(defaults,'browser'), defaults.browser = @streamBrowserHandle;end
+            if ~isfield(defaults,'browser')
+                if isstruct(defaults)
+                    defaults.browser = @streamBrowserHandle;
+                else
+                    defaults = struct('browser',@streamBrowserHandle);
+                end
+            end
             browserObj = defaults.browser(obj,defaults);
         end
         %%

@@ -23,7 +23,13 @@ classdef audioStream < dataStream
             % Plots the audio signal in a browser window.
             
             if nargin < 2, defaults.browser = @audioStreamBrowserHandle;end
-            if ~isfield(defaults,'browser'), defaults.browser = @audioStreamBrowserHandle;end
+            if ~isfield(defaults,'browser'), 
+                if isstruct(defaults)
+                    defaults.browser = @audioStreamBrowserHandle;
+                else
+                    defaults = struct('browser',@audioStreamBrowserHandle);
+                end
+            end
             browserObj = defaults.browser(obj,defaults);
         end
     end
