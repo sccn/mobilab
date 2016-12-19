@@ -1,4 +1,4 @@
-function EEG = cudaica_EEG(EEG)
+function EEG = cudaica_EEG(EEG, verbose)
 % This function is a minimalistic wrapper for computing the ICA decomposition
 % of EEG data on a GPU using cudaica. If no GPU is available it tries to
 % run binica.
@@ -15,59 +15,63 @@ function EEG = cudaica_EEG(EEG)
 %       http://www.hindawi.com/journals/cin/2012/206972/
 %
 % Author: Alejandro Ojeda, SCCN, INC, UCSD, Mar-2013
+if nargin < 2, verbose = 'off';end
+X = EEG.data(:,:);
+if ~isa(X,'double'), X = double(X);end
 
-data = EEG.data(:,:);
-desc = whos('data');
-if desc.bytes > 2^30
-    disp('Downsampling...')
-    sr = obj.samplingRate;
-    while desc.bytes > 2^28
-        dim = size(data,2);
-        ts = timeseries(data,(0:dim-1)/sr);
-        t = ts.Time(1:2:dim);
-        ts = resample(ts,t);
-        data = squeeze(ts.Data);
-        desc = whos('data');
-    end
-    clear ts;
-end
-if ~isa(data,'double'), data = double(data);end
-try
-    r = rank(data);
-    if r < size(data,1)
-        disp('Removing null subspace from tha data before running ICA.');
-        try 
-            [U,S,V] = svd(gpuArray(data));
-            U = gather(U(1:r,1:r));
-            S = gather(S(1:r,:));
-            V = gather(V);
-        catch %#ok
-            [U,S,V] = svds(data,r);
-        end
-        s = diag(S);
-        data = V';
-        clear V;
-        US  = U*S;
-        iUS = diag(1./s)*U';
-    else
-        US  = 1;
-        iUS = 1;
-    end
+r = rank(X);
+if r < size(X,1)
     try
-        [wts,sph] = cudaica(data);
+        disp('This EEG data is rank deficient. Here is what we will try to do.')
+        disp('  First we will remove a few channels (starting from the bottom up) from the data until it ');
+        disp('    becomes full-rank and then run ICA.')
+        disp('  Second we will use the channel locations to extrapolate the decomposition to the previously');
+        disp('     removed channels.')
+        disp('  See cudaica_EEG_interp_scalpmaps.m for more information.')
+        EEG = cudaica_EEG_interp_scalpmaps(EEG);
+        return
     catch ME
-        warning(ME.message)
-        disp('CUDAICA has failed, trying binica...');
-        [wts,sph] = binica(data);
+        disp(ME.message)
+        disp('Removing null subspace from tha data before running ICA using PCA.');
+        [U,S,V] = svds(X,r);
+        X = V';
+        clear V;
+        iU = diag(1./diag(S))*U';
+        U  = U*S;
     end
-    iWts = US*pinv(wts*sph);
-    sph = sph*iUS;
-    scaling = repmat(sqrt(mean(iWts.^2))', [1 size(wts,2)]);
-    wts = wts.*scaling;
+else
+    U  = 1;
+    iU = 1;
 end
+try
+    [wts,sph] = cudaica(X, 'verbose',verbose);
+catch ME
+    warning(ME.message)
+    disp('CUDAICA has failed, trying binica...');
+    [wts,sph] = binica(X);
+end
+% We use the SVD decomposition of elminate the null-space 
+% from the data and then perform ICA on a full rank matrix.
+% 
+% The following transformations are used:
+%        X = U*S*V'
+%        U = U*S
+%   inv(U) = inv(S)*U'
+%        S = U* wts*sph * inv(U)*X
+%        S = U* wts*sph * inv(U)*U*V'
+%        S = U* wts*sph * V'
+%   
+% We define the new wts and sph as:
+%   wts = U* * wts
+%   sph = sph * inv(U) 
 
-EEG.icawinv = pinv(wts*sph);
+icawinv = pinv(wts*sph);
+wts = U*wts*iU;
+sph = U*sph*iU;
+icawinv = U*icawinv*iU;
+
+EEG.icawinv = icawinv;
 EEG.icasphere = sph;
 EEG.icaweights = wts;
-EEG.icachansind = 1:size(data,1);
+EEG.icachansind = 1:EEG.nbchan;
 EEG = eeg_checkset(EEG);
