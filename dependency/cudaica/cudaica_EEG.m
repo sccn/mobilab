@@ -75,3 +75,7 @@ EEG.icasphere = sph;
 EEG.icaweights = wts;
 EEG.icachansind = 1:EEG.nbchan;
 EEG = eeg_checkset(EEG);
+
+%% Clean-up
+rmfiles =  dir('cudaica.*');
+for k=1:length(rmfiles), delete(rmfiles(k).name);end
