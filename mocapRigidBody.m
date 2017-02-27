@@ -758,7 +758,8 @@ classdef mocapRigidBody < dataStream
                 prompt = {'Enter the cutoff frequency:'};
                 dlg_title = 'Filter input parameters';
                 num_lines = 1;
-                def = {num2str(obj.container.container.preferences.mocap.lowpassCutoff)};
+                %def = {num2str(obj.container.container.preferences.mocap.lowpassCutoff)};
+                def = {num2str(3)};
                 varargin = inputdlg2(prompt,dlg_title,num_lines,def);
                 if isempty(varargin), return;end
                 varargin{1} = str2double(varargin{1});
@@ -852,41 +853,49 @@ classdef mocapRigidBody < dataStream
                 commandHistory.varargin{3} = channels;
                 obj.initStatusbar(1,N*Nch,'Computing time derivatives...');
                 tmpObj = obj;
-                for it=1:N
-                    commandHistory.varargin{1} = it;
-                    cobj = tmpObj.copyobj(commandHistory);
-                    if it==1, artifactIndices = cobj.artifactMask(:) ~= 0;end
-                    
-                    for jt=1:cobj.numberOfChannels
+                tmpData = obj.mmfObj.Data.x;
+                for derivative=1:N
+                    for channel=1:size(tmpData,2)
                         
                         % deriving
-                        cobj.mmfObj.Data.x(1:end-1,jt) = diff(cobj.mmfObj.Data.x(:,jt),1)/dt;
-                        cobj.mmfObj.Data.x(end,jt) = cobj.mmfObj.Data.x(end-1,jt);
+                        tmpData(1:end-1,channel) = diff(tmpData(:,channel),1)/dt;
+                        tmpData(end,channel) = tmpData(end-1,channel);
                         
                         % check if channel is Euler angles and if so,
                         % correct for turns over pi or -pi respectively
-                        if strfind(obj.label{jt},'Euler')
+                        if strfind(obj.label{channel},'Euler')
                             
 %                             cobj.mmfObj.Data.x(cobj.mmfObj.Data.x > 2*pi, jt) = cobj.mmfObj.Data.x(cobj.mmfObj.Data.x > 2*pi, jt) - 2*pi;
 %                             cobj.mmfObj.Data.x(cobj.mmfObj.Data.x < -2*pi, jt) = cobj.mmfObj.Data.x(cobj.mmfObj.Data.x < -2*pi, jt) + 2*pi;
 
-                            dataChannel = cobj.mmfObj.Data.x(:,jt);
+                            dataChannel = tmpData(:,channel);
                             
                             dataChannel(dataChannel > pi/dt) = dataChannel(dataChannel > pi/dt) - 2*pi/dt;
                             dataChannel(dataChannel < -pi/dt) = dataChannel(dataChannel < -pi/dt) + 2*pi/dt;
                             
-                            cobj.mmfObj.Data.x(:,jt) = dataChannel;
+                            tmpData(:,channel) = dataChannel;
                             
                         end
                         
                         % smoothing
 %                       %  cobj.mmfObj.Data.x(:,jt) = filtfilt_fast(b,a,cobj.mmfObj.Data.x(:,jt));
-                        obj.statusbar((Nch*(it-1)+jt));
+                        obj.statusbar((Nch*(derivative-1)+channel));
                     end
                     
+                    % creating the new object and filling the derived data
+                    
+                    commandHistory.varargin{1} = derivative;
+                    cobj = tmpObj.copyobj(commandHistory);
+                    
+                    cobj.mmfObj.Data.x = tmpData;
+                    
+                    
                     % soft masking
+                    
+                    if derivative==1, artifactIndices = cobj.artifactMask(:) ~= 0;end
                     if any(artifactIndices), cobj.mmfObj.Data.x(artifactIndices) = cobj.mmfObj.Data.x(artifactIndices).*(1-cobj.artifactMask(artifactIndices));end
                     tmpObj = cobj;
+                    
                 end
                 if dispCommand
                     disp('Running:');
@@ -1314,11 +1323,13 @@ classdef mocapRigidBody < dataStream
             dispCommand = false;
             if  ~isempty(varargin) && length(varargin{1}) == 1 && isnumeric(varargin{1}) && varargin{1} == -1
                 prefObj = [...
-                    PropertyGridField('channel',1,'DisplayName','Channel','Category','Main','Description','Channel number. Enter desired channel to generate marker from and hit return.')...
-                    PropertyGridField('criteria','maxima','Type',PropertyType('char', 'row', {'maxima', 'minima','zero crossing'}),'DisplayName','Criteria','Category','Main','Description','Criterion for making the event, could be: maxima, minima, zero crossing.')...
-                    PropertyGridField('correctSign',1,'DisplayName','Correct sign criteria','Category','Main','Description','Enter if max/min criteria should only be fulfilled if sign is pos/neg and hit return.')...
-                    PropertyGridField('eventType','max','DisplayName','Marker name','Category','Main','Description','Enter the name of the new event marker and hit return.')...
-                    PropertyGridField('inhibitionWindow',0.1,'DisplayName','Inhibition window length','Category','Main','Description','Enter the length of the inhibition window and hit return. Is multiplied by sampling rate!')...
+                    PropertyGridField('channel',4,'DisplayName','Channel','Category','Main','Description','Channel number. Enter desired channel to generate marker from and hit return.')...
+                    PropertyGridField('criteria','movements','Type',PropertyType('char', 'row', {'maxima', 'minima','zero crossing', 'sliding window deviation', 'movements'}),'DisplayName','Criteria','Category','Main','Description','Criterion for making the event, could be: maxima, minima, zero crossing, sliding window deviation, movements.')...
+                    PropertyGridField('correctSign',0,'DisplayName','Correct sign criteria','Category','Main','Description','Enter if max/min criteria should only be fulfilled if sign is pos/neg and hit return.')...
+                    PropertyGridField('eventType','','DisplayName','Marker name','Category','Main','Description','Enter the name of the new event marker and hit return.')...
+                    PropertyGridField('inhibitionWindow',2,'DisplayName','Inhibition/sliding window length','Category','Main','Description','Enter the length of the inhibition window and hit return. Is multiplied by sampling rate!')...
+                    PropertyGridField('movementThreshold',10,'DisplayName','Threshold for detecting a general movement in the velocity in percentage','Category','Main','Description','Enter the threshold and hit return.')...
+                    PropertyGridField('movementOnsetThresholdFine',5,'DisplayName','Threshold for detecting a movement onset in the velocity in percentage once a movement has been detected','Category','Main','Description','Enter the threshold and hit return.')...
                     ];
                 
                 hFigure = figure('MenuBar','none','Name','Create event marker','NumberTitle', 'off','Toolbar', 'none','Units','pixels','Color',obj.container.container.preferences.gui.backgroundColor,...
@@ -1342,6 +1353,8 @@ classdef mocapRigidBody < dataStream
                 varargin{3} = val.eventType;
                 varargin{4} = val.inhibitionWindow;
                 varargin{5} = val.correctSign;
+                varargin{6} = val.movementThreshold;
+                varargin{7} = val.movementOnsetThresholdFine;
                 dispCommand = true;
             end
             
@@ -1355,10 +1368,12 @@ classdef mocapRigidBody < dataStream
                 inhibitedWindowLength = ceil(obj.samplingRate*varargin{4});
             end
             if Narg < 5, correctSign = 0;   else correctSign = varargin{5}; end
-            if Narg < 6
+            if Narg < 6, movementThreshold = 0.05;   else movementThreshold = varargin{6} / 100; end
+            if Narg < 7, movementOnsetThresholdFine = 0.05;   else movementOnsetThresholdFine = varargin{7} / 100; end
+            if Narg < 8
                 segmentObj = basicSegment([obj.timeStamp(1),obj.timeStamp(end)]);
             else
-                segmentObj = varargin{6};
+                segmentObj = varargin{8};
             end
             
             if dispCommand
@@ -1372,17 +1387,19 @@ classdef mocapRigidBody < dataStream
             
             if isempty(eventType)
                 switch criteria
-                    case 'maxima',        eventType = 'max';
-                    case 'zero crossing', eventType = 'zc';
-                    case 'minima',        eventType = 'min';
-                    otherwise,            eventType = 'noname';
+                    case 'maxima',                      eventType = 'max';
+                    case 'zero crossing',               eventType = 'zc';
+                    case 'minima',                      eventType = 'min';
+                    case 'sliding window deviation',    eventType = 'slideDev';
+                    case 'movements',                   eventType = {'onset', 'offset'};
+                    otherwise,                          eventType = 'noname';
                 end
             end
             %signal = obj.magnitude(:,channel);
             signal = obj.mmfObj.data.x(:,channel);
             
             for it=1:numberOfSegments % default is 1 segment: the whole data stream
-                I = searchInSegment(signal(index(it,1):index(it,2)),criteria,inhibitedWindowLength);
+                [I J] = searchInSegment(signal(index(it,1):index(it,2)),criteria,inhibitedWindowLength,movementThreshold, movementOnsetThresholdFine);
                 if correctSign && (strcmp(criteria, 'maxima') || strcmp(criteria, 'minima'))
                     if strcmp(criteria, 'minima')
                         signal = -signal;
@@ -1391,10 +1408,19 @@ classdef mocapRigidBody < dataStream
                 end
                 
                 time = obj.timeStamp(index(it,1):index(it,2));
-                latency = obj.getTimeIndex(time(I));
+                latencyI = obj.getTimeIndex(time(I));
                 
+                if J
+                    time = obj.timeStamp(index(it,1):index(it,2));
+                    latencyJ = obj.getTimeIndex(time(J));
+                end
                 
-                obj.event = obj.event.addEvent(latency,eventType);
+                if ~iscell(eventType) 
+                    obj.event = obj.event.addEvent(latencyI,eventType);
+                else
+                    obj.event = obj.event.addEvent(latencyI,eventType{1});
+                    obj.event = obj.event.addEvent(latencyJ,eventType{2});
+                end
             end
             if dispCommand, disp('Done.');end
         end
