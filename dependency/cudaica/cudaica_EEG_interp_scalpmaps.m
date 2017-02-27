@@ -26,7 +26,7 @@ if ~isa(X,'double'), X = double(X);end
 r = rank(X);
 
 if r < min([n,p])
-    if nargin < 2, channels2remove = (r+1:n);end
+    if nargin < 2, channels2remove = [];end
     elec = [[EEG.chanlocs.X]' [EEG.chanlocs.Y]' [EEG.chanlocs.Z]'];
     loc_i = channels2remove;
     loc = setdiff(1:n, loc_i);
@@ -45,9 +45,14 @@ if r < min([n,p])
     S = zeros(n);   S(loc,loc) = sph;
     iW = zeros(n); iW(loc,loc) = icawinv;
 
-    W(loc_i,loc_i)  = interpolator*wts*interpolator';
-    S(loc_i,loc_i)  = interpolator*sph*interpolator';
-    iW(loc_i,loc_i) = interpolator*icawinv*interpolator';
+    W(loc_i,loc)  = interpolator*wts;
+    W(loc,loc_i)  = wts*interpolator';
+    
+    S(loc_i,loc)  = interpolator*sph;
+    S(loc,loc_i)  = sph*interpolator';
+    
+    iW(loc_i,loc) = interpolator*icawinv;
+    iW(loc,loc_i) = icawinv*interpolator';
     
     icawinv = iW;
     wts = W;
@@ -69,4 +74,5 @@ if length(loc_i)+r < n
     [~, locs] = sort(elec(loc,3));
     loc_i = [loc_i loc(locs(1:n-(length(loc_i)+r)))];
 end
+loc_i = sort(loc_i);
 end
