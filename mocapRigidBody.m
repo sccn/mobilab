@@ -1385,7 +1385,7 @@ classdef mocapRigidBody < dataStream
             index = obj.getTimeIndex([segmentObj.startLatency segmentObj.endLatency]);
             index = reshape(index,numberOfSegments,2);
             
-            if strcmp(eventType,'') || strcmp(eventType{1},'default')
+            if strcmp(eventType(1),'') || strcmp(eventType{1},'default')
                 switch criteria
                     case 'maxima',                      eventType = {'max'};
                     case 'zero crossing',               eventType = {'zc'};
