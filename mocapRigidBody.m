@@ -1326,7 +1326,7 @@ classdef mocapRigidBody < dataStream
                     PropertyGridField('channel',4,'DisplayName','Channel','Category','Main','Description','Channel number. Enter desired channel to generate marker from and hit return.')...
                     PropertyGridField('criteria','movements','Type',PropertyType('char', 'row', {'maxima', 'minima','zero crossing', 'sliding window deviation', 'movements'}),'DisplayName','Criteria','Category','Main','Description','Criterion for making the event, could be: maxima, minima, zero crossing, sliding window deviation, movements.')...
                     PropertyGridField('correctSign',0,'DisplayName','Correct sign criteria','Category','Main','Description','Enter if max/min criteria should only be fulfilled if sign is pos/neg and hit return.')...
-                    PropertyGridField('eventType','','DisplayName','Marker name','Category','Main','Description','Enter the name of the new event marker and hit return.')...
+                    PropertyGridField('eventType','head_movement:onset head_movement:offset','DisplayName','Marker name','Category','Main','Description','Enter the name of the new event marker and hit return.')...
                     PropertyGridField('inhibitionWindow',2,'DisplayName','Inhibition/sliding window length','Category','Main','Description','Enter the length of the inhibition window and hit return. Is multiplied by sampling rate!')...
                     PropertyGridField('movementThreshold',10,'DisplayName','Threshold for detecting a general movement in the velocity in percentage','Category','Main','Description','Enter the threshold and hit return.')...
                     PropertyGridField('movementOnsetThresholdFine',5,'DisplayName','Threshold for detecting a movement onset in the velocity in percentage once a movement has been detected','Category','Main','Description','Enter the threshold and hit return.')...
@@ -1361,7 +1361,7 @@ classdef mocapRigidBody < dataStream
             Narg = length(varargin);
             if Narg < 1, channel   = 1;       else channel   = varargin{1}(1);end
             if Narg < 2, criteria  = 'maxima';else criteria  = varargin{2};   end
-            if Narg < 3, eventType = [];else eventType = varargin{3};   end
+            if Narg < 3, eventType = [];else eventType = strsplit(varargin{3}, ' ');   end
             if Narg < 4
                 inhibitedWindowLength = obj.samplingRate;
             else
@@ -1385,14 +1385,14 @@ classdef mocapRigidBody < dataStream
             index = obj.getTimeIndex([segmentObj.startLatency segmentObj.endLatency]);
             index = reshape(index,numberOfSegments,2);
             
-            if isempty(eventType)
+            if strcmp(eventType,'') || strcmp(eventType{1},'default')
                 switch criteria
-                    case 'maxima',                      eventType = 'max';
-                    case 'zero crossing',               eventType = 'zc';
-                    case 'minima',                      eventType = 'min';
-                    case 'sliding window deviation',    eventType = 'slideDev';
+                    case 'maxima',                      eventType = {'max'};
+                    case 'zero crossing',               eventType = {'zc'};
+                    case 'minima',                      eventType = {'min'};
+                    case 'sliding window deviation',    eventType = {'slideDev'};
                     case 'movements',                   eventType = {'onset', 'offset'};
-                    otherwise,                          eventType = 'noname';
+                    otherwise,                          eventType = {'noname'};
                 end
             end
             %signal = obj.magnitude(:,channel);
@@ -1409,18 +1409,14 @@ classdef mocapRigidBody < dataStream
                 
                 time = obj.timeStamp(index(it,1):index(it,2));
                 latencyI = obj.getTimeIndex(time(I));
+                 obj.event = obj.event.addEvent(latencyI,eventType{1});
                 
-                if J
+                if J ~= 0
                     time = obj.timeStamp(index(it,1):index(it,2));
                     latencyJ = obj.getTimeIndex(time(J));
-                end
-                
-                if ~iscell(eventType) 
-                    obj.event = obj.event.addEvent(latencyI,eventType);
-                else
-                    obj.event = obj.event.addEvent(latencyI,eventType{1});
                     obj.event = obj.event.addEvent(latencyJ,eventType{2});
                 end
+                
             end
             if dispCommand, disp('Done.');end
         end

@@ -1,9 +1,12 @@
 function [I,J,onset,offset] = searchInSegment(data,fun,h,movementThreshold, movementOnsetThresholdFine,alpha)
 if nargin < 2, fun = 'maxima';end
 if nargin < 3, h = 300;end
-if nargin < 4, movementThreshold = 0.05;end
-if nargin < 5, alpha = 0.05;end
+if nargin < 4, movementThreshold = 0.1;end
+if nargin < 5, movementOnsetThresholdFine = 0.05; end
+if nargin < 6, alpha = 0.05;end
 h = round(h);
+
+[I,J] = deal(0);
 
 % if strcmp(fun,'zero crossing')
 %     x_mx = diff(x);
@@ -284,19 +287,4 @@ for it=1:length(I)
 end
 onset(onset==0) = [];
 offset(offset==0) = [];
-end
-
-function ratio = ratioOutliersOfRegression(data)
-
-    dataToTimepoint = data(1:round(length(data)/3));
-    xToTimePoint = 1:length(dataToTimepoint);
-    xToTimePoint = xToTimePoint';
-    X = [ones(size(xToTimePoint)) xToTimePoint];
-    [B,BINT,R,RINT,stats] = regress(dataToTimepoint,X);
-%     timePoint
-%     RINT
-    
-    detected = data(end) < B(1)+length(data)*B(2)- sqrt(stats(4))*110;
-    ratio = ((B(1)+length(data)*B(2)) - data(end)) / sqrt(stats(4));
-        
 end
