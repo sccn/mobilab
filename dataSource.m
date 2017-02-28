@@ -517,10 +517,15 @@ classdef dataSource < handle
                         end
                     case 'dataStream', channelType = 'EEG';
                     case 'mocap',      channelType = 'Mocap';
+                    case 'mocapRigidBody',  channelType = 'Mocap';
                     case 'wii',        channelType = 'Wii';
                     otherwise,         channelType = 'Other';
                 end
-                for jt=1:streamObjList{k}.numberOfChannels, chanlocs(locChannels(jt)).type = channelType;end
+                for jt=1:streamObjList{k}.numberOfChannels 
+                    if ~isa(streamObjList{k},'eeg')
+                        chanlocs(locChannels(jt)).type = channelType;
+                    end
+                end
             end
             EEG.chanlocs = chanlocs;
             EEG.etc.mobi.sessionUUID = streamObjList{1}.sessionUUID;
@@ -863,18 +868,18 @@ try
     tfid = fopen(tmpFile,'w');
     tol = 4;
     for it=1:N
-        srOld = 0;
-        if streamObj{1}.samplingRate - streamObj{it}.samplingRate > tol
-            srOld = streamObj{it}.samplingRate;
-            streamObj{it} = streamObj{it}.copyobj;
-            streamObj{it}.samplingRate = streamObj{1}.samplingRate;
-        end
+%         srOld = 0;
+%         if streamObj{1}.samplingRate - streamObj{it}.samplingRate > tol
+%             srOld = streamObj{it}.samplingRate;
+%             streamObj{it} = streamObj{it}.copyobj;
+%             streamObj{it}.samplingRate = streamObj{1}.samplingRate;
+%         end
         
         y = streamObj{it}.mmfObj.Data.x;  % saving memory, streamObj{it}.data will create in memory the variable, streamObj{it}.mmfObj.Data.x is a lazy copy
         ind = unique(streamObj{it}.getTimeIndex(xi));
         x = streamObj{it}.timeStamp(ind)';
         for ch=1:streamObj{it}.numberOfChannels
-            yi = interp1(x,y(ind,ch),xi,'nearest');
+            yi = interp1(x,y(ind,ch),xi,'spline');
             fwrite(tfid,yi(:),precision);
         end
         % if srOld, streamObj{it}.samplingRate = srOld;end
@@ -893,7 +898,7 @@ try
         fwrite(fid,writeThis(:),precision);
         streamObj{1}.container.container.statusbar(it);
     end
-    streamObj{1}.container.container.statusbar(inf);
+    streamObj{1}.container.container.statusbar(1);
     fclose(fid);
     clear mmfObj
     java.io.File(tmpFile).delete();
