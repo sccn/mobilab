@@ -905,23 +905,35 @@ try
     Ntimepoints = Nxi;
     Nchannels = totalNumberOfChannels;
     
-    type = streamObj{1}.event.label(:);
-    latency = streamObj{1}.timeStamp(streamObj{1}.event.latencyInFrame(:));
-    hedTag = streamObj{1}.event.hedTag(:);
-    
-    for it=2:length(streamObj)
-        type = cat(1,type,streamObj{it}.event.label(:));
-        hedTag = cat(1,hedTag,streamObj{it}.event.hedTag(:));
-        latency = [latency streamObj{1}.timeStamp(streamObj{it}.event.latencyInFrame(:))]; %#ok
-    end
-    
-    for it=1:length(eventcodesObj)
+%     type = streamObj{1}.event.label(:);
+%     latency = streamObj{1}.timeStamp(streamObj{1}.event.latencyInFrame(:));
+%     hedTag = streamObj{1}.event.hedTag(:);
+%     
+%     for it=2:length(streamObj)
+%         type = cat(1,type,streamObj{it}.event.label(:));
+%         hedTag = cat(1,hedTag,streamObj{it}.event.hedTag(:));
+%         latency = [latency streamObj{1}.timeStamp(streamObj{it}.event.latencyInFrame(:))]; %#ok
+%     end
+%     
+%     for it=1:length(eventcodesObj)
+%         if ~isempty(eventcodesObj{it}.event.latencyInFrame)
+%             type = cat(1,type,eventcodesObj{it}.event.label(:));
+%             hedTag = cat(1,hedTag,eventcodesObj{it}.event.hedTag(:));
+%             tmp = eventcodesObj{it}.timeStamp(eventcodesObj{it}.event.latencyInFrame);
+%             tmp = streamObj{1}.getTimeIndex(tmp);
+%             latency = [latency streamObj{1}.timeStamp(tmp)]; %#ok
+%         end
+%     end
+
+    type    = eventcodesObj{1}.event.label(:);
+    latency = eventcodesObj{1}.timeStamp(eventcodesObj{1}.event.latencyInFrame(:));
+    hedTag  = eventcodesObj{1}.event.hedTag(:);
+
+    for it=2:length(eventcodesObj)
         if ~isempty(eventcodesObj{it}.event.latencyInFrame)
             type = cat(1,type,eventcodesObj{it}.event.label(:));
             hedTag = cat(1,hedTag,eventcodesObj{it}.event.hedTag(:));
-            tmp = eventcodesObj{it}.timeStamp(eventcodesObj{it}.event.latencyInFrame);
-            tmp = streamObj{1}.getTimeIndex(tmp);
-            latency = [latency streamObj{1}.timeStamp(tmp)]; %#ok
+            latency = [latency eventcodesObj{it}.timeStamp(eventcodesObj{it}.event.latencyInFrame)]; %#ok
         end
     end
     
