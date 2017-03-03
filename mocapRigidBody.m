@@ -245,30 +245,34 @@ classdef mocapRigidBody < dataStream
                 keepOnlyRigid = inputdlg2(prompt,dlg_title,num_lines,def);
                 if isempty(varargin), return;end
                 dispCommand = true;
-            end
-            
-            if strcmp(keepOnlyRigid,'yes')
+                
+                if strcmp(keepOnlyRigid,'yes')
                 
                 channelsToKeep = rigidChannels';
                 
+                else
+                    prompt = {'Enter channels to keep (pre-entered channels are rigid body channels). ALL OTHER CHANNELS ARE THROWN OUT!'};
+                    dlg_title = 'Input parameters';
+                    num_lines = 1;
+                    def = {num2str(rigidChannels')};
+                    channelsToKeep = inputdlg2(prompt,dlg_title,num_lines,def);
+                    channelsToKeep = str2num(channelsToKeep{1});
+                    if isempty(varargin), return;end
+                    dispCommand = true;
+
+                end
             else
-                prompt = {'Enter channels to keep (pre-entered channels are rigid body channels). ALL OTHER CHANNELS ARE THROWN OUT!'};
-                dlg_title = 'Input parameters';
-                num_lines = 1;
-                def = {num2str(rigidChannels')};
-                channelsToKeep = inputdlg2(prompt,dlg_title,num_lines,def);
-                channelsToKeep = str2num(channelsToKeep{1});
-                if isempty(varargin), return;end
-                dispCommand = true;
-                
+                channelsToKeep = [1: obj.numberOfChannels];
+                channelsToKeep(varargin{1}) = [];
             end
+            
+            
             
             
             
             commandHistory.commandName = 'throwOutChannels';
             commandHistory.uuid        = obj.uuid;
-            commandHistory.varargin{1}    = 'channelsToKeep';
-            commandHistory.varargin{2}    = channelsToKeep;
+            commandHistory.varargin{1} = channelsToKeep;
             cobj = obj.copyobj(commandHistory);
             cobj.mmfObj.Data.x = obj.mmfObj.Data.x(:,channelsToKeep);
             
@@ -827,7 +831,7 @@ classdef mocapRigidBody < dataStream
                 dispCommand = true;
             end
             if nargin < 2, order = 3;else order = varargin{1};end
-            if nargin < 3, fc = 5;  else fc = varargin{2};end
+            if nargin < 3, fc = 6;  else fc = varargin{2};end
             if nargin < 4, channels = 1:obj.numberOfChannels;else channels = varargin{3};end
             if nargin < 5, filterOrder = 128;else filterOrder = varargin{4};end
             if ~isnumeric(order), error('prog:input','First argument must be the order of the derivative (1=veloc, 2=acc, 3=jerk).');end
@@ -1691,7 +1695,7 @@ classdef mocapRigidBody < dataStream
                     prename = 'throwOut_';
                     metadata.name = [prename metadata.name];
                     metadata.binFile = fullfile(path,[metadata.name '_' char(metadata.uuid) '_' metadata.sessionUUID '.bin']);
-                    channels = commandHistory.varargin{2};
+                    channels = commandHistory.varargin{1};
                     metadata.numberOfChannels = length(channels);
                     metadata.label = obj.label(channels);
                     metadata.artifactMask = obj.artifactMask(:,channels);
