@@ -237,7 +237,7 @@ classdef mocapPhasespace < dataStream
             if length(varargin) == 1 && iscell(varargin{1}), varargin = varargin{1};end
             dispCommand = false;
             
-            if ~isempty(varargin) && iscell(varargin) && isnumeric(varargin{1}) && varargin{1} == -1
+            if ~isempty(varargin) && iscell(varargin) && isnumeric(varargin{1}) && varargin{1}(1) == -1
                 prompt = {'Keep only rigid body channels? (''yes'', ''no'')'};
                 dlg_title = 'Input parameters';
                 num_lines = 1;
@@ -245,30 +245,34 @@ classdef mocapPhasespace < dataStream
                 keepOnlyRigid = inputdlg2(prompt,dlg_title,num_lines,def);
                 if isempty(varargin), return;end
                 dispCommand = true;
-            end
-            
-            if strcmp(keepOnlyRigid,'yes')
+                
+                if strcmp(keepOnlyRigid,'yes')
                 
                 channelsToKeep = rigidChannels';
                 
+                else
+                    prompt = {'Enter channels to keep (pre-entered channels are rigid body channels). ALL OTHER CHANNELS ARE THROWN OUT!'};
+                    dlg_title = 'Input parameters';
+                    num_lines = 1;
+                    def = {num2str(rigidChannels')};
+                    channelsToKeep = inputdlg2(prompt,dlg_title,num_lines,def);
+                    channelsToKeep = str2num(channelsToKeep{1});
+                    if isempty(varargin), return;end
+                    dispCommand = true;
+
+                end
             else
-                prompt = {'Enter channels to keep (pre-entered channels are rigid body channels). ALL OTHER CHANNELS ARE THROWN OUT!'};
-                dlg_title = 'Input parameters';
-                num_lines = 1;
-                def = {num2str(rigidChannels')};
-                channelsToKeep = inputdlg2(prompt,dlg_title,num_lines,def);
-                channelsToKeep = str2num(channelsToKeep{1});
-                if isempty(varargin), return;end
-                dispCommand = true;
-                
+                channelsToKeep = [1: obj.numberOfChannels];
+                channelsToKeep(varargin{1}) = [];
             end
+            
+            
             
             
             
             commandHistory.commandName = 'throwOutChannels';
             commandHistory.uuid        = obj.uuid;
-            commandHistory.varargin{1}    = 'channelsToKeep';
-            commandHistory.varargin{2}    = channelsToKeep;
+            commandHistory.varargin{1} = channelsToKeep;
             cobj = obj.copyobj(commandHistory);
             cobj.mmfObj.Data.x = obj.mmfObj.Data.x(:,channelsToKeep);
             
@@ -828,7 +832,7 @@ classdef mocapPhasespace < dataStream
                 dispCommand = true;
             end
             if nargin < 2, order = 3;else order = varargin{1};end
-            if nargin < 3, fc = 5;  else fc = varargin{2};end
+            if nargin < 3, fc = 6;  else fc = varargin{2};end
             if nargin < 4, channels = 1:obj.numberOfChannels;else channels = varargin{3};end
             if nargin < 5, filterOrder = 128;else filterOrder = varargin{4};end
             if ~isnumeric(order), error('prog:input','First argument must be the order of the derivative (1=veloc, 2=acc, 3=jerk).');end
@@ -854,41 +858,49 @@ classdef mocapPhasespace < dataStream
                 commandHistory.varargin{3} = channels;
                 obj.initStatusbar(1,N*Nch,'Computing time derivatives...');
                 tmpObj = obj;
-                for it=1:N
-                    commandHistory.varargin{1} = it;
-                    cobj = tmpObj.copyobj(commandHistory);
-                    if it==1, artifactIndices = cobj.artifactMask(:) ~= 0;end
-                    
-                    for jt=1:cobj.numberOfChannels
+                tmpData = obj.mmfObj.Data.x;
+                for derivative=1:N
+                    for channel=1:size(tmpData,2)
                         
                         % deriving
-                        cobj.mmfObj.Data.x(1:end-1,jt) = diff(cobj.mmfObj.Data.x(:,jt),1)/dt;
-                        cobj.mmfObj.Data.x(end,jt) = cobj.mmfObj.Data.x(end-1,jt);
+                        tmpData(1:end-1,channel) = diff(tmpData(:,channel),1)/dt;
+                        tmpData(end,channel) = tmpData(end-1,channel);
                         
                         % check if channel is Euler angles and if so,
                         % correct for turns over pi or -pi respectively
-                        if strfind(obj.label{jt},'Euler')
+                        if strfind(obj.label{channel},'Euler')
                             
 %                             cobj.mmfObj.Data.x(cobj.mmfObj.Data.x > 2*pi, jt) = cobj.mmfObj.Data.x(cobj.mmfObj.Data.x > 2*pi, jt) - 2*pi;
 %                             cobj.mmfObj.Data.x(cobj.mmfObj.Data.x < -2*pi, jt) = cobj.mmfObj.Data.x(cobj.mmfObj.Data.x < -2*pi, jt) + 2*pi;
 
-                            dataChannel = cobj.mmfObj.Data.x(:,jt);
+                            dataChannel = tmpData(:,channel);
                             
                             dataChannel(dataChannel > pi/dt) = dataChannel(dataChannel > pi/dt) - 2*pi/dt;
                             dataChannel(dataChannel < -pi/dt) = dataChannel(dataChannel < -pi/dt) + 2*pi/dt;
                             
-                            cobj.mmfObj.Data.x(:,jt) = dataChannel;
+                            tmpData(:,channel) = dataChannel;
                             
                         end
                         
                         % smoothing
 %                       %  cobj.mmfObj.Data.x(:,jt) = filtfilt_fast(b,a,cobj.mmfObj.Data.x(:,jt));
-                        obj.statusbar((Nch*(it-1)+jt));
+                        obj.statusbar((Nch*(derivative-1)+channel));
                     end
                     
+                    % creating the new object and filling the derived data
+                    
+                    commandHistory.varargin{1} = derivative;
+                    cobj = tmpObj.copyobj(commandHistory);
+                    
+                    cobj.mmfObj.Data.x = tmpData;
+                    
+                    
                     % soft masking
+                    
+                    if derivative==1, artifactIndices = cobj.artifactMask(:) ~= 0;end
                     if any(artifactIndices), cobj.mmfObj.Data.x(artifactIndices) = cobj.mmfObj.Data.x(artifactIndices).*(1-cobj.artifactMask(artifactIndices));end
                     tmpObj = cobj;
+                    
                 end
                 if dispCommand
                     disp('Running:');
@@ -1262,7 +1274,7 @@ classdef mocapPhasespace < dataStream
                 prompt = {'Which markers to keep?'};
                 dlg_title = 'Input parameters';
                 num_lines = 1;
-                def = {'movementOnset movementEnd'};
+                def = {''};
                 markersToKeep = inputdlg2(prompt,dlg_title,num_lines,def)
                 if isempty(varargin), return;end
                 markersToKeep = strsplit(markersToKeep{1}, ' ')
@@ -1316,11 +1328,14 @@ classdef mocapPhasespace < dataStream
             dispCommand = false;
             if  ~isempty(varargin) && length(varargin{1}) == 1 && isnumeric(varargin{1}) && varargin{1} == -1
                 prefObj = [...
-                    PropertyGridField('channel',1,'DisplayName','Channel','Category','Main','Description','Channel number. Enter desired channel to generate marker from and hit return.')...
-                    PropertyGridField('criteria','maxima','Type',PropertyType('char', 'row', {'maxima', 'minima','zero crossing'}),'DisplayName','Criteria','Category','Main','Description','Criterion for making the event, could be: maxima, minima, zero crossing.')...
-                    PropertyGridField('correctSign',1,'DisplayName','Correct sign criteria','Category','Main','Description','Enter if max/min criteria should only be fulfilled if sign is pos/neg and hit return.')...
-                    PropertyGridField('eventType','max','DisplayName','Marker name','Category','Main','Description','Enter the name of the new event marker and hit return.')...
-                    PropertyGridField('inhibitionWindow',0.1,'DisplayName','Inhibition window length','Category','Main','Description','Enter the length of the inhibition window and hit return. Is multiplied by sampling rate!')...
+                    PropertyGridField('channel',4,'DisplayName','Channel','Category','Main','Description','Channel number. Enter desired channel to generate marker from and hit return.')...
+                    PropertyGridField('criteria','movements','Type',PropertyType('char', 'row', {'maxima', 'minima','zero crossing', 'sliding window deviation', 'movements'}),'DisplayName','Criteria','Category','Main','Description','Criterion for making the event, could be: maxima, minima, zero crossing, sliding window deviation, movements.')...
+                    PropertyGridField('correctSign',0,'DisplayName','Correct sign criteria','Category','Main','Description','Enter if max/min criteria should only be fulfilled if sign is pos/neg and hit return.')...
+                    PropertyGridField('eventType','movement:start movement:end','DisplayName','Marker name','Category','Main','Description','Enter the name of the new event marker and hit return.')...
+                    PropertyGridField('inhibitionWindow',2,'DisplayName','Inhibition/sliding window length','Category','Main','Description','Enter the length of the inhibition window and hit return. Is multiplied by sampling rate!')...
+                    PropertyGridField('movementThreshold',0.07,'DisplayName','Threshold for detecting a general movement','Category','Main','Description','Threshold for detection, multiplied with the maximum value of the dataset. Enter the threshold and hit return.')...
+                    PropertyGridField('movementOnsetThresholdFine',5,'DisplayName','Threshold for detecting a movement onset in the velocity in percentage once a movement has been detected','Category','Main','Description','Enter the threshold and hit return.')...
+                    PropertyGridField('minimumDuration',286,'DisplayName','Minimum duration for a movement','Category','Main','Description','If ''movement'' category is chosen, only movements longer than this duration (in ms) are considered. Enter and hit return.')...
                     ];
                 
                 hFigure = figure('MenuBar','none','Name','Create event marker','NumberTitle', 'off','Toolbar', 'none','Units','pixels','Color',obj.container.container.preferences.gui.backgroundColor,...
@@ -1344,23 +1359,29 @@ classdef mocapPhasespace < dataStream
                 varargin{3} = val.eventType;
                 varargin{4} = val.inhibitionWindow;
                 varargin{5} = val.correctSign;
+                varargin{6} = val.movementThreshold;
+                varargin{7} = val.movementOnsetThresholdFine;
+                varargin{8} = val.minimumDuration;
                 dispCommand = true;
             end
             
             Narg = length(varargin);
             if Narg < 1, channel   = 1;       else channel   = varargin{1}(1);end
             if Narg < 2, criteria  = 'maxima';else criteria  = varargin{2};   end
-            if Narg < 3, eventType = [];else eventType = varargin{3};   end
+            if Narg < 3, eventType = [];else eventType = strsplit(varargin{3}, ' ');   end
             if Narg < 4
                 inhibitedWindowLength = obj.samplingRate;
             else
                 inhibitedWindowLength = ceil(obj.samplingRate*varargin{4});
             end
             if Narg < 5, correctSign = 0;   else correctSign = varargin{5}; end
-            if Narg < 6
+            if Narg < 6, movementThreshold = 1.2;   else movementThreshold = varargin{6}; end
+            if Narg < 7, movementOnsetThresholdFine = 0.05;   else movementOnsetThresholdFine = varargin{7} / 100; end
+            if Narg < 8, minimumDuration = 0; else minimumDuration = varargin{8}; end
+            if Narg < 9
                 segmentObj = basicSegment([obj.timeStamp(1),obj.timeStamp(end)]);
             else
-                segmentObj = varargin{6};
+                segmentObj = varargin{8};
             end
             
             if dispCommand
@@ -1372,19 +1393,24 @@ classdef mocapPhasespace < dataStream
             index = obj.getTimeIndex([segmentObj.startLatency segmentObj.endLatency]);
             index = reshape(index,numberOfSegments,2);
             
-            if isempty(eventType)
+            if strcmp(eventType(1),'') || strcmp(eventType{1},'default')
                 switch criteria
-                    case 'maxima',        eventType = 'max';
-                    case 'zero crossing', eventType = 'zc';
-                    case 'minima',        eventType = 'min';
-                    otherwise,            eventType = 'noname';
+                    case 'maxima',                      eventType = {'max'};
+                    case 'zero crossing',               eventType = {'zc'};
+                    case 'minima',                      eventType = {'min'};
+                    case 'sliding window deviation',    eventType = {'slideDev'};
+                    case 'movements',                   eventType = {'onset', 'offset'};
+                    otherwise,                          eventType = {'noname'};
                 end
             end
             %signal = obj.magnitude(:,channel);
             signal = obj.mmfObj.data.x(:,channel);
             
             for it=1:numberOfSegments % default is 1 segment: the whole data stream
-                I = searchInSegment(signal(index(it,1):index(it,2)),criteria,inhibitedWindowLength);
+                [I J] = searchInSegment(signal(index(it,1):index(it,2)),criteria,inhibitedWindowLength,movementThreshold, movementOnsetThresholdFine, round(obj.samplingRate*minimumDuration/1000));
+                if I == 0
+                    break
+                end
                 if correctSign && (strcmp(criteria, 'maxima') || strcmp(criteria, 'minima'))
                     if strcmp(criteria, 'minima')
                         signal = -signal;
@@ -1393,10 +1419,15 @@ classdef mocapPhasespace < dataStream
                 end
                 
                 time = obj.timeStamp(index(it,1):index(it,2));
-                latency = obj.getTimeIndex(time(I));
+                latencyI = obj.getTimeIndex(time(I));
+                 obj.event = obj.event.addEvent(latencyI,eventType{1});
                 
+                if J ~= 0
+                    time = obj.timeStamp(index(it,1):index(it,2));
+                    latencyJ = obj.getTimeIndex(time(J));
+                    obj.event = obj.event.addEvent(latencyJ,eventType{2});
+                end
                 
-                obj.event = obj.event.addEvent(latency,eventType);
             end
             if dispCommand, disp('Done.');end
         end
@@ -1671,6 +1702,16 @@ classdef mocapPhasespace < dataStream
                     prename = 'throwOut_';
                     metadata.name = [prename metadata.name];
                     metadata.binFile = fullfile(path,[metadata.name '_' char(metadata.uuid) '_' metadata.sessionUUID '.bin']);
+                    channels = commandHistory.varargin{1};
+                    metadata.numberOfChannels = length(channels);
+                    metadata.label = obj.label(channels);
+                    metadata.artifactMask = obj.artifactMask(:,channels);
+                    allocateFile(metadata.binFile,metadata.precision,[length(metadata.timeStamp) length(channels)]);
+                    
+                case 'degToRad'
+                    prename = 'deg2rad_';
+                    metadata.name = [prename metadata.name];
+                    metadata.binFile = fullfile(path,[metadata.name '_' char(metadata.uuid) '_' metadata.sessionUUID '.bin']);
                     channels = commandHistory.varargin{2};
                     metadata.numberOfChannels = length(channels);
                     metadata.label = obj.label(channels);
@@ -1826,6 +1867,10 @@ classdef mocapPhasespace < dataStream
 
             menuItem = javax.swing.JMenuItem('Throw out channels');
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'throwOutChannels',-1});
+            jmenu.add(menuItem);
+            %--
+            menuItem = javax.swing.JMenuItem('Convert from degree to radian');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'degToRad',-1});
             jmenu.add(menuItem);
             %--
             menuItem = javax.swing.JMenuItem('Unflip signs of jumping quaternion channels');

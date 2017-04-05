@@ -596,6 +596,7 @@ classdef dataSource < handle
                 zip(zipfile,files,folder);
                 for it=1:length(files), java.io.File([folder filesep files{it}]).delete();end
                 java.io.File(zipfile).renameTo(java.io.File([folder filesep 'lost+found.zip']));
+                disp('...done.');
             end
         end
     end

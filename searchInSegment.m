@@ -1,9 +1,10 @@
-function [I,J,onset,offset] = searchInSegment(data,fun,h,movementThreshold, movementOnsetThresholdFine,alpha)
+function [I,J,onset,offset] = searchInSegment(data,fun,h,movementThreshold, movementOnsetThresholdFine, minDuration, alpha)
 if nargin < 2, fun = 'maxima';end
 if nargin < 3, h = 300;end
-if nargin < 4, movementThreshold = 0.1;end
+if nargin < 4, movementThreshold = 1.2;end
 if nargin < 5, movementOnsetThresholdFine = 0.05; end
-if nargin < 6, alpha = 0.05;end
+if nargin < 6, minDuration = 0;end
+if nargin < 7, alpha = 0.05;end
 h = round(h);
 
 [I,J] = deal(0);
@@ -33,13 +34,16 @@ end
 
 if strcmp(fun,'movements')
     
-    clear I J
     numberOnsets = 0;
     numberOffsets = 0;
     
+    pd = fitdist(data,'tlocationscale');
+%     pi = paramci(pd,'alpha',movementThreshold);
     thresholdData = movementThreshold * max(abs(data));
+%     thresholdData = movementThreshold*pd.sigma; %      % of values are below threshold -> 1.2 seems good (80% of data below)
     
     movement = false;
+    positive = false;
     
     timePoint = h+1;
     lastOffsetTimePoint = 0;
@@ -47,7 +51,8 @@ if strcmp(fun,'movements')
     while timePoint <= length(data)-h
         step = 1;
         if ~movement
-            if abs(data(timePoint)) > thresholdData 
+            if abs(data(timePoint)) > thresholdData
+%             if data(timePoint) > pi(2,1) ||  data(timePoint) < pi(1,1)
                 
                 fineAccThreshold = max(abs(data(max(lastOffsetTimePoint+1,timePoint-h):timePoint+h)))*movementOnsetThresholdFine;
 
@@ -60,17 +65,30 @@ if strcmp(fun,'movements')
                 numberOnsets = numberOnsets + 1;
                 I(numberOnsets) = fineTimePoint;
                 movement = true;
+                
+                if sign(data(timePoint)) == 1
+                    positive = true;
+                else
+                    positive = false;
+                end
 
                 step = fineTimePoint-timePoint+1;
 
                 
             end
         else
-            if abs(data(timePoint)) < fineAccThreshold %sign(data(timePoint)) ~= sign(data(timePoint-1))
+            if data(timePoint) < fineAccThreshold && positive || data(timePoint) > -1*fineAccThreshold && ~positive
                 numberOffsets = numberOffsets + 1;
-                J(numberOffsets) = timePoint;
+                J(numberOffsets) = timePoint-1;
                 movement = false;
                 lastOffsetTimePoint = timePoint;
+                
+                if J(numberOffsets) - I(numberOnsets) <= minDuration
+                    I(numberOnsets) = [];
+                    J(numberOffsets) = [];
+                    numberOnsets = numberOnsets - 1;
+                    numberOffsets = numberOffsets -1;
+                end
             end
         end    
             

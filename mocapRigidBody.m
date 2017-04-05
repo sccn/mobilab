@@ -1273,7 +1273,7 @@ classdef mocapRigidBody < dataStream
                 prompt = {'Which markers to keep?'};
                 dlg_title = 'Input parameters';
                 num_lines = 1;
-                def = {'movementOnset movementEnd'};
+                def = {''};
                 markersToKeep = inputdlg2(prompt,dlg_title,num_lines,def)
                 if isempty(varargin), return;end
                 markersToKeep = strsplit(markersToKeep{1}, ' ')
@@ -1330,10 +1330,11 @@ classdef mocapRigidBody < dataStream
                     PropertyGridField('channel',4,'DisplayName','Channel','Category','Main','Description','Channel number. Enter desired channel to generate marker from and hit return.')...
                     PropertyGridField('criteria','movements','Type',PropertyType('char', 'row', {'maxima', 'minima','zero crossing', 'sliding window deviation', 'movements'}),'DisplayName','Criteria','Category','Main','Description','Criterion for making the event, could be: maxima, minima, zero crossing, sliding window deviation, movements.')...
                     PropertyGridField('correctSign',0,'DisplayName','Correct sign criteria','Category','Main','Description','Enter if max/min criteria should only be fulfilled if sign is pos/neg and hit return.')...
-                    PropertyGridField('eventType','head_movement:onset head_movement:offset','DisplayName','Marker name','Category','Main','Description','Enter the name of the new event marker and hit return.')...
+                    PropertyGridField('eventType','movement:start movement:end','DisplayName','Marker name','Category','Main','Description','Enter the name of the new event marker and hit return.')...
                     PropertyGridField('inhibitionWindow',2,'DisplayName','Inhibition/sliding window length','Category','Main','Description','Enter the length of the inhibition window and hit return. Is multiplied by sampling rate!')...
-                    PropertyGridField('movementThreshold',10,'DisplayName','Threshold for detecting a general movement in the velocity in percentage','Category','Main','Description','Enter the threshold and hit return.')...
+                    PropertyGridField('movementThreshold',0.07,'DisplayName','Threshold for detecting a general movement','Category','Main','Description','Threshold for detection, multiplied with the maximum value of the dataset. Enter the threshold and hit return.')...
                     PropertyGridField('movementOnsetThresholdFine',5,'DisplayName','Threshold for detecting a movement onset in the velocity in percentage once a movement has been detected','Category','Main','Description','Enter the threshold and hit return.')...
+                    PropertyGridField('minimumDuration',286,'DisplayName','Minimum duration for a movement','Category','Main','Description','If ''movement'' category is chosen, only movements longer than this duration (in ms) are considered. Enter and hit return.')...
                     ];
                 
                 hFigure = figure('MenuBar','none','Name','Create event marker','NumberTitle', 'off','Toolbar', 'none','Units','pixels','Color',obj.container.container.preferences.gui.backgroundColor,...
@@ -1359,6 +1360,7 @@ classdef mocapRigidBody < dataStream
                 varargin{5} = val.correctSign;
                 varargin{6} = val.movementThreshold;
                 varargin{7} = val.movementOnsetThresholdFine;
+                varargin{8} = val.minimumDuration;
                 dispCommand = true;
             end
             
@@ -1372,9 +1374,10 @@ classdef mocapRigidBody < dataStream
                 inhibitedWindowLength = ceil(obj.samplingRate*varargin{4});
             end
             if Narg < 5, correctSign = 0;   else correctSign = varargin{5}; end
-            if Narg < 6, movementThreshold = 0.05;   else movementThreshold = varargin{6} / 100; end
+            if Narg < 6, movementThreshold = 1.2;   else movementThreshold = varargin{6}; end
             if Narg < 7, movementOnsetThresholdFine = 0.05;   else movementOnsetThresholdFine = varargin{7} / 100; end
-            if Narg < 8
+            if Narg < 8, minimumDuration = 0; else minimumDuration = varargin{8}; end
+            if Narg < 9
                 segmentObj = basicSegment([obj.timeStamp(1),obj.timeStamp(end)]);
             else
                 segmentObj = varargin{8};
@@ -1403,7 +1406,10 @@ classdef mocapRigidBody < dataStream
             signal = obj.mmfObj.data.x(:,channel);
             
             for it=1:numberOfSegments % default is 1 segment: the whole data stream
-                [I J] = searchInSegment(signal(index(it,1):index(it,2)),criteria,inhibitedWindowLength,movementThreshold, movementOnsetThresholdFine);
+                [I J] = searchInSegment(signal(index(it,1):index(it,2)),criteria,inhibitedWindowLength,movementThreshold, movementOnsetThresholdFine, round(obj.samplingRate*minimumDuration/1000));
+                if I == 0
+                    break
+                end
                 if correctSign && (strcmp(criteria, 'maxima') || strcmp(criteria, 'minima'))
                     if strcmp(criteria, 'minima')
                         signal = -signal;
