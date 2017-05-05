@@ -1,6 +1,6 @@
 # How to build and install CUDAICA
 
-The following tutorial shows how to build and install CUDAICA binary and its companion helper programs. CUDAICA is an implementation of the Infomax ICA algorithm that is critical for speeding up orders of magnitude the decomposition of data into independent components.
+The following tutorial shows how to build and install CUDAICA binary and its helper programs. CUDAICA is an implementation of the Infomax ICA algorithm that is critical for speeding up orders of magnitude the decomposition of data into independent components.
 
 Although several tutorials already exist (see [cudaica on github](https://github.com/fraimondo/cudaica) and [cudaica on AAIL/UBA](https://liaa.dc.uba.ar/node/13)) we have found that the lack of details on those often leads to a cumbersome install experience. 
 
@@ -30,7 +30,7 @@ ldconfig	# configure dynamic linker run-time bindings
 ./reconf.sh
 ```
 
-5- Run the *configure* script (**not with the default options**). This is probably the most critical step since we will be tempted to use the defaults (naked *./configure* command), we strongly recommend to run the script specifying the compute capability of your GPU card (see [here](https://developer.nvidia.com/cuda-gpus)). In this example we used a Quadro K6000 with compute capability of 3.5, then we run the following command:
+5- Run the *configure* script (**not with the default options**). This is probably the most critical step since we will be tempted to use the defaults (nacked *./configure* command), we strongly recommend to run the script specifying the compute capability of your GPU card (see [here](https://developer.nvidia.com/cuda-gpus)). In this example we used a Quadro K6000 with compute capability of 3.5, then we run the following command:
 ```bash
 ./configure -with-cuda-arch=35
 ```
@@ -42,10 +42,10 @@ make
 sudo make install
 ```
 
-7- Make sure that CUDAICA was inscalled showing its help text:
+7- Make sure that CUDAICA was installed showing its help text:
 ```bash
 cudaica --help
 ```
-The ultimate proof that the installation was successful is running CUDAICA on some data within the MATLAB/EEGLAB enviroment (for rest purposes you can juts use random data), for which several wrappers exist (see [cudaica plugin](https://liaa.dc.uba.ar/node/20), [MoBILAB wrapper](https://github.com/aojeda/mobilab/tree/master/dependency/cudaica)  )
+The ultimate proof that the installation was successful is running CUDAICA on some data within the MATLAB/EEGLAB enviroment (for test purposes you can juts use random data), for which several wrappers exist (see [cudaica plugin](https://liaa.dc.uba.ar/node/20) [MoBILAB wrapper](https://github.com/aojeda/mobilab/tree/master/dependency/cudaica)  )
 
 That's it folks, enjoy!
