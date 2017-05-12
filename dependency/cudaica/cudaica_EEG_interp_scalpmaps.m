@@ -12,7 +12,7 @@ function EEG = cudaica_EEG_interp_scalpmaps(EEG, channels2remove)
 %
 % EEG: same structure but with the ICA fields
 % 
-% For more information visit http://liaa.dc.uba.ar/?q=node/20
+% For more information on the CUDAICA program visit http://liaa.dc.uba.ar/?q=node/20
 % See also: 
 %     Raimondo, F., Kamienkowski, J.E., Sigman, M., and Slezak, D.F., 2012. CUDAICA: GPU Optimization of Infomax-ICA EEG Analysis.
 %       Computational Intelligence and Neuroscience Volume 2012 (2012), Article ID 206972, 8 pages doi:10.1155/2012/206972
@@ -30,13 +30,9 @@ if r < min([n,p])
     elec = [[EEG.chanlocs.X]' [EEG.chanlocs.Y]' [EEG.chanlocs.Z]'];
     loc_i = channels2remove;
     loc = setdiff(1:n, loc_i);
-    Loc_i = loc_i;
-    for k=1:n
-        if k>1 && length(loc_i) == length(Loc_i), break;end
-        Loc_i = loc_i;
-        [loc_i,r] = get_full_rank(X, elec, loc, loc_i, n);
-        loc = setdiff(1:n, loc_i);
-    end
+    [loc_i,r] = get_full_rank(X, elec, loc, loc_i, n);
+    loc = setdiff(1:n, loc_i);
+    
     interpolator = geometricTools.linearInterpolator(elec(loc,:),elec(loc_i,:));
     [wts,sph] = cudaica(X(loc,:), 'verbose','off');
     icawinv = pinv(wts*sph);
