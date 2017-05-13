@@ -1,4 +1,4 @@
-function EEG = cudaica_lowrank(EEG, verbose)
+function EEG = cudaica_lowrank(EEG, verbose, minRank)
 % Perform ICA on rank defficient EEG data using PCA reduction.
 % This function is a minimalistic wrapper for computing the ICA decomposition
 % of EEG data on a GPU using cudaica. If no GPU is available it tries to
@@ -6,7 +6,12 @@ function EEG = cudaica_lowrank(EEG, verbose)
 %
 % Input:
 % EEG: EEGLAB's EEG structure
+% verbose: 'on/off' to activate text output
+% minRank: if the data is rank-deficient, minRank specifies the minimum
+%          number of dimensions to keep in the PCA reduction. If left 
+%          unset, we determine it using the rank function.
 %
+% Output:
 % EEG: same structure but with the ICA fields
 %
 % For more information visit http://liaa.dc.uba.ar/?q=node/20
@@ -20,18 +25,20 @@ if nargin < 2, verbose = 'off';end
 X = EEG.data(:,:);
 if ~isa(X,'double'), X = double(X);end
 [n,m] = size(X);
-r = rank(X);
-if r < n
-    disp('Removing null subspace from tha data before running ICA using PCA.');
+if nargin < 3, 
+    minRank = rank(X);
+end
+if minRank < n
+    fprintf('Removing null subspace of dim(%i) from tha data using PCA.\n',n-minRank);
     Cx = X*X'/m;
     [U,S] = eig(Cx);
     [~,sorting] = sort(diag(S),'descend');
-    Xr = U(:,sorting(1:end-(n-r)))'*X;
+    X = U(:,sorting(1:end-(n-minRank)))'*X;
     try
-        [wts,sph] = cudaica(Xr);
+        [wts,sph] = cudaica(X, 'verbose',verbose);
     catch
         disp('CUDAICA has failed, trying binica...');
-        [wts,sph] = binica(Xr);
+        [wts,sph] = binica(X);
     end
     wts = wts*sph*U(:,sorting(1:end-(n-r)))';
     sph = eye(n);
