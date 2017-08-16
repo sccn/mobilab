@@ -35,6 +35,9 @@ classdef dataSourceXDF < dataSource
             if ~any(ismember({'.xdf','.xdfz'},ext))
                 error('MoBILAB:isNotXDF',['dataSourceXDF cannot read ''' ext ''' format.']);
             end
+            if ~exist('load_xdf','file')
+                error('MoBILAB:xdfimportMissing','xdfimport plugin is missing.')
+            end
             uuid = generateUUID;
             obj@dataSource(mobiDataDirectory,uuid);
             obj.listenerHandle.Enabled = false;
