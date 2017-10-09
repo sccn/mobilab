@@ -193,7 +193,7 @@ classdef browserHandleList < handle
                     case 'mocapBrowser',                  obj.list{end+1} = mocapBrowserHandle(dStreamObj,defaults);
                     case 'videoStream1',                  obj.list{end+1} = videoStreamBrowserHandle1(dStreamObj,defaults);
                     case 'audioStream',                   obj.list{end+1} = audioStreamBrowserHandle(dStreamObj,defaults);
-                    case 'markerStream',                  defaults.partOfMultiStream = 1; obj.list{end+1} = timelineBrowserHandle(dStreamObj,defaults);    
+                    case 'markerStream',                  obj.list{end+1} = dataStreamBrowser(dStreamObj,defaults);    
                     case 'sceneStream',                   obj.list{end+1} = sceneBrowserHandle(dStreamObj,defaults);
                     case 'generalizedCoordinatesBrowser', obj.list{end+1} = generalizedCoordinatesBrowserHandle(dStreamObj,defaults);
                     case 'phaseSpaceBrowser',             obj.list{end+1} = phaseSpaceBrowserHandle(dStreamObj,defaults);
