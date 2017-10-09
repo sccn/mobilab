@@ -35,6 +35,9 @@ classdef dataSourceXDF < dataSource
             if ~any(ismember({'.xdf','.xdfz'},ext))
                 error('MoBILAB:isNotXDF',['dataSourceXDF cannot read ''' ext ''' format.']);
             end
+            if ~exist('load_xdf','file')
+                error('MoBILAB:xdfimportMissing','xdfimport plugin is missing.')
+            end
             uuid = generateUUID;
             obj@dataSource(mobiDataDirectory,uuid);
             obj.listenerHandle.Enabled = false;
@@ -180,6 +183,8 @@ classdef dataSourceXDF < dataSource
                                         channelType{it} = streams{stream_count}.info.desc.channels.channel.type;
                                     elseif isfield(streams{stream_count}.info.desc.channels,'channel') && numberOfChannels == 1 && ~isfield(streams{stream_count}.info.desc.channels.channel,'type')
                                         channelType{it} = type;
+                                    elseif isfield(streams{stream_count}.info.desc.channels,'type')
+                                        channelType{it} = streams{stream_count}.info.desc.channels.type;
                                     elseif isfield(streams{stream_count}.info.desc.channels,'channel') && isfield(streams{stream_count}.info.desc.channels.channel{it},'type')
                                         channelType{it} = streams{stream_count}.info.desc.channels.channel{it}.type;
                                     elseif numberOfChannels > 1 && isfield(streams{stream_count}.info.desc,'channels') && isfield(streams{stream_count}.info.desc.channels{it},'type')
