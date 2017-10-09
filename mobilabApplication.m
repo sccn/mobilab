@@ -558,7 +558,7 @@ classdef mobilabApplication < handle
             if ~obj.isGuiActive, return;end
             if nargin < 2, value = inf;end
             if nargin == 3, obj.statusBar.setText(msg);end
-            set(obj.progressBar,'Value',value);
+            set(obj.progressBar,'Value',min(value, obj.progressBar.getMaximum));
             if value >= obj.progressBar.getMaximum
                 obj.statusBar.setText('Done!!!');
                 pause(1);

@@ -80,7 +80,8 @@ classdef dataSource < handle
             if ~isa(varargin{3},'mobilabApplication')
                 try containerObj = evalin('base','mobilab');
                     if ~isempty(containerObj.allStreams) && isvalid(containerObj.allStreams), delete(containerObj.allStreams);end
-                catch containerObj = mobilabApplication(obj);  %#ok
+                catch
+                    containerObj = mobilabApplication(obj);
                     assignin('base','mobilab',containerObj)
                 end
             else containerObj = varargin{3};
@@ -515,10 +516,11 @@ classdef dataSource < handle
                                 chanlocs(locChannels(jt)).theta = -chanlocs(locChannels(jt)).theta*180/pi;
                             end
                         end
+                        channelType = 'EEG';
                     case 'dataStream', channelType = 'EEG';
                     case 'mocap',      channelType = 'Mocap';
                     case 'wii',        channelType = 'Wii';
-                    otherwise,         channelType = 'Other';
+                    otherwise,         channelType = class(streamObjList{k});
                 end
                 for jt=1:streamObjList{k}.numberOfChannels, chanlocs(locChannels(jt)).type = channelType;end
             end
@@ -861,15 +863,7 @@ try
     [~,filename] = fileparts(tempname);
     tmpFile = [fileparts(EEG.data) filesep filename];
     tfid = fopen(tmpFile,'w');
-    tol = 4;
-    for it=1:N
-        srOld = 0;
-        if streamObj{1}.samplingRate - streamObj{it}.samplingRate > tol
-            srOld = streamObj{it}.samplingRate;
-            streamObj{it} = streamObj{it}.copyobj;
-            streamObj{it}.samplingRate = streamObj{1}.samplingRate;
-        end
-        
+    for it=1:N        
         y = streamObj{it}.mmfObj.Data.x;  % saving memory, streamObj{it}.data will create in memory the variable, streamObj{it}.mmfObj.Data.x is a lazy copy
         ind = unique(streamObj{it}.getTimeIndex(xi));
         x = streamObj{it}.timeStamp(ind)';

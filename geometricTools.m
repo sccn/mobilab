@@ -142,6 +142,26 @@ classdef geometricTools
             if normalize, W = bsxfun(@rdivide,W,sum(W,2)+eps);end
         end
         %%
+        function W = linearInterpolator(X,Xi)
+            try
+                X = X';
+                Xi = Xi';
+                W = ridgeGCV(Xi,X,speye(size(X,2)),100,0);
+                W = W';
+            catch
+                X = X';
+                Xi = Xi';
+                N = size(Xi,1);
+                M = size(X,1);
+                W = zeros(N,M);
+                for it=1:N
+                    d = sum(bsxfun(@minus,X,Xi(it,:)).^2,2);
+                    W(it,:) = 1./d;
+                end
+            end
+            W = bsxfun(@rdivide,W,sum(W,2)+eps);
+        end
+        %%
         function D = isInConvexHull(X,Xi)
             
             X = geometricTools.correctOrigin(X);
