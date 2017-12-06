@@ -90,6 +90,7 @@ setappdata(handles.axes1,'LegendColorbarManualSpace',1);
 setappdata(handles.axes1,'LegendColorbarReclaimSpace',1);
 xlabel(handles.axes1,'');
 ylabel(handles.axes1,'');
+zlabel(handles.axes1,'');
 browserObj.axesHandle = handles.axes1;
 browserObj.timeTexttHandle = handles.text6;
 browserObj.sliderHandle = handles.slider3;
