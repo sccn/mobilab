@@ -465,7 +465,7 @@ classdef dataSource < handle
             if ~ischar(newEEGfile), error('Third argument must be a char!!!');end
             
             if exist(newEEGfile,'file') && obj.container.isGuiActive && nargout < 1
-                choice = questdlg2(sprintf(['The file ' newEEGfile ' already exist.\nWould you like to overwrite it?']),'Warning!!!','Yes','No','No');
+                choice = questdlg(sprintf(['The file ' newEEGfile ' already exist.\nWould you like to overwrite it?']),'Warning!!!','Yes','No','No');
                 if ~strcmp(choice,'Yes')
                     [FileName,PathName] = uiputfile2({'*.set','EEGLAB (.set)'},'Select a location for the EEGLAB .set file');
                     if any([isnumeric(FileName) isnumeric(PathName)]), return;end
