@@ -479,11 +479,11 @@ classdef dataSource < handle
             EEG.filename = name;
             EEG.setname = name;
             EEG.data = [path filesep name '.fdt'];
-            [Ntimepoints,Nchannels,labels,streamObjList,type,latency,hedTag] = alignStreams(EEG,obj.item(dataObjIndex),obj.item(eventObjIndex));
+            [EEG.times, Ntimepoints,Nchannels,labels,streamObjList,type,latency,hedTag] = alignStreams(EEG,obj.item(dataObjIndex),obj.item(eventObjIndex));
             EEG.srate = streamObjList{1}.samplingRate;
             EEG.nbchan = Nchannels;
             EEG.pnts = Ntimepoints;
-            EEG.times = 1000*linspace(0,EEG.pnts-1)/EEG.srate;% from seconds to mili-seconds
+            EEG.times = 1000*EEG.times;% from seconds to milliseconds
             EEG.xmin  = EEG.times(1);
             EEG.xmax  = EEG.times(end);
             EEG.trials = 1;
@@ -825,7 +825,7 @@ end
 
 
 %% -------------------------------------------------------------------------
-function [Ntimepoints,Nchannels,labels,streamObj,type,latency,hedTag] = alignStreams(EEG,streamObj,eventcodesObj)
+function [timeStamps, Ntimepoints,Nchannels,labels,streamObj,type,latency,hedTag] = alignStreams(EEG,streamObj,eventcodesObj)
 % bytes = dir(streamObj.binFile);
 % bytes = bytes.bytes/1e9;
 % if bytes < 0.5
@@ -854,6 +854,11 @@ try
     limits = [max(limits(:,1)) min(limits(:,2))];
     [t0,tn] = streamObj{1}.getTimeIndex(limits);
     xi = streamObj{1}.timeStamp(t0:tn)';
+    timeStamps = xi-xi(1);
+    disc = abs(1./diff(xi)/streamObj{1}.samplingRate-1);
+    if any(disc > 0.24)
+        warning('There may be discontinuities in the data, check EEG.times to be sure and add boundary events if that is the case.');
+    end
     Nxi = length(xi);
     precision = 'single';
     
