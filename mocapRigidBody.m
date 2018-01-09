@@ -284,6 +284,61 @@ classdef mocapRigidBody < dataStream
         end
         
         %%
+        function cobj = addChannels(obj,varargin)
+            % 2 inputs: number of channels that are going to be inserted and a data matrix for those channels 
+            
+            if length(varargin) == 1 && iscell(varargin{1}), varargin = varargin{1};end
+            dispCommand = false;
+            
+            if ~isempty(varargin) && iscell(varargin) && isnumeric(varargin{1}) && varargin{1} == -1
+                error('Dont use the GUI for this, its not implemented.');
+%                 prompt = {'Keep only rigid body channels? (''yes'', ''no'')'};
+%                 dlg_title = 'Input parameters';
+%                 num_lines = 1;
+%                 def = {'yes'};
+%                 keepOnlyRigid = inputdlg2(prompt,dlg_title,num_lines,def);
+%                 if isempty(varargin), return;end
+%                 dispCommand = true;
+%                 
+%                 if strcmp(keepOnlyRigid,'yes')
+%                 
+%                 channelsToKeep = rigidChannels';
+%                 
+%                 else
+%                     prompt = {'Enter channels to keep (pre-entered channels are rigid body channels). ALL OTHER CHANNELS ARE THROWN OUT!'};
+%                     dlg_title = 'Input parameters';
+%                     num_lines = 1;
+%                     def = {num2str(rigidChannels')};
+%                     channelsToKeep = inputdlg2(prompt,dlg_title,num_lines,def);
+%                     channelsToKeep = str2num(channelsToKeep{1});
+%                     if isempty(varargin), return;end
+%                     dispCommand = true;
+% 
+%                 end
+            else
+                % Fucking dirty hack, dont judge me. Just use it correctly,
+                % otherwise there'll be hell for you ;) 
+                
+                allChannels = 1:(obj.numberOfChannels+varargin{1});
+                
+            end
+            
+            
+            
+            
+            
+            commandHistory.commandName = 'addChannels';
+            commandHistory.uuid        = obj.uuid;
+            commandHistory.varargin{1} = allChannels; % this is shit.
+            cobj = obj.copyobj(commandHistory);
+            
+            cobj.mmfObj.Data.x(:,1:obj.mmfObj.numberOfChannels) = obj.mmfObj.Data.x;
+            cobj.mmfObj.Data.x(:,obj.mmfObj.numberOfChannels+1:obj.mmfObj.numberOfChannels+1+varargin{1}) = varargin{2};
+            
+            
+        end
+        
+        %%
         function cobj = degToRad(obj,varargin)
             
             indPS = ~cellfun(@isempty,strfind(obj.label,'PS')); % find channels with Phasespace
@@ -1717,6 +1772,16 @@ classdef mocapRigidBody < dataStream
                     metadata.artifactMask = obj.artifactMask(:,channels);
                     allocateFile(metadata.binFile,metadata.precision,[length(metadata.timeStamp) length(channels)]);
                     
+                case 'addChannels'
+                    prename = 'addChan_';
+                    metadata.name = [prename metadata.name];
+                    metadata.binFile = fullfile(path,[metadata.name '_' char(metadata.uuid) '_' metadata.sessionUUID '.bin']);
+                    channels = commandHistory.varargin{1};
+                    metadata.numberOfChannels = length(channels);
+                    metadata.label = obj.label(channels);
+                    metadata.artifactMask = obj.artifactMask(:,channels);
+                    allocateFile(metadata.binFile,metadata.precision,[length(metadata.timeStamp) length(channels)]);
+                    
                 case 'degToRad'
                     prename = 'deg2rad_';
                     metadata.name = [prename metadata.name];
@@ -1876,6 +1941,10 @@ classdef mocapRigidBody < dataStream
 
             menuItem = javax.swing.JMenuItem('Throw out channels');
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'throwOutChannels',-1});
+            jmenu.add(menuItem);
+            %--
+            menuItem = javax.swing.JMenuItem('Add channels');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'addChannels',-1});
             jmenu.add(menuItem);
             %--
             menuItem = javax.swing.JMenuItem('Convert from degree to radian');
