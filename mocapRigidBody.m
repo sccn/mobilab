@@ -626,7 +626,16 @@ classdef mocapRigidBody < dataStream
 
                 channelEulerYaw = real(atan2(2.*(w.*x + y.*z),1 - 2.*(x.^2 + y.^2)));     % wikipedia roll (rotation about x)
                 channelEulerRoll = real(asin(2.*(w.*y - z.*x)));                             % wikipedia pitch (rotation about y)
-                channelEulerPitch = real(atan2(2.*(w.*z + x.*y),1-2.*(y.^2+z.^2)));          % wikipedia yaw (rotation about z)   
+                channelEulerPitch = real(atan2(2.*(w.*z + x.*y),1-2.*(y.^2+z.^2)));          % wikipedia yaw (rotation about z) 
+                
+                % convert from radian to degree
+                
+                factor = 180/pi;
+                
+                channelEulerYaw = channelEulerYaw*factor;     
+                channelEulerRoll = channelEulerRoll*factor;                            
+                channelEulerPitch = channelEulerPitch*factor;          
+               
                 
                 % actually fill new data set and labels
                 
@@ -844,7 +853,7 @@ classdef mocapRigidBody < dataStream
             
             Nch = length(channels);
             dt = 1/obj.samplingRate;
-            dt = 1e3*dt; % from seconds to mili seconds
+%             dt = 1e3*dt; % from seconds to mili seconds
             order = unique(1:max(order));
             N = max(order);
             try
@@ -874,8 +883,9 @@ classdef mocapRigidBody < dataStream
 
                             dataChannel = tmpData(:,channel);
                             
-                            dataChannel(dataChannel > pi/dt) = dataChannel(dataChannel > pi/dt) - 2*pi/dt;
-                            dataChannel(dataChannel < -pi/dt) = dataChannel(dataChannel < -pi/dt) + 2*pi/dt;
+                            % turning rates of more than half a circle per frame are not possible
+                            dataChannel(dataChannel > 180/dt) = dataChannel(dataChannel > 180/dt) - 2*180/dt;
+                            dataChannel(dataChannel < -180/dt) = dataChannel(dataChannel < -180/dt) + 2*180/dt;
                             
                             tmpData(:,channel) = dataChannel;
                             
@@ -1332,7 +1342,7 @@ classdef mocapRigidBody < dataStream
                     PropertyGridField('correctSign',0,'DisplayName','Correct sign criteria','Category','Main','Description','Enter if max/min criteria should only be fulfilled if sign is pos/neg and hit return.')...
                     PropertyGridField('eventType','movement:start movement:end','DisplayName','Marker name','Category','Main','Description','Enter the name of the new event marker and hit return.')...
                     PropertyGridField('inhibitionWindow',2,'DisplayName','Inhibition/sliding window length','Category','Main','Description','Enter the length of the inhibition window and hit return. Is multiplied by sampling rate!')...
-                    PropertyGridField('movementThreshold',0.07,'DisplayName','Threshold for detecting a general movement','Category','Main','Description','Threshold for detection, multiplied with the maximum value of the dataset. Enter the threshold and hit return.')...
+                    PropertyGridField('movementThreshold',65,'DisplayName','Threshold for detecting a general movement','Category','Main','Description','Percentage of values that should be lower than the threshold. Enter the threshold and hit return.')...
                     PropertyGridField('movementOnsetThresholdFine',5,'DisplayName','Threshold for detecting a movement onset in the velocity in percentage once a movement has been detected','Category','Main','Description','Enter the threshold and hit return.')...
                     PropertyGridField('minimumDuration',286,'DisplayName','Minimum duration for a movement','Category','Main','Description','If ''movement'' category is chosen, only movements longer than this duration (in ms) are considered. Enter and hit return.')...
                     ];

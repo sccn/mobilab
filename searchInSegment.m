@@ -37,11 +37,17 @@ if strcmp(fun,'movements')
     numberOnsets = 0;
     numberOffsets = 0;
     
-    pd = fitdist(data,'tlocationscale');
+%     pd = fitdist(data,'tlocationscale');
 %     pi = paramci(pd,'alpha',movementThreshold);
-    thresholdData = movementThreshold * max(abs(data));
+
 %     thresholdData = movementThreshold*pd.sigma; %      % of values are below threshold -> 1.2 seems good (80% of data below)
     
+%     thresholdData = movementThreshold * max(abs(data));
+    
+    sortedData = sort(abs(data));
+    thresholdData = sortedData(round(length(sortedData)/100*movementThreshold));
+    thresholdData / 0.07
+
     movement = false;
     positive = false;
     

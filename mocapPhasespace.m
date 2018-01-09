@@ -624,6 +624,15 @@ classdef mocapPhasespace < dataStream
                 channelEulerRoll = real(asin(2.*(w.*y - z.*x)));                             % wikipedia pitch (rotation about y)
                 channelEulerPitch = real(atan2(2.*(w.*z + x.*y),1-2.*(y.^2+z.^2)));          % wikipedia yaw (rotation about z)   
                 
+                % convert from radian to degree
+                
+                factor = 180/pi;
+                
+                channelEulerYaw = channelEulerYaw*factor;     
+                channelEulerRoll = channelEulerRoll*factor;                            
+                channelEulerPitch = channelEulerPitch*factor;          
+               
+                
                 % actually fill new data set and labels
                 
                 newData(:,endOfNonRigidChannels+rigidBody*6-5) = data(:,rigidChannels(rigidBody*7-6));
@@ -845,7 +854,7 @@ classdef mocapPhasespace < dataStream
             
             Nch = length(channels);
             dt = 1/obj.samplingRate;
-            dt = 1e3*dt; % from seconds to mili seconds
+%             dt = 1e3*dt; % from seconds to mili seconds
             order = unique(1:max(order));
             N = max(order);
             try
@@ -875,8 +884,9 @@ classdef mocapPhasespace < dataStream
 
                             dataChannel = tmpData(:,channel);
                             
-                            dataChannel(dataChannel > pi/dt) = dataChannel(dataChannel > pi/dt) - 2*pi/dt;
-                            dataChannel(dataChannel < -pi/dt) = dataChannel(dataChannel < -pi/dt) + 2*pi/dt;
+                            % turning rates of more than half a circle per frame are not possible
+                            dataChannel(dataChannel > 180/dt) = dataChannel(dataChannel > 180/dt) - 2*180/dt;
+                            dataChannel(dataChannel < -180/dt) = dataChannel(dataChannel < -180/dt) + 2*180/dt;
                             
                             tmpData(:,channel) = dataChannel;
                             
