@@ -19,6 +19,7 @@ classdef browserHandleList < handle
         list
         startTime
         endTime
+        maxSamplingRate;
     end
     properties(Constant,Hidden=true)
         %timerMult = 0.008;
@@ -209,6 +210,9 @@ classdef browserHandleList < handle
                         obj.list{end+1} = streamBrowserHandle(dStreamObj,defaults);
                         obj.bound = max([obj.bound obj.list{end}.windowWidth/2]);
                 end
+                for it=1:length(obj.list)
+                    obj.maxSamplingRate = max([obj.maxSamplingRate obj.list{it}.streamHandle.samplingRate]);
+                end
             catch ME
                 mobilab.lockGui;
                 ME.rethrow;
@@ -272,7 +276,15 @@ classdef browserHandleList < handle
             end
             delete(findobj(obj.master,'type','axes'));
         end
-        function play(obj), obj.state = ~obj.state;end
+        function play(obj)
+            try
+                delete(obj.timerObj);
+            end
+            fs = 30; % 30 fps should be enough for playback most data types
+            obj.timerObj = timer('TimerFcn',{@playCallback, obj}, 'Period', 1/(fs*obj.speed),...
+                'BusyMode','queue','ExecutionMode','fixedRate','StopFcn',{@stopCallback, obj});
+            obj.state = ~obj.state;
+        end
         %%
         function delete(obj)
             while ~isempty(obj.list) , obj.list{1}.delete;end
@@ -411,7 +423,7 @@ classdef browserHandleList < handle
 end
 %% -----------------
 function playCallback(obj, event, bObj) %#ok
-plotThisTimeStamp(bObj,bObj.nowCursor+bObj.timerMult*bObj.speed);
+plotThisTimeStamp(bObj,bObj.nowCursor+1/bObj.maxSamplingRate);
 drawnow;
 end
 %%
