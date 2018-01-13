@@ -2,15 +2,16 @@ classdef videoStreamBrowserHandle1 < browserHandle
     properties
         videoFile
         vObj
+        img
+        Frames
     end
     methods
         %%
         function obj = videoStreamBrowserHandle1(vStreamObj,defaults)
             
             if isempty(vStreamObj.videoFile) || ~exist(vStreamObj.videoFile,'file')
-                [FileName,PathName] = uigetfile2({'*.wmv;*.asf;*.asx','Windows Media Video (*.wmv, *.asf, *.asx)';...
-                    '*.avi','AVI (*.avi)';'*.mpg','MPEG-1 (*.mpg)';'*.mov','Apple QuickTime?? Movie (*.mov)';...
-                    '*.mp4;*.m4v','MPEG-4 Mac (*.mp4, *.m4v)';'*.ogg','Ogg Theora (*.ogg)'},'Select the video file');
+                formats = VideoReader.getFileFormats();
+                [FileName,PathName] = uigetfile2(getFilterSpec(formats),'Select the video file');
                 if any([isnumeric(FileName) isnumeric(PathName)]), disp('You must provide a video file.');return;end
                 vStreamObj.videoFile = fullfile(PathName,FileName);
             end
@@ -47,6 +48,7 @@ classdef videoStreamBrowserHandle1 < browserHandle
             obj.onscreenDisplay  = true;
             if isempty(vStreamObj.videoFile), error('You must provide a video file');end
             obj.videoFile = vStreamObj.videoFile;
+            obj.Frames = obj.vObj.read();
             obj.state = false;
             obj.step = defaults.step;
             obj.addlistener('timeIndex','PostSet',@videoStreamBrowserHandle1.updateTimeIndexDenpendencies);
@@ -77,10 +79,14 @@ classdef videoStreamBrowserHandle1 < browserHandle
             loc = obj.streamHandle.getTimeIndex(obj.nowCursor);
             frameIndex = obj.streamHandle.data(loc);    
             frameIndex(frameIndex>obj.vObj.NumberOfFrames) = obj.vObj.NumberOfFrames;
-            frame = obj.vObj.read(frameIndex);
-            cla(obj.axesHandle);
-            image(frame,'Parent',obj.axesHandle);
-            warning on %#ok
+            frame = obj.Frames(:,:,:,frameIndex);
+            if isempty(obj.img)
+                cla(obj.axesHandle);
+                obj.img = image(frame,'Parent',obj.axesHandle);
+            else
+                set(obj.img,'CData', frame);
+            end
+            %warning on %#ok
             set(obj.timeTexttHandle,'String',['Current latency = ' num2str(obj.nowCursor,4) ' sec']);
             set(obj.sliderHandle,'Value',obj.nowCursor);
         end
