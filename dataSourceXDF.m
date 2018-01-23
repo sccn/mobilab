@@ -421,7 +421,15 @@ classdef dataSourceXDF < dataSource
                             fclose(fid);
                             % clear mmfObj
                             metadata.binFile = binFile;
-                            metadata.videoFile = '';
+                            try
+                                exist(streams{stream_count}.info.desc.videoFile,'file')
+                                copyfile(streams{stream_count}.info.desc.videoFile, mobiDataDirectory)
+                                [~,filename,ext] = fileparts(streams{stream_count}.info.desc.videoFile);
+                                metadata.videoFile = fullfile(mobiDataDirectory, [filename,ext]);
+                            catch
+                                metadata.videoFile = '';
+                            end
+                            
                             metadata.unit = 'none';
                             metadata.artifactMask = sparse(length(metadata.timeStamp),metadata.numberOfChannels);
                             metadata.class = 'videoStream';

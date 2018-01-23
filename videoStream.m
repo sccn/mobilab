@@ -6,15 +6,19 @@ classdef videoStream < coreStreamObject
         function obj = videoStream(header) 
             if nargin < 1, error('Not enough input arguments.');end
             obj = obj@coreStreamObject(header);
-            warning off %#ok
+            warning off
             load(header,'-mat','videoFile');
-            warning on %#ok
-            if exist('videoFile','var'), obj.videoFile = videoFile; else obj.videoFile = '';end  %#ok
+            warning on
+            if exist('videoFile','var')
+                obj.videoFile = videoFile; 
+            else
+                obj.videoFile = '';
+            end
         end
         function set.videoFile(obj,videoFile)
             if ~ischar(videoFile), return;end
-            stack = dbstack;
-            if any(strcmp({stack.name},'videoStream.videoStream')), return;end
+%             stack = dbstack;
+%             if any(strcmp({stack.name},'videoStream.videoStream')), return;end
             obj.videoFile = videoFile;
             saveProperty(obj,'videoFile',videoFile);
         end
