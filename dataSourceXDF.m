@@ -411,7 +411,8 @@ classdef dataSourceXDF < dataSource
                             header = metadata2headerFile(metadata);
                             
                         % video
-                        elseif ~isempty(strfind(lower(streams{stream_count}.info.type),'videostream'))
+                        elseif ~isempty(strfind(lower(streams{stream_count}.info.type),'videostream')) ||...
+                                ~isempty(strfind(lower(streams{stream_count}.info.type),'video'))
                             binFile = [obj.mobiDataDirectory filesep name '_' uuid '_' obj.sessionUUID '.bin'];
                             % mmfObj = memmapfile(streams{stream_count}.tmpfile,'Format',{streams{stream_count}.precision...
                             %     [numberOfChannels length(streams{stream_count}.time_stamps)] 'x'},'Writable',false);
@@ -421,7 +422,15 @@ classdef dataSourceXDF < dataSource
                             fclose(fid);
                             % clear mmfObj
                             metadata.binFile = binFile;
-                            metadata.videoFile = '';
+                            try
+                                exist(streams{stream_count}.info.desc.videoFile,'file')
+                                copyfile(streams{stream_count}.info.desc.videoFile, mobiDataDirectory)
+                                [~,filename,ext] = fileparts(streams{stream_count}.info.desc.videoFile);
+                                metadata.videoFile = fullfile(mobiDataDirectory, [filename,ext]);
+                            catch
+                                metadata.videoFile = '';
+                            end
+                            
                             metadata.unit = 'none';
                             metadata.artifactMask = sparse(length(metadata.timeStamp),metadata.numberOfChannels);
                             metadata.class = 'videoStream';

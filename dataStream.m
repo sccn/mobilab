@@ -595,6 +595,30 @@ classdef dataStream < coreStreamObject
             %       xlabel('Time (sec)'); legend({eegObj.name eegObj1.name eegObj2.name});
             
             if nargin < 2, error('You must enter the new sampling rate.');end
+            if newSamplingRate == -1
+                prefObj = PropertyGridField('newSamplingRate',obj.samplingRate,'DisplayName','New sampling rate');
+                hFigure = figure('MenuBar','none','Name','Resample','NumberTitle', 'off','Toolbar', 'none','Units','pixels','Color',obj.container.container.preferences.gui.backgroundColor,...
+                    'Resize','off','userData',0);
+                position = get(hFigure,'position');
+                set(hFigure,'position',[position(1:2) 303 231]);
+                hPanel = uipanel(hFigure,'Title','','BackgroundColor','white','Units','pixels','Position',[0 55 303 180],'BorderType','none');
+                g = PropertyGrid(hPanel,'Properties', prefObj,'Position', [0 0 1 1]);
+                uicontrol(hFigure,'Position',[72 15 70 21],'String','Cancel','ForegroundColor',obj.container.container.preferences.gui.fontColor,...
+                    'BackgroundColor',obj.container.container.preferences.gui.buttonColor,'Callback',@cancelCallback);
+                uicontrol(hFigure,'Position',[164 15 70 21],'String','Ok','ForegroundColor',obj.container.container.preferences.gui.fontColor,...
+                    'BackgroundColor',obj.container.container.preferences.gui.buttonColor,'Callback',@okCallback);
+                uiwait(hFigure);
+                if ~ishandle(hFigure), return;end
+                if ~get(hFigure,'userData')
+                    close(hFigure);
+                    cobj = [];
+                    return;
+                end
+                close(hFigure);
+                drawnow
+                val = g.GetPropertyValues();
+                newSamplingRate = val.newSamplingRate;
+            end
             if nargin < 3, method = obj.container.container.preferences.eeg.resampleMethod;end
             if isempty(method), method = obj.container.container.preferences.eeg.resampleMethod;end
             if nargin < 4, flag = 0;end
@@ -615,7 +639,7 @@ classdef dataStream < coreStreamObject
                     error('prog:input','Unknown interpolation method. Go to interp1 help page to see the alternatives.');
             end
             
-            timeStampi = obj.timeStamp(1):1/newSamplingRate:obj.timeStamp(end);
+            timeStampi = interp1(1:length(obj.timeStamp), obj.timeStamp',1:obj.samplingRate/newSamplingRate:length(obj.timeStamp),method,'extrap');
             if obj.isMemoryMappingActive
                 try
                     commandHistory.commandName = 'resample';
@@ -627,8 +651,8 @@ classdef dataStream < coreStreamObject
                     cobj.mmfObj.Writable = true;
                     data = obj.mmfObj.Data.x;
                     if newSamplingRate < obj.samplingRate
-                        b = obj.firDesign(newSamplingRate*1.25,'lowpass',round(newSamplingRate/2));
-                        for it=1:obj.numberOfChannels;
+                        b = fir1(min([512 newSamplingRate*1.25]), 0.99, 'low');
+                        for it=1:obj.numberOfChannels
                             tmp = interp1(obj.timeStamp',data(:,it),timeStampi(:),method,'extrap');
                             cobj.mmfObj.Data.x(:,it) = filtfilt_fast(b,1,tmp);
                         end
@@ -922,7 +946,7 @@ classdef dataStream < coreStreamObject
                 end
                 if ~isMatlab2014b(), set(h,'LineSmoothing','on');end
                 xlabel('Frequency (Hz)')
-                title([Hs.estimationMethod ' Power Spectral Density Estimate']);
+                title([Hs.EstimationMethod ' Power Spectral Density Estimate']);
                 grid on;
             end
         end
@@ -1103,7 +1127,7 @@ classdef dataStream < coreStreamObject
                     metadata.name = [prename metadata.name];
                     metadata.binFile = fullfile(path,[metadata.name '_' metadata.uuid '_' metadata.sessionUUID '.bin']);
                     metadata.samplingRate = commandHistory.varargin{1};
-                    metadata.timeStamp = obj.timeStamp(1):1/metadata.samplingRate:obj.timeStamp(end);
+                    metadata.timeStamp = interp1(1:length(obj.timeStamp), obj.timeStamp',1:obj.samplingRate/metadata.samplingRate:length(obj.timeStamp),'linear','extrap');
                     metadata.artifactMask = sparse(length(metadata.timeStamp),obj.numberOfChannels);
                     for it=1:obj.numberOfChannels
                         metadata.artifactMask(:,it) = sparse(interp1(obj.timeStamp',full(obj.artifactMask(:,it)),metadata.timeStamp','nearest','extrap'));
@@ -1212,8 +1236,8 @@ classdef dataStream < coreStreamObject
         function jmenu = contextMenu(obj)
             jmenu = javax.swing.JPopupMenu;
             %--
-            menuItem = javax.swing.JMenuItem('Savitzky-Golay data denoising');
-            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'sgolayFilter',-1});
+            menuItem = javax.swing.JMenuItem('Resample');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'resample',-1});
             jmenu.add(menuItem);
             %--
             menuItem = javax.swing.JMenuItem('Filter');

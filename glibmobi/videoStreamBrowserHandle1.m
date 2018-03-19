@@ -3,7 +3,7 @@ classdef videoStreamBrowserHandle1 < browserHandle
         videoFile
         vObj
         img
-        Frames
+        Frames = [];
     end
     methods
         %%
@@ -48,7 +48,9 @@ classdef videoStreamBrowserHandle1 < browserHandle
             obj.onscreenDisplay  = true;
             if isempty(vStreamObj.videoFile), error('You must provide a video file');end
             obj.videoFile = vStreamObj.videoFile;
-            obj.Frames = obj.vObj.read();
+            try
+                obj.Frames = obj.vObj.read();
+            end
             obj.state = false;
             obj.step = defaults.step;
             obj.addlistener('timeIndex','PostSet',@videoStreamBrowserHandle1.updateTimeIndexDenpendencies);
@@ -79,7 +81,11 @@ classdef videoStreamBrowserHandle1 < browserHandle
             loc = obj.streamHandle.getTimeIndex(obj.nowCursor);
             frameIndex = obj.streamHandle.data(loc);    
             frameIndex(frameIndex>obj.vObj.NumberOfFrames) = obj.vObj.NumberOfFrames;
-            frame = obj.Frames(:,:,:,frameIndex);
+            if ~isempty(obj.Frames)
+                frame = obj.Frames(:,:,:,frameIndex);
+            else
+                frame = obj.vObj.read(frameIndex);
+            end
             if isempty(obj.img)
                 cla(obj.axesHandle);
                 obj.img = image(frame,'Parent',obj.axesHandle);
