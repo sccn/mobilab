@@ -402,7 +402,16 @@ classdef dataSourceXDF < dataSource
                             % while ~feof(fid3), lines{end+1} = fgets(fid3);end %#ok
                             % fclose(fid3);
                             eventObj = event;
-                            eventObj = eventObj.addEvent(1:length(streams{stream_count}.time_stamps),streams{stream_count}.time_series);
+                            if isnumeric(streams{stream_count}.time_series)
+                                Nev = length(streams{stream_count}.time_series);
+                                eventLabel = cell(Nev,1);
+                                for ev_k=1:Nev
+                                    eventLabel{ev_k} = num2str(streams{stream_count}.time_series(ev_k));
+                                end
+                            else
+                                eventLabel = streams{stream_count}.time_series;
+                            end
+                            eventObj = eventObj.addEvent(1:length(streams{stream_count}.time_stamps),eventLabel);
                             metadata.binFile = binFile;
                             metadata.precision = 'int16';
                             metadata.artifactMask = sparse(length(metadata.timeStamp),metadata.numberOfChannels);
