@@ -9,6 +9,8 @@ h = round(h);
 
 [I,J] = deal(0);
 
+% OLD zero crossing function
+
 % if strcmp(fun,'zero crossing')
 %     x_mx = diff(x);
 %     x_mx(end+1) = x_mx(end);
@@ -45,8 +47,9 @@ if strcmp(fun,'movements')
 %     thresholdData = movementThreshold * max(abs(data));
     
     sortedData = sort(abs(data));
+%     movementThreshold
     thresholdData = sortedData(round(length(sortedData)/100*movementThreshold));
-    thresholdData / 0.07
+%     thresholdData / 0.07
 
     movement = false;
     positive = false;

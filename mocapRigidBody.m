@@ -1,7 +1,7 @@
 %% mocapRigidBody class
 % Creates and uses a mocap object using predefined rigidbodies in the mocap data.
 %
-% Author: Marius Klug, TU Berlin, 13-Sep-2016
+% Author: Marius Klug, TU Berlin, 13-Sep-2016 adapted from Alejandro Ojeda
 
 %%
 classdef mocapRigidBody < dataStream

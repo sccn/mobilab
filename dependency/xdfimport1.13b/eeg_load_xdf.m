@@ -111,7 +111,7 @@ else
     srate = raw.srate;
 end
 for s=1:length(streams)
-    if (strcmp(streams{s}.info.type,'Markers') || strcmp(streams{s}.info.type,'Events')) && ~ismember(streams{s}.info.name,args.exclude_markerstreams)
+    if (strcmp(streams{s}.info.type,'Marker') || strcmp(streams{s}.info.type,'Markers') || strcmp(streams{s}.info.type,'Events')) && ~ismember(streams{s}.info.name,args.exclude_markerstreams)
         try
             if iscell(streams{s}.time_series)
                 for e=1:length(streams{s}.time_stamps)
