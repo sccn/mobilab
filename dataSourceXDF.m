@@ -313,13 +313,12 @@ classdef dataSourceXDF < dataSource
                         elseif any(ismember({'mocap' 'control'},lower(streams{stream_count}.info.type))) && isempty(strfind(lower(streams{stream_count}.info.name),'wii'))
                             class = 'mocap'; % default mocap class
                             if (~isempty(strfind(lower(streams{stream_count}.info.name),'phasespace'))) && ~isempty(channelType)
-                                class = 'mocapPhasespace'; % phasespace mocap class with rigidbodies with orientation
+                                class = 'mocapPhasespace'; % phasespace mocap class 
                                 
                                 indPosition = ~cellfun(@isempty,strfind(channelType,'Position')); % find channels with position value
                                 indOrientation = ~cellfun(@isempty,strfind(channelType,'Orientation')); % find channels with orientation value
-                                ind = indPosition + indOrientation; % channels with both position and orientation
+                                ind = indPosition + indOrientation; 
                                 ind(ind > 1) = 1; % just in case a channel name contains both strings
-%                                ind = ~cellfun(@isempty,strfind(channelType,'Orientation'));
                                 
                             elseif ~isempty(channelType)
                                 ind = ~cellfun(@isempty,strfind(channelType,'Position'));
@@ -357,48 +356,59 @@ classdef dataSourceXDF < dataSource
                             metadata.auxChannel = auxChannel;
                             header = metadata2headerFile(metadata);
                             
-                        % rigidBody    
-                         elseif ~isempty(strfind(lower(streams{stream_count}.info.type),'rigidbody'))
-
-%                             if (~isempty(strfind(lower(streams{stream_count}.info.name),'phasespace'))) && ~isempty(channelType)
-                                class = 'mocapRigidBody'; % phasespace mocap class with rigidbodies with orientation
-                                
-                                indPosition = ~cellfun(@isempty,strfind(channelType,'Position')); % find channels with position value
-                                indOrientation = ~cellfun(@isempty,strfind(channelType,'Orientation')); % find channels with orientation value
-                                ind = indPosition + indOrientation; % channels with both position and orientation
-                                ind(ind > 1) = 1; % just in case a channel name contains both strings
-%                                ind = ~cellfun(@isempty,strfind(channelType,'Orientation'));
-                                
-%                             elseif ~isempty(channelType)
-%                                 ind = ~cellfun(@isempty,strfind(channelType,'Position'));
-%                             else ind = true(numberOfChannels,1);
-%                             end
+                        % rigidBody
+                        elseif ~isempty(strfind(lower(streams{stream_count}.info.type),'rigidbody'))
+                            
+                            class = 'mocapRigidBody'; % phasespace mocap class with rigidbodies with orientation
+                            
+                            indPosition = ~cellfun(@isempty,strfind(channelType,'Position')); % find channels with position value
+                            indOrientation = ~cellfun(@isempty,strfind(channelType,'Orientation')); % find channels with orientation value
+                            ind = indPosition + indOrientation; % channels with both position and orientation
+                            ind(ind > 1) = 1; % just in case a channel name contains both strings
+                            
                             channels2write = 1:numberOfChannels;
                             
                             unit(~ind) = [];
-%                             channels2write(~ind) = [];
-                            % artifactMask(:,1:3:numberOfChannels) = A;
-                            % artifactMask(:,2:3:numberOfChannels) = A;
-                            % artifactMask(:,3:3:numberOfChannels) = A;
                             
                             
                             binFile = [obj.mobiDataDirectory filesep name '_' uuid '_' obj.sessionUUID '.bin'];
-                            % mmfObj = memmapfile(streams{stream_count}.tmpfile,'Format',{streams{stream_count}.precision...
-                            %     [length(ind) length(streams{stream_count}.time_stamps)] 'x'},'Writable',false);
-%                             auxChannel.label = metadata.label(~ind);
-                            % auxChannel.data = mmfObj.Data.x(~ind,:)';
-%                             auxChannel.data = streams{stream_count}.time_series(~ind,:)';
+                            
                             fid = fopen(binFile,'w');
-                            % for ch=1:length(channels2write), fwrite(fid,mmfObj.Data.x(channels2write(ch),:)',precision);end
+                            
                             fwrite(fid,streams{stream_count}.time_series(channels2write,:)',precision);
                             fclose(fid);
-                            % clear mmfObj
-%                             metadata.label(~ind) = [];
+                            
                             numberOfChannels = length(metadata.label);
                             metadata.numberOfChannels = numberOfChannels;
                             metadata.label = labels(channels2write);
                             metadata.binFile = binFile;
                             metadata.animationParameters = struct('limits',[],'conn',[],'bodymodel',[]);
+                            metadata.artifactMask = sparse(length(metadata.timeStamp),metadata.numberOfChannels);
+                            metadata.unit = unit;
+                            metadata.class = class;
+                            metadata.auxChannel = auxChannel;
+                            header = metadata2headerFile(metadata);
+                            
+                        % eye tracking
+                        elseif ~isempty(strfind(lower(streams{stream_count}.info.type),'eyetracking')) ||...
+                                ~isempty(strfind(lower(streams{stream_count}.info.type),'gazetracking')) ||...
+                                ~isempty(strfind(lower(streams{stream_count}.info.type),'eyegaze')) ||...
+                                ~isempty(strfind(lower(streams{stream_count}.info.type),'eye')) ||...
+                                ~isempty(strfind(lower(streams{stream_count}.info.type),'gaze'))
+                            
+                            class = 'eyeTracking'; % eye tracking class
+
+                            binFile = [obj.mobiDataDirectory filesep name '_' uuid '_' obj.sessionUUID '.bin'];
+                            
+                            fid = fopen(binFile,'w');
+                            
+                            fwrite(fid,streams{stream_count}.time_series',precision);
+                            fclose(fid);
+                            
+                            numberOfChannels = length(metadata.label);
+                            metadata.numberOfChannels = numberOfChannels;
+                            metadata.label = labels;
+                            metadata.binFile = binFile;
                             metadata.artifactMask = sparse(length(metadata.timeStamp),metadata.numberOfChannels);
                             metadata.unit = unit;
                             metadata.class = class;

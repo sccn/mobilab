@@ -497,7 +497,7 @@ classdef dataSource < handle
             
             locChannels = 1:streamObjList{1}.numberOfChannels;
             for k=1:length(dataObjIndex)
-                if k > 1, locChannels = (1:streamObjList{k}.numberOfChannels) + streamObjList{k-1}.numberOfChannels;end
+                if k > 1, locChannels = (1:streamObjList{k}.numberOfChannels) + locChannels(end);end
                 switch class(streamObjList{k})
                     case 'eeg'
                         if isfield(streamObjList{k}.hardwareMetaData,'desc')
@@ -516,8 +516,9 @@ classdef dataSource < handle
                             end
                         end
                     case 'dataStream', channelType = 'EEG';
-                    case 'mocap',      channelType = 'Mocap';
-                    case 'mocapRigidBody',  channelType = 'Mocap';
+                    case 'mocap',      channelType = 'MoCap';
+                    case 'mocapRigidBody',  channelType = 'MoCap';
+                    case 'eyeTracking', channelType = 'EyeTracking';
                     case 'wii',        channelType = 'Wii';
                     otherwise,         channelType = 'Other';
                 end

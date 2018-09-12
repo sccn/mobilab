@@ -54,7 +54,7 @@ if strcmp(fun,'movements')
     movement = false;
     positive = false;
     
-    timePoint = h+1;
+    timePoint = 1;
     lastOffsetTimePoint = 0;
     
     while timePoint <= length(data)-h
@@ -63,7 +63,7 @@ if strcmp(fun,'movements')
             if abs(data(timePoint)) > thresholdData
 %             if data(timePoint) > pi(2,1) ||  data(timePoint) < pi(1,1)
                 
-                fineAccThreshold = max(abs(data(max(lastOffsetTimePoint+1,timePoint-h):timePoint+h)))*movementOnsetThresholdFine;
+                fineAccThreshold = max(abs(data(max(lastOffsetTimePoint+1,timePoint):timePoint+h)))*movementOnsetThresholdFine;
 
                 fineTimePoint = timePoint;
                 

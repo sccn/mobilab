@@ -1,7 +1,7 @@
 %% mocapPhasespace class
 % Creates and uses a mocap object using predefined rigidbodies in the mocap data.
 %
-% Author: Marius Klug, TU Berlin, 13-Sep-2016
+% Author: Marius Klug, TU Berlin, 13-Sep-2016, adapted from Alejandro Ojeda
 
 %%
 classdef mocapPhasespace < dataStream
@@ -207,16 +207,12 @@ classdef mocapPhasespace < dataStream
             obj.animationParameters.conn = connectedBody;
             saveProperty(obj,'animationParameters',obj.animationParameters);
         end
+        
         %%
         function cobj = throwOutChannels(obj,varargin)
-            % Throws away channels. Gives the option of keeping only rigid
-            % body channels or specify all channels to keep (in case single
-            % marker channels should be kept for other reasons)
+            % Throws out selected channels. 
             %
             % Input arguments:
-            %       method: 'yes' or 'no' -> whether or not only rigid body
-            %       channels are kept
-            %       channels: channels to keep, default: only rigidb body
             %       channels
             %
             % Output argument:
@@ -224,501 +220,74 @@ classdef mocapPhasespace < dataStream
             %
             % Usage:
             %       mocapObj = mobilab.allStreams.item{ mocapItem };
-            %       method   = 'yes';
-            %       newMocapObj = mocapObj.throwOutChannels(method);
+            %       newMocapObj = mocapObj.throwOutChannels(channelsToThrow);
             %
-            %       figure;plot(mocapObj.timeStamp, [mocapObj.data(:,1) newMocapObj.data(:,1)])
-            %       xlabel('Time (sec)');legend({mocapObj.name newMocapObj.name});
             
-            indRigid = ~cellfun(@isempty,strfind(obj.label,'Rigid')); % find channels with rigidbody
-            rigidChannels = indRigid .* [1: obj.numberOfChannels]';
-            rigidChannels = rigidChannels(rigidChannels ~= 0);
-            
-            if length(varargin) == 1 && iscell(varargin{1}), varargin = varargin{1};end
             dispCommand = false;
             
             if ~isempty(varargin) && iscell(varargin) && isnumeric(varargin{1}) && varargin{1}(1) == -1
-                prompt = {'Keep only rigid body channels? (''yes'', ''no'')'};
-                dlg_title = 'Input parameters';
-                num_lines = 1;
-                def = {'yes'};
-                keepOnlyRigid = inputdlg2(prompt,dlg_title,num_lines,def);
-                if isempty(varargin), return;end
-                dispCommand = true;
-                
-                if strcmp(keepOnlyRigid,'yes')
-                
-                channelsToKeep = rigidChannels';
-                
-                else
-                    prompt = {'Enter channels to keep (pre-entered channels are rigid body channels). ALL OTHER CHANNELS ARE THROWN OUT!'};
+                prompt = {'Enter channel numbers to throw out.'};
                     dlg_title = 'Input parameters';
                     num_lines = 1;
-                    def = {num2str(rigidChannels')};
-                    channelsToKeep = inputdlg2(prompt,dlg_title,num_lines,def);
-                    channelsToKeep = str2num(channelsToKeep{1});
+                    channelsToThrow = inputdlg2(prompt,dlg_title,num_lines,{''});
+                    varargin{1} = str2num(channelsToThrow{1});
                     if isempty(varargin), return;end
                     dispCommand = true;
-
-                end
-            else
-                channelsToKeep = [1: obj.numberOfChannels];
-                channelsToKeep(varargin{1}) = [];
             end
-            
-            
-            
-            
             
             commandHistory.commandName = 'throwOutChannels';
             commandHistory.uuid        = obj.uuid;
-            commandHistory.varargin{1} = channelsToKeep;
+            commandHistory.varargin{1} = varargin{1};
             cobj = obj.copyobj(commandHistory);
-            cobj.mmfObj.Data.x = obj.mmfObj.Data.x(:,channelsToKeep);
             
             if dispCommand
                 disp('Running:');
                 disp(['  ' cobj.history]);
             end
             
+            channelsToThrow = commandHistory.varargin{1};
+            channelsToKeep = 1:obj.numberOfChannels;
+            channelsToKeep(channelsToThrow) = [];
+            
+            cobj.mmfObj.Data.x = obj.mmfObj.Data.x(:,channelsToKeep);
+            
         end
         
          %%
         function cobj = addChannels(obj,varargin)
-            % 2 inputs: number of channels that are going to be inserted and a data matrix for those channels 
+            % 2 inputs:  A cell containing strings for labels of the additional channels, a data matrix for the new 
+            % channels. Channels will be appended automatically at the end.
             
-            if length(varargin) == 1 && iscell(varargin{1}), varargin = varargin{1};end
             dispCommand = false;
             
             if ~isempty(varargin) && iscell(varargin) && isnumeric(varargin{1}) && varargin{1} == -1
                 error('Dont use the GUI for this, its not implemented.');
-%                 prompt = {'Keep only rigid body channels? (''yes'', ''no'')'};
-%                 dlg_title = 'Input parameters';
-%                 num_lines = 1;
-%                 def = {'yes'};
-%                 keepOnlyRigid = inputdlg2(prompt,dlg_title,num_lines,def);
-%                 if isempty(varargin), return;end
-%                 dispCommand = true;
-%                 
-%                 if strcmp(keepOnlyRigid,'yes')
-%                 
-%                 channelsToKeep = rigidChannels';
-%                 
-%                 else
-%                     prompt = {'Enter channels to keep (pre-entered channels are rigid body channels). ALL OTHER CHANNELS ARE THROWN OUT!'};
-%                     dlg_title = 'Input parameters';
-%                     num_lines = 1;
-%                     def = {num2str(rigidChannels')};
-%                     channelsToKeep = inputdlg2(prompt,dlg_title,num_lines,def);
-%                     channelsToKeep = str2num(channelsToKeep{1});
-%                     if isempty(varargin), return;end
-%                     dispCommand = true;
-% 
-%                 end
             else
-                % Fucking dirty hack, dont judge me. Just use it correctly,
-                % otherwise there'll be hell for you ;) 
-                
-                allChannels = 1:(obj.numberOfChannels+varargin{1});
-                
+                if length(varargin) ~= 2
+                    error('Enter two arguments: The number of channels to add and the data matrix of them!')
+                end
+               
             end
             
+            allData = obj.mmfObj.Data.x;
+            allData(:,end+1:end+size(varargin{2},2)) = varargin{2};
             
-            
-            
-            
+            allLabels = obj.label;
+            allLabels(end+1:end+length(varargin{1})) = varargin{1};
+ 
             commandHistory.commandName = 'addChannels';
             commandHistory.uuid        = obj.uuid;
-            commandHistory.varargin{1} = allChannels; % this is shit.
+            commandHistory.varargin{1} = varargin{1};
+            commandHistory.varargin{2} = 'This would be the data matrix of the added channels.';
+            
+            
             cobj = obj.copyobj(commandHistory);
             
-            cobj.mmfObj.Data.x(:,1:obj.numberOfChannels) = obj.mmfObj.Data.x;
-            cobj.mmfObj.Data.x(:,obj.numberOfChannels+1:obj.numberOfChannels+varargin{1}) = varargin{2};
-            
-            for addedChannel = 1:varargin{1}
-                cobj.label{obj.numberOfChannels+addedChannel} = ['Added channel ' num2str(addedChannel)];
-            end
-            
-            cobj.artifactMask = [obj.artifactMask,sparse(size(obj.artifactMask,1),varargin{1})];
+            cobj.mmfObj.Data.x = allData;
             
         end
         
-        %%
-        function cobj = unflipSigns(obj,varargin)
-            
-            indRigid = ~cellfun(@isempty,strfind(obj.label,'Rigid')); % find channels with rigidbody
-            rigidChannels = indRigid .* [1: obj.numberOfChannels]';
-            rigidChannels = rigidChannels(rigidChannels ~= 0);
-            
-            
-            for rigidBody = rigidChannels'
-                
-                % checking for already present eulers
-                if ~isempty(strfind(obj.label{rigidBody},'Euler'))
-                    error('You can only unflip Quaternions, try it with the original data set.')
-                end
-                
-            end
-            
-            % no eulers are present, therefore each RB has 7 channels:
-            % XYZABCD, from which ABCD are the quaternion values
-            
-            numberOfRigidChannels = size(rigidChannels,1);
-            numberOfRigidBodies = numberOfRigidChannels / 7;
-            
-            commandHistory.commandName = 'unflipSigns';
-            commandHistory.uuid        = obj.uuid;
-            commandHistory.varargin{1}    = 'channels';
-            commandHistory.varargin{2}    = 1:obj.numberOfChannels;
-            cobj = obj.copyobj(commandHistory);
-            data = obj.mmfObj.Data.x;
-            
-            
-            disp('Running:');
-            disp(['  ' cobj.history]);
-            
-            
-            % now unflip all quaternions
-            for rigidBody = 1:numberOfRigidBodies
-                
-                rigidBody
-                
-                % find correct channelnumber for the quaternion values of
-                % this RB
-                channelA = rigidChannels(rigidBody*7-3);
-                channelB = rigidChannels(rigidBody*7-2);
-                channelC = rigidChannels(rigidBody*7-1);
-                channelD = rigidChannels(rigidBody*7);
-                
-                % take the values
-                A = data(:,channelA);
-                B = data(:,channelB);
-                C = data(:,channelC);
-                D = data(:,channelD);
-                
-                
-                % form a matrix of quaternions for the RB and transform
-                % those values to euler angles and then back to quaternions
-                
-                %                 for dataPoint = 1:size(data,1)
-                %
-                %                     channelEulerRoll(dataPoint) = atan2(2*(A(dataPoint)*B(dataPoint) + C(dataPoint)*D(dataPoint)),1 - 2*(B(dataPoint)^2 + C(dataPoint)^2));
-                %                     channelEulerPitch(dataPoint) = asin(2*(A(dataPoint)*C(dataPoint) - D(dataPoint)*B(dataPoint)));
-                %                     channelEulerYaw(dataPoint) = atan2(2*(A(dataPoint)*D(dataPoint) + B(dataPoint)*C(dataPoint)),1-2*(C(dataPoint)^2+D(dataPoint)^2));
-                %
-                %                     A(dataPoint) = cos(channelEulerRoll(dataPoint)/2) * cos(channelEulerPitch(dataPoint)/2) * cos(channelEulerYaw(dataPoint)/2) + sin(channelEulerRoll(dataPoint)/2) * sin(channelEulerPitch(dataPoint)/2) * sin(channelEulerYaw(dataPoint)/2);
-                %                     B(dataPoint) = sin(channelEulerRoll(dataPoint)/2) * cos(channelEulerPitch(dataPoint)/2) * cos(channelEulerYaw(dataPoint)/2) - cos(channelEulerRoll(dataPoint)/2) * sin(channelEulerPitch(dataPoint)/2) * sin(channelEulerYaw(dataPoint)/2);
-                %                     C(dataPoint) = cos(channelEulerRoll(dataPoint)/2) * sin(channelEulerPitch(dataPoint)/2) * cos(channelEulerYaw(dataPoint)/2) + sin(channelEulerRoll(dataPoint)/2) * cos(channelEulerPitch(dataPoint)/2) * sin(channelEulerYaw(dataPoint)/2);
-                %                     D(dataPoint) = cos(channelEulerRoll(dataPoint)/2) * cos(channelEulerPitch(dataPoint)/2) * sin(channelEulerYaw(dataPoint)/2) - sin(channelEulerRoll(dataPoint)/2) * sin(channelEulerPitch(dataPoint)/2) * cos(channelEulerYaw(dataPoint)/2);
-                %
-                % %                     quaternionThisRB(dataPoint) = quaternion(A(dataPoint),B(dataPoint),C(dataPoint),D(dataPoint));
-                % %
-                % %                     eulerThisRB(dataPoint,:) = quaternionThisRB(dataPoint).EulerAngles( '123' );
-                % %
-                % %                     flippedQuaternionThisRB(dataPoint) = quaternion.eulerangles('123',eulerThisRB(dataPoint,:));
-                % %
-                % %
-                % %                     doublesFlippedQuaternionThisRB(dataPoint,:) = flippedQuaternionThisRB(dataPoint).double;
-                %
-                %
-                %                 end
-                %
-                %
-                %                 % take the values and fill the data
-                %                 data(:,channelA) = A;
-                %                 data(:,channelB) = B;
-                %                 data(:,channelC) = C;
-                %                 data(:,channelD) = D;
-                %
-                %             end
-                
-                
-                for dataPoint = 5:size(data,1)
-                    
-                    epsilon = 0.5;
-                    
-                    Adiff = abs(A(dataPoint-1) - A(dataPoint));
-                    Adiff2 = abs(A(dataPoint-2) - A(dataPoint-1));
-                    Adiff3 = abs(A(dataPoint-3) - A(dataPoint-2));
-                    Adiff4 = abs(A(dataPoint-4) - A(dataPoint-3));
-                    AsumOfPreviousDiffs = Adiff2 + Adiff3 + Adiff4;
-                    
-                    AflippedDataPoint = -A(dataPoint);
-                    
-                    AdiffFlipped = abs(A(dataPoint-1) - AflippedDataPoint);
-                    
-                    AconditionMet = AdiffFlipped<Adiff;% & Adiff > AsumOfPreviousDiffs;
-                    AbigJump = AdiffFlipped> 0.5;
-                    
-                    Bdiff = abs(B(dataPoint-1) - B(dataPoint));
-                    Bdiff2 = abs(B(dataPoint-2) - B(dataPoint-1));
-                    Bdiff3 = abs(B(dataPoint-3) - B(dataPoint-2));
-                    Bdiff4 = abs(B(dataPoint-4) - B(dataPoint-3));
-                    BsumOfPreviousDiffs = Bdiff2 + Bdiff3 + Bdiff4;
-                    
-                    BflippedDataPoint = -B(dataPoint);
-                    
-                    BdiffFlipped = abs(B(dataPoint-1) - BflippedDataPoint);
-                    
-                    BconditionMet = BdiffFlipped<Bdiff;% & Bdiff > BsumOfPreviousDiffs;
-                    BbigJump = BdiffFlipped> epsilon;
-                    
-                    Cdiff = abs(C(dataPoint-1) - C(dataPoint));
-                    Cdiff2 = abs(C(dataPoint-2) - C(dataPoint-1));
-                    Cdiff3 = abs(C(dataPoint-3) - C(dataPoint-2));
-                    Cdiff4 = abs(C(dataPoint-4) - C(dataPoint-3));
-                    CsumOfPreviousDiffs = Cdiff2 + Cdiff3 + Cdiff4;
-                    
-                    CflippedDataPoint = -C(dataPoint);
-                    
-                    CdiffFlipped = abs(C(dataPoint-1) - CflippedDataPoint);
-                    
-                    CconditionMet = CdiffFlipped<Cdiff;% & Cdiff > CsumOfPreviousDiffs;
-                    CbigJump = CdiffFlipped> epsilon;
-                    
-                    Ddiff = abs(D(dataPoint-1) - D(dataPoint));
-                    Ddiff2 = abs(D(dataPoint-2) - D(dataPoint-1));
-                    Ddiff3 = abs(D(dataPoint-3) - D(dataPoint-2));
-                    Ddiff4 = abs(D(dataPoint-4) - D(dataPoint-3));
-                    DsumOfPreviousDiffs = Ddiff2 + Ddiff3 + Ddiff4;
-                    
-                    DflippedDataPoint = -D(dataPoint);
-                    
-                    DdiffFlipped = abs(D(dataPoint-1) - DflippedDataPoint);
-                    
-                    DconditionMet = DdiffFlipped<Ddiff;% & Ddiff > DsumOfPreviousDiffs;
-                    DbigJump = DdiffFlipped> epsilon;
-                    
-                    
-                    
-                    if (AconditionMet+BconditionMet+CconditionMet+DconditionMet >= 2 && AbigJump+BbigJump+CbigJump+DbigJump == 0)
-                        
-                        A(dataPoint) = -A(dataPoint);
-                        B(dataPoint) = -B(dataPoint);
-                        C(dataPoint) = -C(dataPoint);
-                        D(dataPoint) = -D(dataPoint);
-                        
-                    end
-                    
-%                     data(dataPoint,diffFlipped<diff & abs(diff) > minDiff) = -data(dataPoint,diffFlipped<diff & abs(diff) > minDiff);
-%                     data(dataPoint,diffFlipped<diff & diff>sumOfPreviousDiffs) = -data(dataPoint,diffFlipped<diff & diff>sumOfPreviousDiffs);
-                    
-                    
-                end
-                
-                data(:,channelA) = A;
-                data(:,channelB) = B;
-                data(:,channelC) = C;
-                data(:,channelD) = D;
-                
-            end
-            cobj.mmfObj.Data.x = data;
-            
-        end
-        
-        
-        
-        
-        %%
-        function cobj = switchCoordinateSystem(obj,varargin)
-           
-            
-            indRigid = ~cellfun(@isempty,strfind(obj.label,'Rigid')); % find channels with rigidbody
-            rigidChannels = indRigid .* [1: obj.numberOfChannels]';
-            rigidChannels = rigidChannels(rigidChannels ~= 0);
-            
-            
-            for channel = rigidChannels'
-                
-                % checking for already present eulers
-                if ~isempty(strfind(obj.label{channel},'Euler'))
-                  %  error('Please attempt switching between coordinate systems only using quaternion orientation values')
-                end
-                
-            end
-            
-            % no eulers are present, therefore each RB has 7 channels:
-            % XYZABCD, from which ABCD are the quaternion values
-            
-%             numberOfRigidChannels = size(rigidChannels,1);
-%             numberOfRigidBodies = numberOfRigidChannels / 7;
-%             numberOfNewChannels = size(obj.label,1) - numberOfRigidBodies;
-            
-            % make new object
-            commandHistory.commandName = 'switchCoordinateSystem';
-            commandHistory.uuid        = obj.uuid;
-            commandHistory.varargin{1}    = 'switched';
-            commandHistory.varargin{2}    = 1:obj.numberOfChannels;
-            cobj = obj.copyobj(commandHistory);
-            
-                disp('Running:');
-                disp(['  ' cobj.history]);
-                
-            
-            data = obj.mmfObj.Data.x;
- 
-            % now fill with data
-            for channel = 1:obj.numberOfChannels
-                
-                
-                if ~isempty(strfind(obj.label{channel},'_Z')) || ~isempty(strfind(obj.label{channel},'_B')) || ~isempty(strfind(obj.label{channel},'_C')) || ~isempty(strfind(obj.label{channel},'_Yaw')) || ~isempty(strfind(obj.label{channel},'_Pitch'))
-                   
-                   data(:,channel) = data(:,channel) .* -1;
-                    
-                end
-                
-                
-            end
-            
-            cobj.mmfObj.Data.x = data;
-            
-        end
-        
-        %%
-        function cobj = quaternionsToEuler(obj,varargin)
-           
-            
-            indRigid = ~cellfun(@isempty,strfind(obj.label,'Rigid')); % find channels with rigidbody
-            rigidChannels = indRigid .* [1: obj.numberOfChannels]';
-            rigidChannels = rigidChannels(rigidChannels ~= 0);
-            
-            
-            for rigidBody = rigidChannels'
-                
-                % checking for already present eulers
-                if ~isempty(strfind(obj.label{rigidBody},'Euler'))
-                    error('Don''t try to convert to Euler twice... that''s kinda obvious, isn''t it?')
-                end
-                
-            end
-            
-            % no eulers are present, therefore each RB has 7 channels:
-            % XYZABCD, from which ABCD are the quaternion values
-            
-            numberOfRigidChannels = size(rigidChannels,1);
-            numberOfRigidBodies = numberOfRigidChannels / 7;
-            
-            if ~rem(numberOfRigidChannels, 1) == 0
-                error('Number of rigid body channels not dividable by 7 (should be 3 position and 4 quaternion values)')
-            end
-            
-            numberOfNewChannels = size(obj.label,1) - numberOfRigidBodies;
-            
-            % make new object
-            commandHistory.commandName = 'quaternionsToEuler';
-            commandHistory.uuid        = obj.uuid;
-            commandHistory.varargin{1}    = 'newChannels';
-            commandHistory.varargin{2}    = 1:numberOfNewChannels;
-            cobj = obj.copyobj(commandHistory);
-            
-                disp('Running:');
-                disp(['  ' cobj.history]);
-                
-            
-            data = obj.mmfObj.Data.x;
-            newData = zeros(size(obj.mmfObj.Data.x,1),size(obj.mmfObj.Data.x,2) - numberOfRigidBodies);
-            newLabel = cell(numberOfNewChannels,1);
-            % the new Euler data has 1 channel less than the quaternions per RB
-            
-            endOfNonRigidChannels = rigidChannels(1)-1;
-            
-            % fill the new data set and its label with all non RB data
-            newLabel(1:endOfNonRigidChannels) = obj.label(1:endOfNonRigidChannels);
-            newData(:,1:endOfNonRigidChannels) = obj.mmfObj.Data.x(:,1:endOfNonRigidChannels);
-            
-            
-            
-            % now fill with RB data
-            for rigidBody = 1:numberOfRigidBodies
-                
-                rigidBody
-                
-                % find correct channelnumber for the quaternion values of
-                % this RB
-                channelA = rigidChannels(rigidBody*7-3);
-                channelB = rigidChannels(rigidBody*7-2);
-                channelC = rigidChannels(rigidBody*7-1);
-                channelD = rigidChannels(rigidBody*7);
-                
-                % take the values
-                % The orientation axes' labels in PhaseSpace are different from the
-                % ones in Wikipedia: Forward is z (Wikipedia x), sideways is x (Wikipedia y), upways is
-                % y (Wikipedia z) 
-                w = data(:,channelA);
-                z = data(:,channelB);
-                x = data(:,channelC);
-                y = data(:,channelD);
-                
-                % check if values are [-1 1] - could have been messed up by
-                % interpolating
-                
-                w(w>=1) = 0.99999;
-                w(w<=-1) = -0.99999;
-                x(x>=1) = 0.99999;
-                x(x<=-1) = -0.99999;
-                y(y>=1) = 0.99999;
-                y(y<=-1) = -0.99999;
-                z(z>=1) = 0.99999;
-                z(z<=-1) = -0.99999;
-                
-                
-                % transform those values to euler angles
-                % see https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-                % the rotation occurs in the order yaw, pitch, roll (about body-fixed axes).
-                
-                % now since we took the different axes for the quaternions
-                % before, this has to be taken backwards to obtain the 
-                % correct values for yaw, pitch and roll
-                % -> this means that roll (rotation about x) becomes yaw, pitch (rotation about y) becomes
-                % roll and yaw (rotation about z) becomes pitch.
-                
-                % for some reason after filtering the quaternion values, it
-                % can happen that the transformation below results in
-                % complex numbers, whereas the real part is exactly pi (or
-                % -pi) and the complex number has some kind of "excess"
-                % value. I don't know why this happens, but I just take the
-                % real part, since it's the most reasonable thing to do, I
-                % guess...
-
-                channelEulerYaw = real(atan2(2.*(w.*x + y.*z),1 - 2.*(x.^2 + y.^2)));     % wikipedia roll (rotation about x)
-                channelEulerRoll = real(asin(2.*(w.*y - z.*x)));                             % wikipedia pitch (rotation about y)
-                channelEulerPitch = real(atan2(2.*(w.*z + x.*y),1-2.*(y.^2+z.^2)));          % wikipedia yaw (rotation about z)   
-                
-                % convert from radian to degree
-                
-                factor = 180/pi;
-                
-                channelEulerYaw = channelEulerYaw*factor;     
-                channelEulerRoll = channelEulerRoll*factor;                            
-                channelEulerPitch = channelEulerPitch*factor;          
-               
-                
-                % actually fill new data set and labels
-                
-                newData(:,endOfNonRigidChannels+rigidBody*6-5) = data(:,rigidChannels(rigidBody*7-6));
-                newData(:,endOfNonRigidChannels+rigidBody*6-4) = data(:,rigidChannels(rigidBody*7-5));
-                newData(:,endOfNonRigidChannels+rigidBody*6-3) = data(:,rigidChannels(rigidBody*7-4));
-                newData(:,endOfNonRigidChannels+rigidBody*6-2) = channelEulerYaw;
-                newData(:,endOfNonRigidChannels+rigidBody*6-1) = channelEulerPitch;
-                newData(:,endOfNonRigidChannels+rigidBody*6) = channelEulerRoll;
-                
-                newLabel{endOfNonRigidChannels+rigidBody*6-5} = strcat('Rigid',num2str(rigidBody),'_X');
-                newLabel{endOfNonRigidChannels+rigidBody*6-4} = strcat('Rigid',num2str(rigidBody),'_Y');
-                newLabel{endOfNonRigidChannels+rigidBody*6-3} = strcat('Rigid',num2str(rigidBody),'_Z');
-                newLabel{endOfNonRigidChannels+rigidBody*6-2} = strcat('Rigid',num2str(rigidBody),'Euler_Yaw');
-                newLabel{endOfNonRigidChannels+rigidBody*6-1} = strcat('Rigid',num2str(rigidBody),'Euler_Pitch');
-                newLabel{endOfNonRigidChannels+rigidBody*6} = strcat('Rigid',num2str(rigidBody),'Euler_Roll');
-                
-%                 cobj.mmfObj.Data.x = newData;
-%             cobj.label = newLabel;
-                
-            end
-            
-            cobj.mmfObj.Data.x = newData;
-            cobj.label = newLabel;
-            
-        end
-        
+       
         %%
         function cobj = removeOcclusionArtifact(obj,varargin)
             % Fills-in occluded time points. In optical mocap systems like PhaseSpace
@@ -785,7 +354,7 @@ classdef mocapPhasespace < dataStream
                 % fill occlusions interpolating the signal
                 obj.initStatusbar(1,cobj.numberOfChannels,'Filling-in occluded time points...');
                 for it=1:cobj.numberOfChannels
-                    indi = data(:,channels(it))==0 | data(:,channels(it))==1; % one of the quaternion channels is 1 if occluded
+                    indi = data(:,channels(it))==0 | data(:,channels(it))==1;
                     
                     if any(indi) && sum(indi) < length(obj.timeStamp)-1
                         cobj.mmfObj.Data.x(indi,it) = interp1(obj.timeStamp(~indi),data(~indi,channels(it)),obj.timeStamp(indi),method);
@@ -861,6 +430,105 @@ classdef mocapPhasespace < dataStream
                 ME.rethrow;
             end
         end
+        
+        %%
+        function cobj = oneEuroFilter(obj, varargin)
+            % Filters the motion capture data with a one euro filter. 
+            % See Gery Casiez, Nicolas Roussel, Daniel Vogel.  1 ? Filter:  A Simple Speed-based Low-pass Filter for
+            % Noisy Input in Interactive Systems.  CHI?12, the 30th Conference on Human Factors in Computing
+            % Systems, May 2012, Austin, United States. ACM, pp.2527-2530, 2012, <10.1145/2207676.2208639>.
+            % <hal-00670496>
+            %
+            % Input arguments:
+            %       mincutoff:   minimum lowpass cutoff frequency (in Hz)
+            %       beta: beta value for adaptation of the filter -> higher value lead to less lag and more jitter for
+            %       high frequency data
+            %
+            % Output argument:
+            %       cobj:      handle to the new object
+            %
+            % Usage:
+            %       mincutoff    = 1;
+            %       beta         = 2;  
+            %       mocapObjFilt = mobilab.allStreams.item{7}.oneEuroFilter( mincutoff , beta );
+            
+            dispCommand = false;
+            if length(varargin) == 1 && iscell(varargin{1}), varargin = varargin{1};end
+            if ~isempty(varargin) && iscell(varargin) && isnumeric(varargin{1}) && varargin{1} == -1
+                prompt = {'Enter the minimal cutoff frequency:'};
+                dlg_title = 'Filter input parameters';
+                num_lines = 1;
+                %def = {num2str(obj.container.container.preferences.mocap.lowpassCutoff)};
+                def = {num2str(1.0)};
+                inputFromDialog = inputdlg2(prompt,dlg_title,num_lines,def);
+                if isempty(inputFromDialog), return;end
+                varargin{1} = str2double(inputFromDialog{1});
+                if isnan(varargin{1}), return;end
+                
+                prompt = {'Enter the beta value:'};
+                dlg_title = 'Filter input parameters';
+                num_lines = 1;
+                %def = {num2str(obj.container.container.preferences.mocap.lowpassCutoff)};
+                def = {num2str(5.0)};
+                inputFromDialog = inputdlg2(prompt,dlg_title,num_lines,def);
+                if isempty(inputFromDialog), return;end
+                varargin{2} = str2double(inputFromDialog{1});
+                if isnan(varargin{2}), return;end
+                
+                dispCommand = true;
+            end
+            
+            % Cutoff Frequency and beta values
+            if nargin < 1, mincutoff = 1.0; else mincutoff = varargin{1};end
+            if nargin < 2, beta = 5.0; else beta = varargin{2};end
+
+            try 
+
+                
+                noisySignal = obj.mmfObj.Data.x;
+                commandHistory.commandName = 'oneEuroFilter';
+                commandHistory.uuid        = obj.uuid;
+                commandHistory.varargin{1} = mincutoff;
+                commandHistory.varargin{2} = beta;
+                cobj = obj.copyobj(commandHistory);
+                
+                if dispCommand
+                    disp('Running:');
+                    disp(['  ' cobj.history]);
+                end
+                
+                %Declare oneEuro object
+                theOneEuroFilter = oneEuro;
+                %Alter filter parameters to tune
+                theOneEuroFilter.mincutoff = mincutoff;
+                theOneEuroFilter.beta = beta;
+                
+                filteredSignal = zeros(size(noisySignal));
+                
+                obj.initStatusbar(1,size(noisySignal,2),'Filtering...');
+
+                % filter all channels
+                for channelToFilter = 1:size(noisySignal,2)
+                    
+                    % the filter goes through all data points 
+                    for dataPoint = 1:size(noisySignal,1)
+                        filteredSignal(dataPoint,channelToFilter) = theOneEuroFilter.filter(noisySignal(dataPoint,channelToFilter),dataPoint);
+                    end
+                    
+                    obj.statusbar(channelToFilter);
+
+                end
+                
+                
+                % add the filtered data
+                cobj.mmfObj.Data.x = filteredSignal;
+                
+            catch ME
+                if exist('cobj','var'), obj.container.deleteItem(obj.container.findItem(cobj.uuid));end
+                ME.rethrow;
+            end
+        end
+        
         %%
         function cobj = timeDerivative(obj,varargin)
             % Computes the time derivatives of motion capture data. It smooths
@@ -909,8 +577,8 @@ classdef mocapPhasespace < dataStream
             if ~isnumeric(channels), error('Invalid channel.');end
             if ~all(intersect(channels,1:obj.numberOfChannels)), error('Invalid channel.');end
             
-            % checking for Quaternionvalues
-            if sum(~cellfun('isempty',strfind(obj.label,'_A')))>0, error('Please transform quaternion values to euler angles before calculating time derivatives!');end
+            % checking for Quaternion values
+            if sum(~cellfun('isempty',strfind(obj.label,'_A')))>0, error('Please throw out Quaternion values before calculating time derivatives!');end
             
             Nch = length(channels);
             dt = 1/obj.samplingRate;
@@ -1248,96 +916,54 @@ classdef mocapPhasespace < dataStream
         end
         %%
         function addEventsFromDerivatives(obj,varargin)
+            % Adds all events from time derivative streams (vel, acc, jerk, DtX) of this stream into this stream. Mostly
+            % to be used for visually inspecting movement on and offset event markers
+            %
+            % Input arguments:
+            %       none
+            %
+            % Output argument:
+            %       none. The events will be saved in the present data set.
+            %
+            % Uses:
+            %       mocapObj = mobilab.allStreams.item{ mocapItem };
+            %       mocapObj.addEventsFromDerivatives();
 
-            dispCommand = false;
-            if  ~isempty(varargin) && length(varargin{1}) == 1 && isnumeric(varargin{1}) && varargin{1} == -1
-              
-                dispCommand = true;
-            end
             
-            if dispCommand
-                disp('Running:');
-                disp('addEventsFromDerivatives');
-            end
+            disp('Running:');
+            disp('obj.addEventsFromDerivatives()');
             
             for children = 1:size(obj.children,2)
-               
-                if ~isempty(strfind(obj.children{children}.name,'vel')) || ~isempty(strfind(obj.children{children}.name,'acc')) || ~isempty(strfind(obj.children{children}.name,'jerk')) || ~isempty(strfind(obj.children{children}.name,'Dt'))
+                
+                if ~isempty(strfind(obj.children{children}.name,'vel')) ||...
+                        ~isempty(strfind(obj.children{children}.name,'acc')) ||...
+                        ~isempty(strfind(obj.children{children}.name,'jerk')) ||...
+                        ~isempty(strfind(obj.children{children}.name,'Dt'))
                     
                     derivativeEvent = obj.children{children}.event;
                     obj.event = obj.event.addEvent(derivativeEvent.latencyInFrame,derivativeEvent.label);
-               
+                    
                 end
             end
             
-            if dispCommand, disp('Done.');end
         end
         
-        %%
-        function movementOnsetsAndEnds(obj,varargin)
-
-            dispCommand = false;
-            if  ~isempty(varargin) && length(varargin{1}) == 1 && isnumeric(varargin{1}) && varargin{1} == -1
-              
-                dispCommand = true;
-            end
-            
-            if dispCommand
-                disp('Running:');
-                disp('movementOnsetsAndEnds');
-            end
-            
-            events = obj.event;
-            maxPosition = ~cellfun(@isempty,strfind(events.label,'max'));
-            minPosition = ~cellfun(@isempty,strfind(events.label,'min'));
-            zeroCrossPosition = ~cellfun(@isempty,strfind(events.label,'zeroCross'));
-            
-            maxEvents=events;
-            minEvents=events;
-            
-            maxEvents.label(~(maxPosition+zeroCrossPosition))=[];
-            maxEvents.latencyInFrame(~(maxPosition+zeroCrossPosition))=[];
-            maxEvents.hedTag(~(maxPosition+zeroCrossPosition))=[];
-            
-            latenciesIndex = 1;
-            movementOnsetFound = 0;
-            for i = 1:size(maxEvents.label,1)-2
-                if ~isempty(strfind(maxEvents.label{i},'zeroCrossVel')) && ~isempty(strfind(maxEvents.label{i+1},'Jerk')) && ~isempty(strfind(maxEvents.label{i+2},'Acc')) %&& ~isempty(strfind(maxEvents.label{i+2},'Vel'))
-                    movementOnsetFound = 1;
-                    latencies(latenciesIndex) = maxEvents.latencyInFrame(i+1);
-                    latenciesIndex = latenciesIndex + 1;
-                end
-            end
-            
-            if movementOnsetFound
-                events = events.addEvent(latencies,'movementOnset');
-            end
-            
-            minEvents.label(~(minPosition+zeroCrossPosition))=[];
-            minEvents.latencyInFrame(~(minPosition+zeroCrossPosition))=[];
-            minEvents.hedTag(~(minPosition+zeroCrossPosition))=[];
-            
-            latenciesIndex = 1;
-            for i = 1:size(minEvents.label,1)-2
-                if ~isempty(strfind(minEvents.label{i},'zeroCrossVel')) && ~isempty(strfind(minEvents.label{i+1},'Jerk')) && ~isempty(strfind(minEvents.label{i+2},'Acc'))
-                    movementOnsetFound = 1;
-                    latencies(latenciesIndex) = minEvents.latencyInFrame(i+1);
-                    latenciesIndex = latenciesIndex + 1;
-                end
-            end
-
-            if movementOnsetFound
-                events = events.addEvent(latencies,'movementOnset');
-            end
-            
-            obj.event = events;
-            
-            if dispCommand, disp('Done.');end
-        end
-        
+       
         %%
         function deleteMarkers(obj,varargin)
-
+            % Removes event markers in the stream. Optionally keeps specified markers.
+            %
+            % Input arguments:
+            %       markersToKeep:    (OPTIONAL) Cell array of markers that should be kept in the data stream. 
+            %
+            % Output argument:
+            %       none. The events will be saved in the present data set.
+            %
+            % Uses:
+            %       mocapObj = mobilab.allStreams.item{ mocapItem };
+            %       mocapObj.deleteMarkers();
+            %       mocapObj.deleteMarkers(markersToKeep);
+            
             dispCommand = false;
             
             if ~isempty(varargin) && iscell(varargin) && isnumeric(varargin{1}) && varargin{1} == -1
@@ -1345,14 +971,20 @@ classdef mocapPhasespace < dataStream
                 dlg_title = 'Input parameters';
                 num_lines = 1;
                 def = {''};
-                markersToKeep = inputdlg2(prompt,dlg_title,num_lines,def)
+                markersToKeep = inputdlg2(prompt,dlg_title,num_lines,def);
                 if isempty(varargin), return;end
-                markersToKeep = strsplit(markersToKeep{1}, ' ')
+                markersToKeep = strsplit(markersToKeep{1}, ' ');
                 dispCommand = true;
+            else
+                if ~isempty(varargin)
+                    markersToKeep = varargin{1};
+                else
+                    markersToKeep = {''};
+                end
             end
             
             command = 'Delete Markers, keep only:';
-            for marker = 1:size(markersToKeep,1)
+            for marker = 1:numel(markersToKeep)
                 
                 command = strcat(command, {' '}, markersToKeep(marker));
                 
@@ -1364,36 +996,73 @@ classdef mocapPhasespace < dataStream
             end
             
             % determine for each unique marker if it is of the markers to keep or not
-            for uniqueLabelInd = 1:size(obj.event.uniqueLabel,1)
-               for markerInd = 1:size(markersToKeep,1)
-                   
-                    comparison(uniqueLabelInd,markerInd) = strcmp(obj.event.uniqueLabel{uniqueLabelInd},markersToKeep{markerInd});
-                       
+            if ~isempty(obj.event.uniqueLabel)
+                for uniqueLabelInd = 1:size(obj.event.uniqueLabel,1)
+                    for markerInd = 1:numel(markersToKeep)
+
+                        comparison(uniqueLabelInd,markerInd) = strcmp(obj.event.uniqueLabel{uniqueLabelInd},markersToKeep{markerInd});
+
+                    end
                 end
-            end
-            comparison = sum(comparison,2);
-            
-            tempEvents = obj.event;
-            % delete markers
-            for uniqueLabelInd = 1:size(obj.event.uniqueLabel,1)
-                
-                if ~comparison(uniqueLabelInd)
-                    
-                    tempEvents = tempEvents.deleteAllEventsWithThisLabel(obj.event.uniqueLabel{uniqueLabelInd});
-                    
+                comparison = sum(comparison,2);
+
+                tempEvents = obj.event;
+                % delete markers
+                for uniqueLabelInd = 1:size(obj.event.uniqueLabel,1)
+
+                    if ~comparison(uniqueLabelInd)
+
+                        tempEvents = tempEvents.deleteAllEventsWithThisLabel(obj.event.uniqueLabel{uniqueLabelInd});
+
+                    end
+
                 end
-                
+
+                obj.event = tempEvents;
+            else
+                disp('No event markers present that could be deleted.')
             end
-            
-            obj.event = tempEvents;
             
         end
         
         
         %%
-        function createEventsFromMagnitude(obj,varargin)
-            % criteria: 'maxima', 'minima', 'zero crossing', '% maxima', '% minima', or 'all' (default: criteria = 'all')
-            % channel: index of the channel where to search for the events
+        function createEvents(obj,varargin)
+            % Creates event markers from the data.
+            %
+            % markers are created based on the velocity data stream (1st child of euler
+            % angle values). entered values are:
+            % - channel that should be used for marker generation (4 are yaw values in our
+            % case)
+            % - algorithm that should be used for marker creation: 'movement', 'maxima', 'minima', 'zero crossing'
+            % - one string with onset and offset marker names separated by a single
+            % whitespace
+            % - window length for determining the fine movement onset/offset
+            % threshold (in s after coarse onset detection). set this to a value that you expect the average
+            % movement to be long
+            % - boolean only used in algorithms that are NOT 'movement' (if max/min criteria should only be fulfilled if
+            % sign is pos/neg).
+            % - VERY IMPORTANT! threshold for generally detecting a movement (values that are above are
+            % classified as movement). the entered value is the percentage of datapoints
+            % that are lower than the threshold (example: the threshold is set such that 65% of the
+            % data are lower, meaning in practice that we assume the participant is
+            % moving 35% of the time.)
+            % - IMPORTANT! threshold for the fine tuned onsets and offsets in
+            % percentage of the maximum value present in the window after onset detected
+            % - minimum movement duration (if 'movement' is chosen as algorithm)
+            % necessary for a movement to also be marked as such (in ms). the first
+            % time we do this with 0, as written at the top of this loop, so all movements are detected
+            % and then the appropriate minDuration is chosen.
+            %
+            % Input arguments:
+            %       none
+            %
+            % Output argument:
+            %       none. The events will be saved in the present data set.
+            %
+            % Uses:
+            %       mocapObj = mobilab.allStreams.item{ mocapItem };
+            %       mocapObj.createEvents(channel,method,eventName(s),windowLength,correctSign,movementThreshold,movementThresholdFine,minMovementDuration);
             
             dispCommand = false;
             if  ~isempty(varargin) && length(varargin{1}) == 1 && isnumeric(varargin{1}) && varargin{1} == -1
@@ -1403,9 +1072,9 @@ classdef mocapPhasespace < dataStream
                     PropertyGridField('correctSign',0,'DisplayName','Correct sign criteria','Category','Main','Description','Enter if max/min criteria should only be fulfilled if sign is pos/neg and hit return.')...
                     PropertyGridField('eventType','movement:start movement:end','DisplayName','Marker name','Category','Main','Description','Enter the name of the new event marker and hit return.')...
                     PropertyGridField('inhibitionWindow',2,'DisplayName','Inhibition/sliding window length','Category','Main','Description','Enter the length of the inhibition window and hit return. Is multiplied by sampling rate!')...
-                    PropertyGridField('movementThreshold',0.07,'DisplayName','Threshold for detecting a general movement','Category','Main','Description','Threshold for detection, multiplied with the maximum value of the dataset. Enter the threshold and hit return.')...
+                    PropertyGridField('movementThreshold',65,'DisplayName','Threshold for detecting a general movement','Category','Main','Description','Percentage of values that should be lower than the threshold. Enter the threshold and hit return.')...
                     PropertyGridField('movementOnsetThresholdFine',5,'DisplayName','Threshold for detecting a movement onset in the velocity in percentage once a movement has been detected','Category','Main','Description','Enter the threshold and hit return.')...
-                    PropertyGridField('minimumDuration',286,'DisplayName','Minimum duration for a movement','Category','Main','Description','If ''movement'' category is chosen, only movements longer than this duration (in ms) are considered. Enter and hit return.')...
+                    PropertyGridField('minimumDuration',0,'DisplayName','Minimum duration for a movement','Category','Main','Description','If ''movement'' category is chosen, only movements longer than this duration (in ms) are considered. Enter and hit return.')...
                     ];
                 
                 hFigure = figure('MenuBar','none','Name','Create event marker','NumberTitle', 'off','Toolbar', 'none','Units','pixels','Color',obj.container.container.preferences.gui.backgroundColor,...
@@ -1437,15 +1106,15 @@ classdef mocapPhasespace < dataStream
             
             Narg = length(varargin);
             if Narg < 1, channel   = 1;       else channel   = varargin{1}(1);end
-            if Narg < 2, criteria  = 'maxima';else criteria  = varargin{2};   end
-            if Narg < 3, eventType = [];else eventType = strsplit(varargin{3}, ' ');   end
+            if Narg < 2, criteria  = 'movements'; else criteria  = varargin{2};   end
+            if Narg < 3, eventType = {'default'};else eventType = strsplit(varargin{3}, ' ');   end
             if Narg < 4
                 inhibitedWindowLength = obj.samplingRate;
             else
                 inhibitedWindowLength = ceil(obj.samplingRate*varargin{4});
             end
             if Narg < 5, correctSign = 0;   else correctSign = varargin{5}; end
-            if Narg < 6, movementThreshold = 1.2;   else movementThreshold = varargin{6}; end
+            if Narg < 6, movementThreshold = 65;   else movementThreshold = varargin{6}; end
             if Narg < 7, movementOnsetThresholdFine = 0.05;   else movementOnsetThresholdFine = varargin{7} / 100; end
             if Narg < 8, minimumDuration = 0; else minimumDuration = varargin{8}; end
             if Narg < 9
@@ -1456,7 +1125,7 @@ classdef mocapPhasespace < dataStream
             
             if dispCommand
                 disp('Running:');
-                disp('  latency = createEventsFromMagnitude(obj,mocap_marker, criteria, event_marker)');
+                disp('   obj.createEvents(channel,method,eventName(s),windowLength,correctSign,movementThreshold,movementThresholdFine,minMovementDuration)');
             end
             
             numberOfSegments = length(segmentObj.startLatency);
@@ -1490,7 +1159,7 @@ classdef mocapPhasespace < dataStream
                 
                 time = obj.timeStamp(index(it,1):index(it,2));
                 latencyI = obj.getTimeIndex(time(I));
-                 obj.event = obj.event.addEvent(latencyI,eventType{1});
+                obj.event = obj.event.addEvent(latencyI,eventType{1});
                 
                 if J ~= 0
                     time = obj.timeStamp(index(it,1):index(it,2));
@@ -1782,52 +1451,28 @@ classdef mocapPhasespace < dataStream
                     prename = 'addChan_';
                     metadata.name = [prename metadata.name];
                     metadata.binFile = fullfile(path,[metadata.name '_' char(metadata.uuid) '_' metadata.sessionUUID '.bin']);
-                    channels = commandHistory.varargin{1};
-                    metadata.numberOfChannels = length(channels);
-%                     metadata.label = obj.label(channels);
-%                     metadata.artifactMask = obj.artifactMask(:,channels);
-                    allocateFile(metadata.binFile,metadata.precision,[length(metadata.timeStamp) length(channels)]);
                     
-                case 'degToRad'
-                    prename = 'deg2rad_';
+                    
+                    allLabels = obj.label;
+                    allLabels(end+1:end+length(commandHistory.varargin{1})) = commandHistory.varargin{1};
+                    
+                    oldArtifactMask = obj.artifactMask;
+                    newArtifactMask = sparse(size(obj.data,1),length(commandHistory.varargin{1}));
+                    allArtifactMask = [oldArtifactMask newArtifactMask];
+                    
+                    metadata.numberOfChannels = length(allLabels);
+                    metadata.label = allLabels;
+                    metadata.artifactMask = allArtifactMask;
+                    allocateFile(metadata.binFile,metadata.precision,[length(metadata.timeStamp) length(allLabels)]);
+                    
+                case 'oneEuroFilter'
+                    prename = 'oneEuroFilter_';
                     metadata.name = [prename metadata.name];
                     metadata.binFile = fullfile(path,[metadata.name '_' char(metadata.uuid) '_' metadata.sessionUUID '.bin']);
-                    channels = commandHistory.varargin{2};
-                    metadata.numberOfChannels = length(channels);
-                    metadata.label = obj.label(channels);
-                    metadata.artifactMask = obj.artifactMask(:,channels);
-                    allocateFile(metadata.binFile,metadata.precision,[length(metadata.timeStamp) length(channels)]);
-                    
-                case 'switchCoordinateSystem'
-                    prename = 'switchCoordSys_';
-                    metadata.name = [prename metadata.name];
-                    metadata.binFile = fullfile(path,[metadata.name '_' char(metadata.uuid) '_' metadata.sessionUUID '.bin']);
-                    channels = commandHistory.varargin{2};
-                    metadata.numberOfChannels = length(channels);
-                    metadata.label = obj.label(channels);
-                    metadata.artifactMask = obj.artifactMask(:,channels);
-                    allocateFile(metadata.binFile,metadata.precision,[length(metadata.timeStamp) length(channels)]);
-                    
-                case 'unflipSigns'
-                    prename = 'unflip_';
-                    metadata.name = [prename metadata.name];
-                    metadata.binFile = fullfile(path,[metadata.name '_' char(metadata.uuid) '_' metadata.sessionUUID '.bin']);
-                    channels = commandHistory.varargin{2};
-                    metadata.numberOfChannels = length(channels);
-                    metadata.label = obj.label(channels);
-                    metadata.artifactMask = obj.artifactMask(:,channels);
-                    allocateFile(metadata.binFile,metadata.precision,[length(metadata.timeStamp) length(channels)]);
-                    
-                    
-                case 'quaternionsToEuler'
-                    prename = 'quat2eul_';
-                    metadata.name = [prename metadata.name];
-                    metadata.binFile = fullfile(path,[metadata.name '_' char(metadata.uuid) '_' metadata.sessionUUID '.bin']);
-                    channels = commandHistory.varargin{2};
-                    metadata.numberOfChannels = length(channels);
-                    metadata.label = obj.label(channels);
-                    metadata.artifactMask = obj.artifactMask(:,channels);
-                    allocateFile(metadata.binFile,metadata.precision,[length(metadata.timeStamp) length(channels)]);
+                    metadata.numberOfChannels = obj.numberOfChannels;
+                    metadata.label = obj.label;
+                    metadata.artifactMask = obj.artifactMask;
+                    allocateFile(metadata.binFile,metadata.precision,[length(metadata.timeStamp) obj.numberOfChannels]);
                     
                 case 'timeDerivative'
                     order = commandHistory.varargin{1};
@@ -1949,32 +1594,16 @@ classdef mocapPhasespace < dataStream
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'throwOutChannels',-1});
             jmenu.add(menuItem);
             %--
-            menuItem = javax.swing.JMenuItem('Add channels');
-            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'addChannels',-1});
-            jmenu.add(menuItem);
-            %--
-            menuItem = javax.swing.JMenuItem('Convert from degree to radian');
-            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'degToRad',-1});
-            jmenu.add(menuItem);
-            %--
-            menuItem = javax.swing.JMenuItem('Unflip signs of jumping quaternion channels');
-            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'unflipSigns',-1});
-            jmenu.add(menuItem);
-            %--
             menuItem = javax.swing.JMenuItem('Filling-in occluded time points');
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'removeOcclusionArtifact',-1});
-            jmenu.add(menuItem);
-            %--
-            menuItem = javax.swing.JMenuItem('Switch between left- and right hand sided coordinate system');
-            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'switchCoordinateSystem',-1});
             jmenu.add(menuItem);
             %--
             menuItem = javax.swing.JMenuItem('Lowpass filter');
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'lowpass',-1});
             jmenu.add(menuItem);
             %--
-            menuItem = javax.swing.JMenuItem('Transform Quaternions to Euler Angles');
-            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'quaternionsToEuler',-1});
+            menuItem = javax.swing.JMenuItem('One Euro filter');
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'oneEuroFilter',-1});
             jmenu.add(menuItem);
             %---------
             jmenu.addSeparator;
@@ -1984,15 +1613,11 @@ classdef mocapPhasespace < dataStream
             jmenu.add(menuItem);
             %---------
             menuItem = javax.swing.JMenuItem('Create event marker');
-            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'createEventsFromMagnitude',-1});
+            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'createEvents',-1});
             jmenu.add(menuItem);
             %---------
             menuItem = javax.swing.JMenuItem('Add events from time derivative streams');
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'addEventsFromDerivatives',-1});
-            jmenu.add(menuItem);
-            %---------
-            menuItem = javax.swing.JMenuItem('Determine movement onsets and ends');
-            set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'movementOnsetsAndEnds',-1});
             jmenu.add(menuItem);
             %---------
             menuItem = javax.swing.JMenuItem('Delete Event Markers');
@@ -2009,7 +1634,7 @@ classdef mocapPhasespace < dataStream
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'dataStreamBrowser',-1});
             jmenu.add(menuItem);
             %--
-            menuItem = javax.swing.JMenuItem('Make it dance! (Add stick figure)');
+            menuItem = javax.swing.JMenuItem('Add stick figure');
             set(handle(menuItem,'CallbackProperties'), 'ActionPerformedCallback', {@myDispatch,obj,'loadConnectedBody',-1});
             jmenu.add(menuItem);
             %--
