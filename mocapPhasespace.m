@@ -469,7 +469,7 @@ classdef mocapPhasespace < dataStream
                 dlg_title = 'Filter input parameters';
                 num_lines = 1;
                 %def = {num2str(obj.container.container.preferences.mocap.lowpassCutoff)};
-                def = {num2str(5.0)};
+                def = {num2str(15.0)};
                 inputFromDialog = inputdlg2(prompt,dlg_title,num_lines,def);
                 if isempty(inputFromDialog), return;end
                 varargin{2} = str2double(inputFromDialog{1});
@@ -480,7 +480,7 @@ classdef mocapPhasespace < dataStream
             
             % Cutoff Frequency and beta values
             if nargin < 1, mincutoff = 1.0; else mincutoff = varargin{1};end
-            if nargin < 2, beta = 5.0; else beta = varargin{2};end
+            if nargin < 2, beta = 15.0; else beta = varargin{2};end
 
             try 
 
@@ -512,7 +512,7 @@ classdef mocapPhasespace < dataStream
                     
                     % the filter goes through all data points 
                     for dataPoint = 1:size(noisySignal,1)
-                        filteredSignal(dataPoint,channelToFilter) = theOneEuroFilter.filter(noisySignal(dataPoint,channelToFilter),dataPoint);
+                        filteredSignal(dataPoint,channelToFilter) = theOneEuroFilter.filter(noisySignal(dataPoint,channelToFilter),obj.samplingRate);
                     end
                     
                     obj.statusbar(channelToFilter);
