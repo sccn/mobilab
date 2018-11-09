@@ -18,6 +18,7 @@ classdef mocapBrowserHandle < browserHandle
         passCursor
         beep
         roomSize
+        dataXYZ = [];
     end
     properties(SetObservable)
         channelIndex
@@ -100,7 +101,9 @@ classdef mocapBrowserHandle < browserHandle
             else
                 obj.connectivity = defaults.connectivity;
             end
-            
+            try
+                obj.dataXYZ = obj.streamHandle.dataInXYZ;
+            end
             obj.channelIndex = defaults.channels; 
             if isfield(defaults,'color'), obj.color = defaults.color;end
             if strcmp(defaults.mode,'standalone'), obj.master = -1;end
@@ -131,16 +134,20 @@ classdef mocapBrowserHandle < browserHandle
             obj.nowCursor = nowCursor;
             %[~,t0] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - obj.nowCursor));
             t0 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),obj.nowCursor);
-            perm = [1 2 3];
-            if (strcmpi(obj.streamHandle.hardwareMetaData.name,'phasespace') || isempty(obj.streamHandle.hardwareMetaData.name)) %&& isa(obj.streamHandle.hardwareMetaData,'hardwareMetaData')
-                perm = [1 3 2];
-            elseif isempty(obj.streamHandle.hardwareMetaData.name) || ~isempty(strfind(obj.streamHandle.hardwareMetaData.name,'KinectMocap'))
-                perm = [1 3 2];
-            end
-            obj.streamHandle.reshape([obj.dim(1) 3 obj.dim(2)/3]);
-            data = squeeze(obj.streamHandle.mmfObj.Data.x(obj.timeIndex(t0),perm,obj.channelIndex))';
-            obj.streamHandle.reshape(obj.dim);
             
+            if isempty(obj.dataXYZ)
+                perm = [1 2 3];
+                if (strcmpi(obj.streamHandle.hardwareMetaData.name,'phasespace') || isempty(obj.streamHandle.hardwareMetaData.name)) %&& isa(obj.streamHandle.hardwareMetaData,'hardwareMetaData')
+                    perm = [1 3 2];
+                elseif isempty(obj.streamHandle.hardwareMetaData.name) || ~isempty(strfind(obj.streamHandle.hardwareMetaData.name,'KinectMocap'))
+                    perm = [1 3 2];
+                end
+                obj.streamHandle.reshape([obj.dim(1) 3 obj.dim(2)/3]);
+                data = squeeze(obj.streamHandle.mmfObj.Data.x(obj.timeIndex(t0),perm,obj.channelIndex))';
+                obj.streamHandle.reshape(obj.dim);
+            else
+                data = squeeze(obj.dataXYZ(obj.timeIndex(t0),:,obj.channelIndex))';
+            end
             if obj.numberOfChannelsToPlot==1, data = data';end
             if ~strcmp(obj.streamHandle.hardwareMetaData.name,'optitrack')
                 indZeros = any(data==0,2);
@@ -151,20 +158,12 @@ classdef mocapBrowserHandle < browserHandle
             
             cla(obj.axesHandle);
             hold(obj.axesHandle,'on')
-            %if isfield(obj.streamHandle.animationParameters,'limits')
-            %    obj.streamHandle.container.findSpaceBoundary;
-            %    obj.streamHandle.container.save;
-            %end
-            %if isempty(obj.streamHandle.animationParameters.limits)
-            %    obj.streamHandle.container.findSpaceBoundary;
-            %    obj.streamHandle.container.save;
-            %end
             axis(obj.axesHandle,'equal')
             obj.markerHandle = zeros(1,obj.numberOfChannelsToPlot);
             [x,y,z] = meshgrid(obj.roomSize.x,obj.roomSize.y,obj.roomSize.z(1));
             surf(obj.axesHandle,double(x),double(y),double(z),'FaceColor',obj.floorColor);
             for it=1:obj.numberOfChannelsToPlot
-                obj.markerHandle(it) = scatter3(data(it,1),data(it,2),data(it,3),'filled');                
+                obj.markerHandle(it) = scatter3(obj.axesHandle,data(it,1),data(it,2),data(it,3),'filled');                
                 set(obj.markerHandle(it),'Tag',['Node ' num2str(obj.channelIndex(it))],'HitTest','off','ButtonDownFcn',...
                     @nodePressed,'MarkerFaceColor',obj.color(it,:),'MarkerEdgeColor','k');
             end
@@ -241,18 +240,20 @@ classdef mocapBrowserHandle < browserHandle
             %[~,t0] = min(abs(obj.streamHandle.timeStamp(obj.timeIndex) - obj.nowCursor));
             
             t0 = binary_findClosest(obj.streamHandle.timeStamp(obj.timeIndex),obj.nowCursor);
-            
-            perm = [1 2 3];
-            if (strcmpi(obj.streamHandle.hardwareMetaData.name,'phasespace') || isempty(obj.streamHandle.hardwareMetaData.name)) %&& isa(obj.streamHandle.hardwareMetaData,'hardwareMetaData')
-                perm = [1 3 2];
-            elseif isempty(obj.streamHandle.hardwareMetaData.name) || ~isempty(strfind(obj.streamHandle.hardwareMetaData.name,'KinectMocap')) 
-                perm = [1 3 2];
+            if isempty(obj.dataXYZ)
+                perm = [1 2 3];
+                if (strcmpi(obj.streamHandle.hardwareMetaData.name,'phasespace') || isempty(obj.streamHandle.hardwareMetaData.name)) %&& isa(obj.streamHandle.hardwareMetaData,'hardwareMetaData')
+                    perm = [1 3 2];
+                elseif isempty(obj.streamHandle.hardwareMetaData.name) || ~isempty(strfind(obj.streamHandle.hardwareMetaData.name,'KinectMocap'))
+                    perm = [1 3 2];
+                end
+                
+                obj.streamHandle.reshape([obj.dim(1) 3 obj.dim(2)/3]);
+                data = squeeze(obj.streamHandle.mmfObj.Data.x(obj.timeIndex(t0),perm,obj.channelIndex))';
+                obj.streamHandle.reshape(obj.dim);
+            else
+                data = squeeze(obj.dataXYZ(obj.timeIndex(t0),:,obj.channelIndex))';
             end
-            
-            obj.streamHandle.reshape([obj.dim(1) 3 obj.dim(2)/3]);
-            data = squeeze(obj.streamHandle.mmfObj.Data.x(obj.timeIndex(t0),perm,obj.channelIndex))';
-            obj.streamHandle.reshape(obj.dim);
-
             if obj.numberOfChannelsToPlot==1, data = data';end
             if ~strcmp(obj.streamHandle.hardwareMetaData.name,'optitrack')
                 indZeros = any(data==0,2);

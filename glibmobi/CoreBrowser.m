@@ -4,7 +4,7 @@ classdef CoreBrowser < handle
         eventColor  % onscreen display color
         showEvents = true;
         nowCursor
-        master = -1;
+        mode = -1;
         uuid
         %dcmHandle
         gObjHandle
@@ -18,6 +18,7 @@ classdef CoreBrowser < handle
         timeStamp
         font
         eventObj
+        master
     end
     properties(SetObservable)
         state = false
@@ -63,6 +64,9 @@ classdef CoreBrowser < handle
         function delete(obj)
             if strcmp(get(obj.timerObj,'Running'),'on'), stop(obj.timerObj);end
             delete(obj.timerObj);
+            if obj.master ~= -1
+                obj.master.updateList();
+            end
         end
         %%
         function defaults = saveobj(obj)
@@ -72,11 +76,7 @@ classdef CoreBrowser < handle
             defaults.speed = obj.speed;
             defaults.font = obj.font;
             defaults.uuid = obj.uuid;
-            if isa(obj.master,'browserHandleList')
-                defaults.mode = 'slave';
-            else
-                defaults.mode = 'standalone';
-            end 
+            defaults.mode = obj.mode;
         end
         %%
         function init(obj)
@@ -155,6 +155,10 @@ classdef CoreBrowser < handle
             set(obj.sliderHandle,'Value',obj.nowCursor);
             set(obj.sliderHandle,'SliderStep',0.001*ones(1,2));
             
+            if strcmp(obj.mode,'slave')
+                set([hRev, hPlay hNext hPref hSlider hText, hTextMin hTextMax ],'Enable','off');
+            end
+            
             set(obj.figureHandle,'WindowScrollWheelFcn',@(src, event)onMouseWheelMove(obj,[], event),'KeyPressFcn',@(src, event)onKeyPress(obj,[], event));
             if isa(obj,'mocapBrowserHandle')
                 set(findobj(obj.figureHandle,'tag','connectLine'),'Visible','on');
@@ -193,6 +197,12 @@ classdef CoreBrowser < handle
             switch eventObj.Key
                 case 'leftarrow',  plotStep(obj,-obj.step*obj.speed*2);
                 case 'rightarrow', plotStep(obj,obj.step*obj.speed*2);
+                case 'subtract' 
+                    obj.gain = obj.gain/2;
+                    plotStep(obj,0);
+                case 'add'
+                    obj.gain = obj.gain*2;
+                    plotStep(obj,0);
             end
         end
     end
@@ -293,8 +303,12 @@ if ~isempty(eventObj.label)
     [~,loc1] = max(tmp2);
     jumpLatency = tmp(loc1);
     if ~isempty(jumpLatency)
-        set(browserObj.sliderHandle,'Value',browserObj.streamHandle.timeStamp(jumpLatency));
-        slider_Callback(browserObj.sliderHandle,eventdata); 
+        if browserObj.master == -1
+            set(browserObj.sliderHandle,'Value',browserObj.streamHandle.timeStamp(jumpLatency));
+            slider_Callback(browserObj.sliderHandle,eventdata);
+        else
+            browserObj.master.plotThisTimeStamp(browserObj.streamHandle.timeStamp(jumpLatency));
+        end
     end
 end
 end
@@ -309,7 +323,6 @@ if isa(browserObj,'segmentedStreamBrowserHandle')
 else
     eventObj = browserObj.streamHandle.event;
 end
-
 ind = get(findobj(get(hObject,'parent'),'style','popupmenu'),'Value');
 if ~isempty(eventObj.label)
     [~,loc] = ismember( eventObj.label, eventObj.uniqueLabel{ind});
@@ -320,8 +333,12 @@ if ~isempty(eventObj.label)
     [~,loc1] = min(tmp2);
     jumpLatency = tmp(loc1);
     if ~isempty(jumpLatency)
-        set(browserObj.sliderHandle,'Value',browserObj.streamHandle.timeStamp(jumpLatency));
-        slider_Callback(browserObj.sliderHandle,eventdata); 
+        if browserObj.master == -1
+            set(browserObj.sliderHandle,'Value',browserObj.streamHandle.timeStamp(jumpLatency));
+            slider_Callback(browserObj.sliderHandle,eventdata);
+        else
+            browserObj.master.plotThisTimeStamp(browserObj.streamHandle.timeStamp(jumpLatency));
+        end
     end
 end
 end

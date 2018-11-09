@@ -134,8 +134,7 @@ classdef mobilabApplication < handle
                 uimenu(hFile,'Label','Import file','Callback','mobilab.loadData(''file'');mobilab.gui;');
                 uimenu(hFile,'Label','Load','Callback','mobilab.loadData(''mobi'');mobilab.gui;');
                 uimenu(hFile,'Label','Save as','Callback','mobilab.saveAs;mobilab.gui;');
-                uimenu(hFile,'Label','Close folder','Callback','delete(mobilab.allStreams);mobilab.gui;');
-                
+                uimenu(hFile,'Label','Close folder','Callback','delete(mobilab.allStreams);mobilab.gui;');        
                 uimenu(hFile,'Label','Exit MoBILAB','Callback','mobilab.applicationClose;');
                 
                 hEdit = uimenu('Label','Edit','Parent',figureHandle);
@@ -143,7 +142,8 @@ classdef mobilabApplication < handle
                 
                 hTools = uimenu('Label','Tools','Parent',figureHandle);
                 uimenu(hTools,'Label','MultiStream browser','Callback','mobilab.msBrowser;');
-                uimenu(hTools,'Label','Insert events markers','Callback','mobilab.insertEvents;');
+                uimenu(hTools,'Label','Insert event markers','Callback','mobilab.insertEvents;');
+                uimenu(hTools,'Label','Export to EEGLAB','Callback','mobilab.export2eeglab;');
                 %uimenu(hTools,'Label','Copy and Import folders (batch mode)','Callback','mobilab.copyImportFolder;');
                 %uimenu(hTools,'Label','Mocap workflow','Callback','mobilab.mocapWorkflow;');
                 %uimenu(hTools,'Label','Mocap events editor','Callback','mobilab.eventsEditor;');
@@ -359,6 +359,10 @@ classdef mobilabApplication < handle
         function figHandle = insertEvents(obj)
             if isempty(obj.allStreams) || ~isvalid(obj.allStreams), error('Load some data first');end
             figHandle = InsertEvents(obj);
+        end
+        function figHandle = export2eeglab(obj)
+            if isempty(obj.allStreams) || ~isvalid(obj.allStreams), error('Load some data first');end
+            figHandle = Export2EEGLAB(obj);
         end
         
         %%

@@ -17,14 +17,16 @@ classdef DataStreamBrowser < CoreBrowser
     end
     methods
         %% constructor
-        function obj = DataStreamBrowser(streamHandle, objMaster)
-            if nargin < 2, objMaster = -1;end
+        function obj = DataStreamBrowser(streamHandle, plotMode, master)
+            if nargin < 2, plotMode = 'standalone';end
+            if nargin < 3, master = -1;end
             obj.streamHandle = streamHandle;
             obj.dim = fliplr(size(streamHandle.data));
             obj.addlistener('channelIndex','PostSet',@DataStreamBrowser.updateChannelDependencies);
             obj.addlistener('timeIndex','PostSet',@DataStreamBrowser.updateTimeIndexDenpendencies);
             obj.addlistener('color','PostSet',@DataStreamBrowser.updateColorInCell);
-            obj.master = objMaster;
+            obj.mode = plotMode;
+            obj.master = master;
             obj.init();
         end
         %% plot

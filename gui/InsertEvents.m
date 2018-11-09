@@ -1,5 +1,5 @@
 function fig = InsertEvents(mobilab)
-fig = figure('Menu','none','WindowStyle','modal','NumberTitle','off','Name','Insert events','UserData',mobilab);
+fig = figure('Menu','none','WindowStyle','normal','NumberTitle','off','Name','Insert events','UserData',mobilab);
 fig.Position(3:4) = [570   256];
 n = length(mobilab.allStreams.item);
 TData= cell(n,2);

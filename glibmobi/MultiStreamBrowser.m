@@ -112,6 +112,9 @@ try
         set(handles.text6,'String',num2str(browserListObj.nowCursor));
         set(handles.text7,'String',num2str(browserListObj.endTime));
         set(handles.text8,'String',['Current latency = ' num2str(browserListObj.nowCursor) ' sec']);
+        
+        set([handles.popupmenu2 handles.edit8 handles.text27 handles.text28 handles.listbox1 handles.previous handles.next],'Visible','off');
+        set([handles.popupmenu2 handles.edit8 handles.text27 handles.text28 handles.listbox1 handles.previous handles.next],'Enable','off');
         try
             hListener = handle.listener(handles.slider1,'ActionEvent',@slider1_Callback);
         catch

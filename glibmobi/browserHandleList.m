@@ -120,8 +120,7 @@ classdef browserHandleList < handle
             end
             if nargin < 3
                 switch class(dStreamObj)
-                    case 'eeg',          browserType = 'topographyBrowser';
-                    case 'icaStream',    browserType = 'topographyBrowser';
+                    case 'eeg',          browserType = 'streamBrowser';
                     case 'dataStream',   browserType = 'streamBrowser';
                     case 'mocap',        browserType = 'mocapBrowser';
                     case 'wii',          browserType = 'streamBrowser';
@@ -131,8 +130,6 @@ classdef browserHandleList < handle
                     case 'videoStream',  browserType = 'videoStream1';
                     case 'sceneStream',  browserType = 'sceneStream';
                     case 'pcaMocap',     browserType = 'projectionBrowser';
-                    case 'pcdStream',    browserType = 'pcdBrowserHandle';
-                    case 'coreTimeFrequencyObject', browserType = 'spectrogramBrowser';
                     otherwise,           browserType = 'streamBrowser';
                 end
             end
@@ -148,12 +145,7 @@ classdef browserHandleList < handle
                 obj.endTime = defaults.endTime;
             end
             defaults.step = obj.step;
-            
-            if isempty(obj.nowCursor), 
-                obj.nowCursor = obj.startTime + 2.5;
-            elseif obj.nowCursor == 0
-                obj.nowCursor = obj.startTime + 2.5;
-            end
+            obj.nowCursor = obj.startTime + 2.5;
             defaults.nowCursor = obj.nowCursor;
             defaults.mode = 'slave';
             defaults.font = obj.font;
@@ -181,20 +173,13 @@ classdef browserHandleList < handle
             mobilab.lockGui('Making the figure...');
             try
                 switch browserType
-                    case 'topographyBrowser'
-                        try obj.list{end+1} = plotOnScalp(dStreamObj,defaults);
-                        catch ME
-                            obj.list{end+1} = dataStreamBrowser(dStreamObj,defaults);
-                            obj.bound = max([obj.bound obj.list{end}.windowWidth/2]);
-                            disp([ME.message ' Changing to streamBrowser.']);
-                        end
                     case 'streamBrowser'
-                        obj.list{end+1} = dataStreamBrowser(dStreamObj,defaults);
+                        obj.list{end+1} = DataStreamBrowser(dStreamObj,'slave');
                         obj.bound = max([obj.bound obj.list{end}.windowWidth/2]);
                     case 'mocapBrowser',                  obj.list{end+1} = mocapBrowserHandle(dStreamObj,defaults);
                     case 'videoStream1',                  obj.list{end+1} = videoStreamBrowserHandle1(dStreamObj,defaults);
                     case 'audioStream',                   obj.list{end+1} = audioStreamBrowserHandle(dStreamObj,defaults);
-                    case 'markerStream',                  obj.list{end+1} = dataStreamBrowser(dStreamObj,defaults);    
+                    case 'markerStream',                  obj.list{end+1} = DataStreamBrowser(dStreamObj,'slave');    
                     case 'sceneStream',                   obj.list{end+1} = sceneBrowserHandle(dStreamObj,defaults);
                     case 'generalizedCoordinatesBrowser', obj.list{end+1} = generalizedCoordinatesBrowserHandle(dStreamObj,defaults);
                     case 'phaseSpaceBrowser',             obj.list{end+1} = phaseSpaceBrowserHandle(dStreamObj,defaults);
@@ -203,17 +188,15 @@ classdef browserHandleList < handle
                     case 'segmentedMocapBrowser',         obj.list{end+1} = dStreamObj.mocapBrowser(defaults);
                     case 'projectionBrowser',             obj.list{end+1} = projectionBrowser(dStreamObj,defaults);
                     case 'vectorBrowser',                 obj.list{end+1} = vectorBrowser(dStreamObj,defaults);
-                    case 'spectrogramBrowser',            obj.list{end+1} = spectrogramBrowser(dStreamObj,defaults);
-                    case 'pcdBrowserHandle',              obj.list{end+1} = pcdBrowserHandle(dStreamObj,defaults);
-                    case 'plotROI',                       obj.list{end+1} = plotROI(dStreamObj,defaults);
                     otherwise
-                        obj.list{end+1} = streamBrowserHandle(dStreamObj,defaults);
+                        obj.list{end+1} = DataStreamBrowser(dStreamObj,'slave');
                         obj.bound = max([obj.bound obj.list{end}.windowWidth/2]);
                 end
             catch ME
                 mobilab.lockGui;
                 ME.rethrow;
             end
+            obj.list{end}.plotThisTimeStamp(obj.nowCursor);
             pos = get(obj.list{end}.figureHandle,'position');
             if length(obj.list) == 1
                 set(obj.list{end}.figureHandle,'Position',[0.1 0.5 pos(3:4)]);
@@ -225,8 +208,8 @@ classdef browserHandleList < handle
             mobilab.lockGui;
             obj.list{end}.master = obj; 
             set(obj.sliderHandle,'Max',obj.endTime);
-            set(obj.sliderHandle,'Min',obj.startTime);
             set(obj.sliderHandle,'Value',obj.nowCursor);
+            set(obj.sliderHandle,'Min',obj.startTime);
             set(obj.minTextHandle,'String',num2str(obj.startTime,4),'FontSize',obj.font.size,'FontWeight',obj.font.weight);
             set(obj.maxTextHandle,'String',num2str(obj.endTime,4),'FontSize',obj.font.size,'FontWeight',obj.font.weight);
             set(obj.timeTexttHandle,'String',['Current latency = ' num2str(obj.nowCursor,4) ' sec'],'FontSize',obj.font.size,'FontWeight',obj.font.weight);
@@ -285,7 +268,10 @@ classdef browserHandleList < handle
         end
         %%
         function delete(obj)
-            while ~isempty(obj.list) , obj.list{1}.delete;end
+            while ~isempty(obj.list)
+                obj.list{1}.delete;
+                obj.updateList();
+            end
             if ishandle(obj.slHandle), delete(obj.slHandle);end
             if ishandle(obj.ceHandle), delete(obj.ceHandle);end
             if strcmp(get(obj.timerObj,'Running'),'on'), stop(obj.timerObj);end
@@ -355,7 +341,11 @@ classdef browserHandleList < handle
         function updateList(obj)
             N = length(obj.list);
             I = false(N,1);
-            for it=1:N, if obj.list{it}.timeIndex == -1, I(it) = true;end;end
+            for it=1:N
+                if ~isvalid(obj.list{it})
+                    I(it) = true;
+                end
+            end
             obj.list(I) = [];
             ed8 = findobj(obj.master,'tag','edit8');
             streamNames = get(ed8,'String');

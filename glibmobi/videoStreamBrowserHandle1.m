@@ -18,11 +18,9 @@ classdef videoStreamBrowserHandle1 < browserHandle
             
             obj.videoFile = vStreamObj.videoFile;
             obj.streamHandle = vStreamObj;
-                        
+            
             try
-                disp('Reading the video file...')
                 obj.vObj = VideoReader(obj.streamHandle.videoFile);
-                disp('Done.')
             catch ME
                 ME.rethrow;
             end
@@ -49,7 +47,9 @@ classdef videoStreamBrowserHandle1 < browserHandle
             if isempty(vStreamObj.videoFile), error('You must provide a video file');end
             obj.videoFile = vStreamObj.videoFile;
             try
+                disp('Reading the video file...')
                 obj.Frames = obj.vObj.read();
+                disp('Done.')
             end
             obj.state = false;
             obj.step = defaults.step;
