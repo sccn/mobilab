@@ -60,6 +60,7 @@ classdef EEGBrowser < CoreBrowser
             obj.streamHandle.icachansind = EEG.icachansind;
             if isfield(EEG.event,'type')
                 type = {EEG.event.type};
+                for ev=1:length(type), if isnumeric(type{ev}), type{ev} = num2str(type{ev});end;end
                 latency = round(cell2mat({EEG.event.latency}));
                 obj.streamHandle.event = obj.streamHandle.event.addEvent(latency,type);
             end
@@ -303,31 +304,4 @@ classdef EEGBrowser < CoreBrowser
             end
         end
     end
-end
-
-%% -----------------------------
-function gObject_ButtonDownFcn(hObject,~,~)
-browserObj = get(get(get(hObject,'parent'),'parent'),'userData');
-if strcmp(browserObj.zoomHandle.Enable,'on'), return;end
-%if strcmp(browserObj.dcmHandle.enable,'on'), return;end
-userData = get(hObject,'userData'); 
-if ~iscell(userData), return;end
-if length(userData)~=2, return;end
-
-tpHandle = get(get(hObject,'parent'),'userData');
-try close(tpHandle); end%#ok;
-streamHandle = userData{1};
-if isempty(streamHandle.icawinv), return;end
-tpHandle = figure;
-topoplot(streamHandle.icawinv(:,userData{2}),streamHandle.chanlocs);
-
-position = get(tpHandle,'position');
-A = get(0,'PointerLocation');
-%A = get(get(get(hObject,'parent'),'parent'),'currentpoint');
-set(tpHandle,'position',[A 0.25*position(3:4)]);
-%set(tpHandle,'position',[position(1:2) 0.25*position(3:4)]);
-set(tpHandle,'toolbar','none');
-set(tpHandle,'menubar','none');
-set(hObject,'userData',userData); 
-set(get(hObject,'parent'),'userData',tpHandle);
 end

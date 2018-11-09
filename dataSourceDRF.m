@@ -55,8 +55,6 @@ classdef dataSourceDRF < dataSource
             eegCount = 0;
             mocapCount = 0;
             metadata.sessionUUID = obj.sessionUUID;
-            metadata.owner = struct('name',obj.container.preferences.username,'organization',obj.container.preferences.organization,...
-                'email',obj.container.preferences.email);
                        
             % Preparing for the show!!!
             xDom = xmlread([drfFolder filesep drfName '.xml']);
@@ -349,14 +347,12 @@ classdef dataSourceDRF < dataSource
                 event.label = obj.item{stream_count}.event.label;
                 event.latencyInFrame = obj.item{stream_count}.event.latencyInFrame;
                 timeStamp = obj.item{stream_count}.timeStamp; %#ok
-                artifactMask = sparse(length(obj.item{stream_count}.timeStamp), obj.item{stream_count}.numberOfChannels); %#ok
-                save(obj.item{stream_count}.header,'-mat','-append','event','timeStamp','artifactMask','header','binFile');
+                save(obj.item{stream_count}.header,'-mat','-append','event','timeStamp','header','binFile');
                 obj.item{stream_count}.container = obj;
             end
             
             obj.connect;
             obj.checkTimeStamps;
-            obj.expandAroundBoundaryEvents;
             obj.findSpaceBoundary;
             obj.updateLogicalStructure;
             obj.save(obj.mobiDataDirectory);
@@ -408,11 +404,6 @@ classdef dataSourceDRF < dataSource
                 end
                 fclose(fid);
                 cumSize = zeros(Nf,1);
-                M = [];
-                for folder=1:Nf
-                    cumSize(folder) = size(dsourceObjs{folder}.item{it},1);
-                    M = [M;dsourceObjs{folder}.item{it}.artifactMask]; %#ok
-                end
                 time = dsourceObjs{1}.item{it}.timeStamp;
                 for folder=2:Nf, time = [time offset(folder-1)+1/dsourceObjs{folder}.item{it}.samplingRate+dsourceObjs{folder}.item{it}.timeStamp];end%#ok
                 
@@ -430,11 +421,9 @@ classdef dataSourceDRF < dataSource
                 metadata.sessionUUID = obj.sessionUUID;
                 metadata.parentCommand = parentCommand;
                 metadata.timeStamp = time;
-                metadata.artifactMask = M;
                 metadata.event = eventObj.saveobj;
                 header = metadata2headerFile(metadata);
-                cobj = obj.addItem(header);
-
+                obj.addItem(header);
             end
         end
     end

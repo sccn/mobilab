@@ -112,11 +112,16 @@ classdef CoreBrowser < handle
             hText    = uicontrol('Parent', hFigure, 'Style', 'text','Position',[374.13 14 266.87 12],'String','Current latency = ');
             hTextMin = uicontrol('Parent', hFigure, 'Style', 'text','Position',[125 14 100 12],'String',obj.timeStamp(1),'HorizontalAlignment','left');
             hTextMax = uicontrol('Parent', hFigure, 'Style', 'text','Position',[125+680 14 100 12],'String',obj.timeStamp(end),'HorizontalAlignment','right');
-            hRevEvnt = uicontrol('Parent', hFigure, 'Style', 'pushbutton','Position',[543 53 40  40],'Callback',@previous_Callback,'CData',imgRev);
-            hText2   = uicontrol('Parent', hFigure, 'Style', 'text','Position',[438 81 100 13],'String','Go to event');
-            hPopUp   = uicontrol('Parent', hFigure, 'Style', 'popup',     'Position',[438 37 100 40],'String',obj.eventObj.uniqueLabel);
-            hNextEvnt = uicontrol('Parent', hFigure, 'Style', 'pushbutton','Position',[543+41 53 40 40],'Callback',@next_Callback,'CData',imgNext);
             
+            hText2   = uicontrol('Parent', hFigure, 'Style', 'text','Position',[438 81 100 13],'String','Go to event');
+            hNextEvnt = uicontrol('Parent', hFigure, 'Style', 'pushbutton','Position',[543+41 53 40 40],'Callback',@next_Callback,'CData',imgNext);
+            hRevEvnt = uicontrol('Parent', hFigure, 'Style', 'pushbutton','Position',[543 53 40  40],'Callback',@previous_Callback,'CData',imgRev);
+            if ~isempty(obj.eventObj.uniqueLabel)
+                hPopUp   = uicontrol('Parent', hFigure, 'Style', 'popup',     'Position',[438 37 100 40],'String',obj.eventObj.uniqueLabel);
+            else
+                hPopUp = uicontrol(hFigure,'Position',[438 37 100 40]);
+                set([hNextEvnt hRevEvnt hText2 hPopUp],'Visible','off','Enable','off');
+            end       
             set([hText hText2 hTextMin hTextMax],'BackgroundColor',backgroundColor);
             set([hRev, hPlay hNext hPref hSlider hText, hRevEvnt, hText2, hPopUp, hNextEvnt, hTextMin hTextMax],'Units','Normalized')
             
@@ -164,13 +169,18 @@ classdef CoreBrowser < handle
         end
         %%
         function initEventColor(obj)
-            tmpColor = lines(length(obj.eventObj.uniqueLabel));
-            obj.eventColor = zeros(length(obj.eventObj.latencyInFrame),3);
-            for it=1:length(obj.eventObj.uniqueLabel)
-                loc = ismember(obj.eventObj.label,obj.eventObj.uniqueLabel(it));
-                obj.eventColor(loc,1) = tmpColor(it,1);
-                obj.eventColor(loc,2) = tmpColor(it,2);
-                obj.eventColor(loc,3) = tmpColor(it,3);
+            n = length(obj.eventObj.uniqueLabel);
+            if n < 100 
+                tmpColor = lines(n);
+                obj.eventColor = zeros(length(obj.eventObj.latencyInFrame),3);
+                for it=1:n
+                    loc = ismember(obj.eventObj.label,obj.eventObj.uniqueLabel(it));
+                    obj.eventColor(loc,1) = tmpColor(it,1);
+                    obj.eventColor(loc,2) = tmpColor(it,2);
+                    obj.eventColor(loc,3) = tmpColor(it,3);
+                end
+            else
+                obj.eventColor = lines(length(obj.eventObj.latencyInFrame));
             end
         end
         %%

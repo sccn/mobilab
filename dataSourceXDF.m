@@ -218,10 +218,8 @@ classdef dataSourceXDF < dataSource
                         clear metadata
                         eventStruct = event;
                         metadata = struct('binFile','','header','','name',name,'timeStamp',timeStamp,'numberOfChannels',numberOfChannels,'precision',precision,...
-                            'uuid',uuid,'sessionUUID',obj.sessionUUID,'writable',false,'unit',[],'owner',struct('name',obj.container.preferences.username,...
-                            'organization',obj.container.preferences.organization,'email',obj.container.preferences.email),'hardwareMetaData',hardwareMetaDataObj,...
-                            'parentCommand',parentCommand,'label',[],'event',eventStruct.saveobj,'notes','','artifactMask',sparse(length(timeStamp),...
-                            numberOfChannels),'samplingRate',samplingRate);
+                            'uuid',uuid,'sessionUUID',obj.sessionUUID,'writable',false,'unit',[],'hardwareMetaData',hardwareMetaDataObj,...
+                            'parentCommand',parentCommand,'label',[],'event',eventStruct.saveobj,'notes','','samplingRate',samplingRate);
                         metadata.unit = unit;
                         metadata.label = labels;
                         
@@ -296,10 +294,8 @@ classdef dataSourceXDF < dataSource
                                 fiducials = [];
                             end
                             fid = fopen(binFile,'w');
-                            %for ch=1:length(channels2write), fwrite(fid,mmfObj.Data.x(channels2write(ch),:)',precision);end
                             fwrite(fid,streams{stream_count}.time_series(channels2write,:)',precision);
                             fclose(fid);
-                            %clear mmfObj
                             metadata.numberOfChannels = numberOfChannels;
                             metadata.label = labels;
                             metadata.binFile = binFile;
@@ -309,7 +305,6 @@ classdef dataSourceXDF < dataSource
                             metadata.isReferenced = isReferenced;
                             metadata.fiducials = fiducials;
                             metadata.auxChannel = auxChannel;
-                            metadata.artifactMask = sparse(length(metadata.timeStamp),metadata.numberOfChannels);
                             metadata.unit = unit;
                             metadata.class = 'eeg';
                             header = metadata2headerFile(metadata);
@@ -326,19 +321,10 @@ classdef dataSourceXDF < dataSource
                             
                             unit(~ind) = [];
                             channels2write(~ind) = [];
-                            % artifactMask(:,1:3:numberOfChannels) = A;
-                            % artifactMask(:,2:3:numberOfChannels) = A;
-                            % artifactMask(:,3:3:numberOfChannels) = A;
-                            
-                            
                             binFile = [obj.mobiDataDirectory filesep name '_' uuid '_' obj.sessionUUID '.bin'];
-                            % mmfObj = memmapfile(streams{stream_count}.tmpfile,'Format',{streams{stream_count}.precision...
-                            %     [length(ind) length(streams{stream_count}.time_stamps)] 'x'},'Writable',false);
                             auxChannel.label = metadata.label(~ind);
-                            % auxChannel.data = mmfObj.Data.x(~ind,:)';
                             auxChannel.data = streams{stream_count}.time_series(~ind,:)';
                             fid = fopen(binFile,'w');
-                            % for ch=1:length(channels2write), fwrite(fid,mmfObj.Data.x(channels2write(ch),:)',precision);end
                             fwrite(fid,streams{stream_count}.time_series(channels2write,:)',precision);
                             fclose(fid);
                             % clear mmfObj
@@ -348,7 +334,6 @@ classdef dataSourceXDF < dataSource
                             metadata.label = labels(channels2write);
                             metadata.binFile = binFile;
                             metadata.animationParameters = struct('limits',[],'conn',[],'bodymodel',[]);
-                            metadata.artifactMask = sparse(length(metadata.timeStamp),metadata.numberOfChannels);
                             metadata.unit = unit;
                             metadata.class = 'mocap';
                             metadata.auxChannel = auxChannel;
@@ -382,7 +367,6 @@ classdef dataSourceXDF < dataSource
                             eventObj = eventObj.addEvent(1:length(streams{stream_count}.time_stamps),hedTag);
                             metadata.binFile = binFile;
                             metadata.precision = 'int16';
-                            metadata.artifactMask = sparse(length(metadata.timeStamp),metadata.numberOfChannels);
                             metadata.event = eventObj.saveobj;
                             metadata.class = 'markerStream';
                             header = metadata2headerFile(metadata);
@@ -390,17 +374,11 @@ classdef dataSourceXDF < dataSource
                         % markers    
                         elseif ~isempty(strfind(lower(streams{stream_count}.info.type),'marker')) || ~isempty(strfind(lower(streams{stream_count}.info.type),'event'))
                             binFile = [obj.mobiDataDirectory filesep name '_' uuid '_' obj.sessionUUID '.bin'];
-                            % markerItems = getItemIndexFromItemNameSimilarTo(obj,'marker');
-                            % name = ['markers' num2str(length(markerItems)+1)];
                             metadata.writable = true;
                             fid2 =  fopen(binFile,'w');
                             fwrite(fid2,zeros(length(streams{stream_count}.time_stamps),1),'int16');
                             fclose(fid2);
                             
-                            % fid3 = fopen(streams{stream_count}.tmpfile,'r');
-                            % lines = {};
-                            % while ~feof(fid3), lines{end+1} = fgets(fid3);end %#ok
-                            % fclose(fid3);
                             eventObj = event;
                             if isnumeric(streams{stream_count}.time_series)
                                 Nev = length(streams{stream_count}.time_series);
@@ -414,7 +392,6 @@ classdef dataSourceXDF < dataSource
                             eventObj = eventObj.addEvent(1:length(streams{stream_count}.time_stamps),eventLabel);
                             metadata.binFile = binFile;
                             metadata.precision = 'int16';
-                            metadata.artifactMask = sparse(length(metadata.timeStamp),metadata.numberOfChannels);
                             metadata.event = eventObj.saveobj;
                             metadata.class = 'markerStream';
                             header = metadata2headerFile(metadata);
@@ -423,13 +400,9 @@ classdef dataSourceXDF < dataSource
                         elseif ~isempty(strfind(lower(streams{stream_count}.info.type),'videostream')) ||...
                                 ~isempty(strfind(lower(streams{stream_count}.info.type),'video'))
                             binFile = [obj.mobiDataDirectory filesep name '_' uuid '_' obj.sessionUUID '.bin'];
-                            % mmfObj = memmapfile(streams{stream_count}.tmpfile,'Format',{streams{stream_count}.precision...
-                            %     [numberOfChannels length(streams{stream_count}.time_stamps)] 'x'},'Writable',false);
                             fid = fopen(binFile,'w');
-                            % fwrite(fid,mmfObj.Data.x',precision);
                             fwrite(fid,streams{stream_count}.time_series',precision);
                             fclose(fid);
-                            % clear mmfObj
                             metadata.binFile = binFile;
                             try
                                 exist(streams{stream_count}.info.desc.videoFile,'file')
@@ -441,7 +414,6 @@ classdef dataSourceXDF < dataSource
                             end
                             
                             metadata.unit = 'none';
-                            metadata.artifactMask = sparse(length(metadata.timeStamp),metadata.numberOfChannels);
                             metadata.class = 'videoStream';
                             header = metadata2headerFile(metadata);
                             
@@ -461,27 +433,10 @@ classdef dataSourceXDF < dataSource
                         
                         % audio
                         elseif strfind(lower(streams{stream_count}.info.type),'audio')
-                            
                             binFile = [obj.mobiDataDirectory filesep name '_' uuid '_' obj.sessionUUID '.bin'];
-                            % mmfObj = memmapfile(streams{stream_count}.tmpfile,'Format',{streams{stream_count}.precision...
-                            %     [numberOfChannels length(streams{stream_count}.time_stamps)] 'x'},'Writable',false);
                             fid = fopen(binFile,'w');
-                            % sr = metadata.samplingRate;
-                            % if sr > 20e3
-                            %     metadata.samplingRate = fix(sr/2);
-                            %     metadata.timeStamp    = metadata.timeStamp(1:2:end);
-                            %     b = fir1(sr, 0.9*sr/sr, 'low', hann(sr+1), 'scale');
-                            %     for ch=1:numberOfChannels
-                            %         data = filtfilt_fast(b,1,mmfObj.Data.x(ch,1:2:end)');
-                            %         fwrite(fid,data(:),precision);
-                            %     end
-                            % else for ch=1:numberOfChannels, fwrite(fid,mmfObj.Data.x(ch,:)',precision);end
-                            % end
-                            
                             fwrite(fid,streams{stream_count}.time_series',precision);
                             fclose(fid);
-                            % clear mmfObj
-                            metadata.artifactMask = sparse(length(metadata.timeStamp),numberOfChannels);
                             metadata.binFile = binFile;
                             metadata.class = 'audioStream';
                             header = metadata2headerFile(metadata);
@@ -577,7 +532,6 @@ classdef dataSourceXDF < dataSource
                             obj.item{index}.event = obj.item{index}.event.addEvent(length(obj.item{index}.timeStamp),'boundary');
                             
                             saveProperty(obj.item{index},'timeStamp',[obj.item{index}.timeStamp dsourceObjs{folder}.item{it}.timeStamp]);
-                            saveProperty(obj.item{index},'artifactMask',[obj.item{index}.artifactMask; dsourceObjs{folder}.item{it}.artifactMask]);
                             header = obj.item{index}.header;
                             constructorHandle = eval(['@' class(obj.item{index})]);
                             delete(obj.item{index});
@@ -598,7 +552,6 @@ classdef dataSourceXDF < dataSource
                             obj.item{ind}.event = obj.item{ind}.event.addEvent(length(obj.item{ind}.timeStamp),'boundary');
                             
                             saveProperty(obj.item{ind},'timeStamp',[obj.item{ind}.timeStamp dsourceObjs{folder}.item{it}.timeStamp]);
-                            saveProperty(obj.item{ind},'artifactMask',[obj.item{ind}.artifactMask; dsourceObjs{folder}.item{it}.artifactMask]);
                             header = obj.item{ind}.header;
                             constructorHandle = eval(['@' class(obj.item{ind})]);
                             delete(obj.item{ind});
