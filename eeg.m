@@ -31,6 +31,22 @@ classdef eeg < dataStream
             obj@dataStream(header);
         end
         %%
+        function channelSpace = get.channelSpace(obj)
+            stack = dbstack;
+            if any(strcmp({stack.name},'coreStreamObject.set.channelSpace')), label = obj.channelSpace;return;end
+            if isempty(obj.channelSpace), obj.channelSpace = retrieveProperty(obj,'channelSpace');end
+            channelSpace = obj.channelSpace;
+        end
+        function set.channelSpace(obj,channelSpace)
+            stack = dbstack;
+            if any(strcmp({stack.name},'eeg.get.channelSpace'))
+                obj.channelSpace = channelSpace;
+                return;
+            end
+            obj.channelSpace = channelSpace;
+            saveProperty(obj,'channelSpace',channelSpace);
+        end
+        %%
         function isReferenced = get.isReferenced(obj)
             stack = dbstack;
             if any(strcmp({stack.name},'eeg.set.isReferenced'))
@@ -417,7 +433,7 @@ classdef eeg < dataStream
                 EEG.urevent = EEG.event;
             end
             if ismmf && passData, pop_saveset( EEG, [name '.set'],path);end
-            if ~isCalledFromIca && isCalledFromGui
+            if ~isCalledFromGui
                 [ALLEEG,EEG,CURRENTSET] = eeg_store(ALLEEG, EEG);
                 assignin('base','ALLEEG',ALLEEG);
                 assignin('base','CURRENTSET',CURRENTSET);
