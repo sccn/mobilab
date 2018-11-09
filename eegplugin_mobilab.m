@@ -37,4 +37,9 @@ h = findobj(filemenu,'Label','Import data');
 uimenu( h, 'label', 'Into MoBILAB', 'callback','runmobilab;');
 
 h = findobj(fig,'Label','Tools');
-uimenu( h, 'label', 'MoBILAB','CallBack','disp(''runmobilab'');runmobilab;');
+h = uimenu( h, 'label', 'MoBILAB');
+uimenu( h, 'label', 'GUI','CallBack','disp(''runmobilab'');runmobilab;');
+uimenu( h, 'label', 'MultiStream Browser', 'callback','mobilab.msBrowser();');
+uimenu( h, 'label', 'Insert Events', 'callback','mobilab.insertEvents();');
+uimenu( h, 'label', 'Export to EEGLAB', 'callback','mobilab.export2eeglab();');
+uimenu( h, 'label', 'EEG Browser', 'callback','pop_eegbrowser(EEG);');
