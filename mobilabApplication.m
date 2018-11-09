@@ -53,11 +53,9 @@ classdef mobilabApplication < handle
             try
                 functionHandle = eval(['@' functionHandle]);
                 n = length(folders);
-                matlabpool open
-                parfor it=1:n
+                for it=1:n
                     functionHandle(folders{it});
                 end
-                matlabpool close
             catch ME
                 ME.rethrow;
             end
@@ -99,115 +97,28 @@ classdef mobilabApplication < handle
         end
         %%
         function setPreferences(obj)
-           
-            stickFigure0 = obj.preferences.mocap.stickFigure;
-            stickFigure1 = fullfile(obj.path,'data','sccnOnePersonStickFigure.mat');
-            stickFigure2 = fullfile(obj.path,'data','sccnTwoPeopleStickFigure.mat');
-            stickFigure = unique({stickFigure0,stickFigure1,stickFigure2});
-            
-            tmpHeadModels = pickfiles([obj.path filesep 'data'],'headModel');
-            headModels = cell(size(tmpHeadModels,1),1);
-            rmThis = zeros(size(headModels));
-            for it=1:size(tmpHeadModels,1)
-                headModels{it} = deblank(tmpHeadModels(it,:));
-                if ~isempty(strfind(headModels{it},'.svn')), rmThis(it) = it;end
-            end
-            rmThis(rmThis==0)=[];
-            headModels(rmThis) = [];
-            
-            oldGui = obj.preferences.gui;
-            
-            prefObj = [...
-                PropertyGridField('username',obj.preferences.username,'Category','User info','DisplayName','Username','Description','Your name. The files resulting from your analysis will be owned by you.'),...
-                PropertyGridField('organization',obj.preferences.organization,'Category','User info','DisplayName','Organization','Description','Organization where you belong, for instance, UCSD, NCTU, UTSA, etc..'),...
-                PropertyGridField('email',obj.preferences.email,'Category','User info','DisplayName','email','Description','Your email (optional). This allows your collaborators contact you regarding the work you''ve done, this info NEVER will be used by MoBILAB software for other porpuse different than that.'),...
-                PropertyGridField('backgroundColor',obj.preferences.gui.backgroundColor,'Category','GUI','DisplayName','BackgroundColor','Description',...
-                'Backgroud color for MoBILAB''s guis (set it to [0.76 0.77 1] to get EEGLAB''s color).')...
-                PropertyGridField('buttonColor',obj.preferences.gui.buttonColor,'Category','GUI','DisplayName','Botton color','Description','')...
-                 PropertyGridField('fontColor',obj.preferences.gui.fontColor,'Category','GUI','DisplayName','FontColor','Description',...
-                'Set to false and all graphic outputs (waitbars and guis) will be blocked. This is useful if you''re running scripts then you don''t get windows poping up all the time.')...
-                PropertyGridField('interpolation', obj.preferences.mocap.interpolation,'Type',PropertyType('char', 'row', {'pchip','linear','nearest','spline'}),...
-                'Category', 'Mocap', 'DisplayName', 'Interpolation method','Description',...
-                'Interpolation method to fill-in occluded markers at certain time point (spline methods are recommended: ''pchip'', and ''spline'').')...
-                PropertyGridField('smoothing', obj.preferences.mocap.smoothing,'Type',PropertyType('char', 'row', {'sgolay','moving','lowess','loess','rlowess','rloess'}),...
-                'Category', 'Mocap', 'DisplayName', 'Smoothing method','Description',...
-                'Method to smooth out each channel of mocap data (''sgolay'' is the option good and slow and ''moving'' is the one fast and poor).')...
-                PropertyGridField('lowpassCutoff', obj.preferences.mocap.lowpassCutoff, 'Category', 'Mocap', 'DisplayName', 'Lowpass cutoff','Description','')...
-                PropertyGridField('derivationOrder', obj.preferences.mocap.derivationOrder, 'Category', 'Mocap', 'DisplayName', 'Derivative order','Description',...
-                'Specifies the maximum order of mocap time derivatives, set it to 3 will compute: 1) velocity, 2) acceleration, and 3) jerk.')...
-                PropertyGridField('stickFigure', obj.preferences.mocap.stickFigure,'Type',PropertyType('char','row',stickFigure),'Category','Mocap',...
-                'DisplayName', 'Mocap stick figure','Description','')...
-                PropertyGridField('bodyModel', obj.preferences.mocap.bodyModel,'Category','Mocap','DisplayName', 'Body model','Description','Mat file containing the variables connectivity (connectivity matrix of the body parts/nodes) and nodeLabels (cell array with the names of the body parts).')...
-                PropertyGridField('resampleMethod', obj.preferences.eeg.resampleMethod,'Type',PropertyType('char','row', {'linear','nearest','spline','pchip'}),'Category','EEG',...
-                'DisplayName','Resampling method','Description','Resampling is done in two steps, 1) lowpass at a half of the new sampling frequency, and 2) interpolation on the new time axis.')...
-                PropertyGridField('filterType', obj.preferences.eeg.filterType,'Type',PropertyType('char','row', {'lowpass','highpass','bandpass'}),'Category','EEG',...
-                'DisplayName','Bandpass cutoff','Description','')...
-                PropertyGridField('cutoff', obj.preferences.eeg.cutoff,'Category','EEG','DisplayName','Filter cutoff frequencies','Description','')...
-                PropertyGridField('headModel',obj.preferences.eeg.headModel,'Type',PropertyType('char','row', headModels),'Category','EEG','DisplayName','Head model','Description',...
-                'Mat file containing the array of surfaces defining different layers of tissue in certain anatomical space (could be MNI, ICBM, or other).')...
-                PropertyGridField('tmpDirectory', obj.preferences.tmpDirectory,'DisplayName','Temp directory','Description',...
-                'Directory where save temporary files during MoBILAB''s session.')];
-                   
-            prefObj = prefObj.GetHierarchy();
-            
-            % create figure
-            hFigure = figure('MenuBar','none','Name','Preferences','NumberTitle', 'off','Toolbar', 'none','Units','pixels','userData',0);
-            position = get(hFigure,'position');
-            set(hFigure,'position',[position(1) position(2)-50 420 570]);
-            hPanel = uipanel(hFigure,'Title','','BackgroundColor','white','Units','pixels','Position',[0 77 418 490],'BorderType','none');
-            %g = PropertyGrid(f,'Properties', prefObj,'Position', [0 0 1 1]);
-            g = PropertyGrid(hPanel,'Properties', prefObj,'Position', [0 0 1 1]);
-            uicontrol(hFigure,'Position',[180 15 80 30],'String','Cancel','ForegroundColor',obj.preferences.gui.fontColor,...
-                    'BackgroundColor',obj.preferences.gui.buttonColor,'Callback',@cancelCallback);
-            uicontrol(hFigure,'Position',[290 15 80 30],'String','Save','ForegroundColor',obj.preferences.gui.fontColor,...
-                    'BackgroundColor',obj.preferences.gui.buttonColor,'Callback',@okCallback);
-            uiwait(hFigure); % wait for figure to close
-            
-            if ~ishandle(hFigure), return;end
-            if ~get(hFigure,'userData')
-                close(hFigure);
+            properyArray = {...
+                {'GUI background color','GUI button color','Font color','Temp directory'},...
+                {num2str(obj.preferences.gui.backgroundColor),num2str(obj.preferences.gui.buttonColor),num2str(obj.preferences.gui.fontColor), obj.preferences.tmpDirectory}};
+            params = inputdlg(properyArray{1},'Preferences',1,properyArray{2});
+            if isempty(params)
                 return;
             end
-            close(hFigure);
-            drawnow
-            
-            val = g.GetPropertyValues();
-            obj.preferences.username = val.username;
-            obj.preferences.organization = val.organization;
-            obj.preferences.email = val.email;
-            
-            obj.preferences.gui.fontColor = val.fontColor;
-            obj.preferences.gui.backgroundColor = val.backgroundColor;
-            obj.preferences.gui.buttonColor = val.buttonColor;
-            
-            obj.preferences.mocap.interpolation = val.interpolation;
-            obj.preferences.mocap.smoothing = val.smoothing;
-            obj.preferences.mocap.lowpassCutoff = val.lowpassCutoff;
-            obj.preferences.mocap.derivationOrder = val.derivationOrder;
-            obj.preferences.mocap.stickFigure = val.stickFigure;
-            obj.preferences.mocap.bodyModel = val.bodyModel;
-            
-            obj.preferences.eeg.resampleMethod = val.resampleMethod;
-            obj.preferences.eeg.filterType = val.filterType;
-            obj.preferences.eeg.cutoff = val.cutoff;
-            obj.preferences.eeg.headModel = val.headModel;
-            obj.preferences.tmpDirectory = val.tmpDirectory;
-            
+            obj.preferences.gui.backgroundColor = str2num(params{1});
+            obj.preferences.gui.buttonColor = str2num(params{2});
+            obj.preferences.gui.fontColor = str2num(params{3});
+            obj.preferences.tmpDirectory = params{4};
             configuration = obj.preferences; %#ok
-            save(fullfile(getHomeDir,'.mobilab.mat'),'configuration');
-                
-            reDraw = any(obj.preferences.gui.fontColor ~= oldGui.fontColor);
-            reDraw = reDraw | any(obj.preferences.gui.backgroundColor ~= oldGui.backgroundColor);
-            reDraw = reDraw | any(obj.preferences.gui.buttonColor ~= oldGui.buttonColor);
+            save(fullfile(getHomeDir,'.mobilab.mat'),'configuration');    
             [isActive,figureHandle] = obj.isGuiActive();
-            if isActive && reDraw, close(figureHandle); obj.gui;end
+            if isActive, close(figureHandle); obj.gui;end
         end
         %%
         function figureHandle = gui(obj,callback)
             if nargin < 2, callback = 'dispNode_Callback';end
             
             [isActive,figureHandle] = obj.isGuiActive();
-            if length(figureHandle) > 1, 
+            if length(figureHandle) > 1
                 try close(figureHandle(2:end));end;%#ok
                 figureHandle = figureHandle(1);
             end 
@@ -220,12 +131,8 @@ classdef mobilabApplication < handle
                 
                 % creating the menu
                 hFile = uimenu('Label','File','Parent',figureHandle);
-                hImport = uimenu(hFile,'Label','Import data');
-                uimenu(hImport,'Label','From file','Callback','mobilab.loadDataWizard(''file'');mobilab.gui;');
-                uimenu(hImport,'Label','From folder (concat. files)','Callback','mobilab.loadDataWizard(''folder'');mobilab.gui;');
-                uimenu(hImport,'Label','From DataRiver .bdf file','Callback','mobilab.loadDataWizard(''dr_bdf'');mobilab.gui;');
-                
-                uimenu(hFile,'Label','Load','Callback','mobilab.loadDataWizard(''mobi'');mobilab.gui;');
+                uimenu(hFile,'Label','Import file','Callback','mobilab.loadData(''file'');mobilab.gui;');
+                uimenu(hFile,'Label','Load','Callback','mobilab.loadData(''mobi'');mobilab.gui;');
                 uimenu(hFile,'Label','Save as','Callback','mobilab.saveAs;mobilab.gui;');
                 uimenu(hFile,'Label','Close folder','Callback','delete(mobilab.allStreams);mobilab.gui;');
                 
@@ -236,6 +143,7 @@ classdef mobilabApplication < handle
                 
                 hTools = uimenu('Label','Tools','Parent',figureHandle);
                 uimenu(hTools,'Label','MultiStream browser','Callback','mobilab.msBrowser;');
+                uimenu(hTools,'Label','Insert events markers','Callback','mobilab.insertEvents;');
                 %uimenu(hTools,'Label','Copy and Import folders (batch mode)','Callback','mobilab.copyImportFolder;');
                 %uimenu(hTools,'Label','Mocap workflow','Callback','mobilab.mocapWorkflow;');
                 %uimenu(hTools,'Label','Mocap events editor','Callback','mobilab.eventsEditor;');
@@ -327,7 +235,6 @@ classdef mobilabApplication < handle
             
             callbacks = cell(N,1);
             for it=1:N, callbacks{it} = {funcHandle,obj.allStreams.item{it}};end
-            
             try
                 
                 % cleaning the form
@@ -381,7 +288,7 @@ classdef mobilabApplication < handle
                 renderer.setClosedIcon(jImageIcon);
                 renderer.setOpenIcon(jImageIcon);
                 renderer.setLeafIcon(jImageIcon);
-                javax.swing.ToolTipManager.sharedInstance().registerComponent(jTree);
+                javax.swing.ToolTipManager.sharedInstance(1).registerComponent(jTree);
                 jTree.setCellRenderer(renderer);
                 %set(jTree,'userData',callbacks);
                 set(figureHandle,'userData',callbacks)
@@ -449,6 +356,11 @@ classdef mobilabApplication < handle
             if isempty(obj.allStreams) || ~isvalid(obj.allStreams), error('Load some data first');end
             msBrowserHandle = MultiStreamBrowser(obj);
         end
+        function figHandle = insertEvents(obj)
+            if isempty(obj.allStreams) || ~isvalid(obj.allStreams), error('Load some data first');end
+            figHandle = InsertEvents(obj);
+        end
+        
         %%
         function copyImportFolder(obj,source,destination)
             if nargin < 2
@@ -644,6 +556,10 @@ classdef mobilabApplication < handle
         end
         %%
         function loadDataWizard(obj,format)
+            warning('MoBILAB:deprecated','This method has been deprecated in favor of ''loadData'', calling ''loadDataWizard'' will result in an error in future versions.');
+            loadData(obj,format);
+        end
+        function loadData(obj,format)
             switch lower(format)
                 case 'file',   guiFun = @ImportFile;
                 case 'folder', guiFun = @ImportFolder;
@@ -662,47 +578,7 @@ classdef mobilabApplication < handle
                     if obj.isGuiActive, obj.gui;end
                     return;
             end
-            
-            try
-                h = guiFun(obj);
-                uiwait(h);
-                userData = get(h,'UserData');
-                delete(h);
-                drawnow;
-                if isempty(userData), return;end
-                source = userData.source;
-                mobiDataDirectory = userData.mobiDataDirectory;
-                
-                [~,~,ext] = fileparts(source);
-                if isempty(ext) && exist(source,'dir'), ext = 'dir';end
-                
-                switch ext
-                    case '.xdf',  importFun = @dataSourceXDF; importFunStr = 'dataSourceXDF';
-                    case '.xdfz', importFun = @dataSourceXDF; importFunStr = 'dataSourceXDF';
-                    case '.set',  importFun = @dataSourceSET; importFunStr = 'dataSourceSET';
-                    case '.drf',  importFun = @dataSourceDRF; importFunStr = 'dataSourceDRF';
-                    case '.bdf',  importFun = @dataSourceBDF; importFunStr = 'dataSourceBDF';
-                    case 'dir',   importFun = @dataSourceFromFolder; importFunStr = 'dataSourceFromFolder';
-                    otherwise,    error('Unknown format.')
-                end
-                
-                if strcmpi(ext,'.bdf')
-                    disp('Running:');
-                    disp(['  mobilab.allStreams = ' importFunStr '( ''' source ''' , ''' mobiDataDirectory ''', configList );' ]);
-                    
-                    configList = userData.configList;
-                    obj.allStreams = importFun(source,mobiDataDirectory,configList);
-                    return;
-                end
-                
-                disp('Running:');
-                disp(['  mobilab.allStreams = ' importFunStr '( ''' source ''' , ''' mobiDataDirectory ''');' ]);
-                
-                obj.allStreams = importFun(source,mobiDataDirectory);
-                if obj.isGuiActive, obj.gui;end
-            catch ME
-                errordlg(ME.message);
-            end
+            guiFun(obj);
         end
         %%
         function refresh(obj,~)
@@ -824,4 +700,68 @@ for it=1:length(dependencyTree)
         end
     end
 end
+end
+
+function ImportFile(mobilab)
+fig = figure('Menu','none','WindowStyle','modal','NumberTitle','off','Name','Import file','UserData',mobilab);
+fig.Position(3:4) = [534   132];
+
+filenameCtrl = uicontrol(fig,'Style','edit','Position',[88   98   350    20]);
+filenameLabel = uicontrol(fig,'Style','text','String','File name','Position',[10   96    72    20]);
+uicontrol(fig,'Style','text','String','MoBI folder','Position',[10   65    83    20]);
+folderCtrl = uicontrol(fig,'Style','edit','Position',[88   68   350    20]);
+browse = uicontrol(fig,'Style','pushbutton','String','Select','Position',[439   98    83    20],'Callback',@selectFile);
+uicontrol(fig,'Style','text','String','_MoBI','Position',[439   66    44    20]);
+
+btnOk = uicontrol(fig,'Style','pushbutton','String','Ok','Position',[124    15    83    20],'Callback',@onSet);
+btnCancel = uicontrol(fig,'Style','pushbutton','String','Cancel','Position',[232    15    83    20],'Callback',@onCancel);
+btnHelp = uicontrol(fig,'Style','pushbutton','String','Help','Position',[338    15    83    20],'Callback',@onHelp);
+end
+
+function selectFile(src,evnt)
+[FileName,PathName] = uigetfile2({'*.xdf;*.xdfz','LSL files (*.xdf, *.xdfz)';'*.drf;*.bdf','Datariver File (*.drf, *.bdf)';'*.set;*.SET','EEGLAB File (*.set, *.SET)'},'Select the source file');
+if any([isnumeric(FileName) isnumeric(PathName)]), return;end
+sourceFileName = fullfile(PathName,FileName);
+[~,filename,ext] = fileparts(sourceFileName);
+src.Parent.Children(9).String = sourceFileName;
+src.Parent.Children(6).String = fullfile(PathName,filename);
+end
+
+function onSet(src,evnt)
+sourceFileName = src.Parent.Children(9).String;
+if ~exist(sourceFileName,'file')
+    errordlg('Cannot locate the file.');
+end
+mobiDataDirectory = [src.Parent.Children(6).String '_MoBI'];
+[~,~,ext] = fileparts(sourceFileName);
+if isempty(ext) && exist(source,'dir'), ext = 'dir';end
+switch ext
+    case '.xdf',  importFun = @dataSourceXDF; importFunStr = 'dataSourceXDF';
+    case '.xdfz', importFun = @dataSourceXDF; importFunStr = 'dataSourceXDF';
+    case '.set',  importFun = @dataSourceSET; importFunStr = 'dataSourceSET';
+    case 'dir',   importFun = @dataSourceFromFolder; importFunStr = 'dataSourceFromFolder';
+    otherwise,    error('Unknown format.')
+end
+src.Parent.Visible = 'off';
+drawnow;
+disp('Running:');
+disp(['  mobilab.allStreams = ' importFunStr '( ''' sourceFileName ''' , ''' mobiDataDirectory ''');' ]);
+try
+    src.Parent.UserData.allStreams = importFun(sourceFileName,mobiDataDirectory);
+catch ME
+    errordlg(ME.message);
+end
+src.Parent.UserData.refresh;
+close(src.Parent);
+end
+
+function onCancel(src,evnt)
+close(src.Parent);
+end
+
+function onHelp(src,evnt)
+disp('Import file:')
+disp('  1- Select the raw xdf file')
+disp('  2- Select the folder where to save the MoBI data (usually automatically selected)')
+disp('  3- Click OK to import the file.')
 end

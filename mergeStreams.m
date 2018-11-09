@@ -35,7 +35,6 @@ prename = 'merged_';
 metadata.name = [prename metadata.name];
 metadata.mmfName = fullfile(path,[metadata.name '_' char(metadata.uuid) '.bin']);
 metadata.timeStamp = tu;
-metadata.artifactMask = sparse(length(metadata.timeStamp),streamList{1}.numberOfChannels);
 obj_properties = fieldnames(metadata);
 obj_values     = struct2cell(metadata);
 varargIn = cat(1,obj_properties,obj_values);
