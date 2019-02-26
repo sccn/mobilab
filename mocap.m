@@ -159,7 +159,6 @@ classdef mocap < dataStream
             metadata.class = class(obj);
             metadata.size = size(obj);
             metadata.event = obj.event.uniqueLabel;
-            metadata.artifactMask = sum(metadata.artifactMask(:) ~= 0);
             metadata.writable = double(metadata.writable);
             metadata.history = obj.history;
             if isempty(metadata.animationParameters.conn)
@@ -415,8 +414,6 @@ classdef mocap < dataStream
                 for it=1:N
                     commandHistory.varargin{1} = it;
                     cobj = tmpObj.copyobj(commandHistory);
-                    if it==1, artifactIndices = cobj.artifactMask(:) ~= 0;end
-                    
                     for jt=1:cobj.numberOfChannels
                         
                         % deriving
@@ -427,9 +424,6 @@ classdef mocap < dataStream
                         cobj.mmfObj.Data.x(:,jt) = filtfilt_fast(b,a,cobj.mmfObj.Data.x(:,jt));
                         obj.statusbar((Nch*(it-1)+jt));
                     end
-                    
-                    % soft masking
-                    if any(artifactIndices), cobj.mmfObj.Data.x(artifactIndices) = cobj.mmfObj.Data.x(artifactIndices).*(1-cobj.artifactMask(artifactIndices));end
                     tmpObj = cobj;
                 end
                 if dispCommand
@@ -1046,7 +1040,6 @@ classdef mocap < dataStream
                     channels = commandHistory.varargin{2};
                     metadata.numberOfChannels = length(channels);
                     metadata.label = obj.label(channels);
-                    metadata.artifactMask = obj.artifactMask(:,channels);
                     allocateFile(metadata.binFile,metadata.precision,[length(metadata.timeStamp) obj.numberOfChannels]);
                     
                 case 'timeDerivative'
@@ -1068,7 +1061,6 @@ classdef mocap < dataStream
                         fid = fopen(metadata.binFile,'w');
                         fwrite(fid,obj.mmfObj.Data.x(:,channels),obj.precision);
                         fclose(fid);
-                        metadata.artifactMask = obj.artifactMask(:,channels);
                         metadata.numberOfChannels = length(channels);
                         metadata.label = obj.label(channels);
                     else
@@ -1081,7 +1073,6 @@ classdef mocap < dataStream
                     metadata.binFile = fullfile(path,[metadata.name '_' char(metadata.uuid) '_' metadata.sessionUUID '.bin']);
                     load(obj.bodyModelFile);
                     metadata.numberOfChannels = length(nodeLabel)*3;
-                    metadata.artifactMask = sparse(length(metadata.timeStamp),metadata.numberOfChannels);
                     allocateFile(metadata.binFile,metadata.precision,[length(metadata.timeStamp) obj.numberOfChannels]);
                     metadata.connectivity = connectivity; %#ok
                     metadata.nodeLabel = nodeLabel;
@@ -1103,7 +1094,6 @@ classdef mocap < dataStream
                     metadata.treeNodes = treeNodes;
                     metadata.lsMarker2JointMapping = ls_marker2nodesMapping;
                     metadata.numberOfChannels = length(nodes)*3;
-                    metadata.artifactMask = sparse(length(metadata.timeStamp),metadata.numberOfChannels);
                     allocateFile(metadata.binFile,metadata.precision,[length(metadata.timeStamp) metadata.numberOfChannels]);
                     
                     newLabel = repmat(nodes,1,3);
@@ -1137,7 +1127,6 @@ classdef mocap < dataStream
                     if fid<=0, error('Invalid file identifier. Cannot create the copy object.');end;
                     fwrite(data(:),obj.precision);
                     fclose(fid);
-                    metadata.artifactMask = obj.artifactMask(:,channels);
                     N = length(channels);
                     metadata.label = cell(N,1);
                     for it=1:N, metadata.label{it} = obj.label{channels(it)};end

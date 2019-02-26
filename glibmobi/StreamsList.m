@@ -69,44 +69,27 @@ for it=1:N
     Value = 1;
     switch class(browserListObj.list{it}.streamHandle)
         case 'eeg'
-            strPopup = {'topographyBrowserHandle','streamBrowserHandle'};
+            strPopup = {'DataStreamBrowser'};
         case 'icaStream'
-            strPopup = {'topographyBrowserHandle','streamBrowserHandle'};
+            strPopup = {'DataStreamBrowser'};
         case {'dataStream','wii'}
-            strPopup = 'streamBrowserHandle';
+            strPopup = {'DataStreamBrowser'};
         case 'mocap'
-            strPopup = {'mocapBrowserHandle' 'streamBrowserHandle' 'generalizedCoordinatesBrowserHandle','cometBrowserHandle'};%'phaseSpaceBrowser'
-            switch class(browserListObj.list{it})
-                case 'mocapBrowserHandle'
-                    Value = 1;
-                case 'streamBrowserHandle'
-                    Value = 2;
-                case 'generalizedCoordinatesBrowserHandle'
-                    Value = 3;
-                    %case 'phaseSpaceBrowserHandle'
-                    %    Value = 4;
-                case 'cometBrowserHandle'
-                    Value = 4;
-            end
+            strPopup = {'mocapBrowserHandle' 'DataStreamBrowser' 'generalizedCoordinatesBrowserHandle','cometBrowserHandle'};%'phaseSpaceBrowser'
         case 'videoStream'
             strPopup = {'videoStreamBrowserHandle'};
         case 'audioStream'
             strPopup = {'audioStreamBrowserHandle'};
         case 'wii'
-            strPopup = {'mocapBrowserHandle' 'streamBrowserHandle'};
+            strPopup = {'mocapBrowserHandle' 'DataStreamBrowser'};
         case 'projectedMocap'
             strPopup = {'projectionBrowserHandle' 'vectorBrowserHandle'};
-            if isa(browserListObj.list{it},'projectionBrowserHandle')
-                Value = 1;
-            else
-                Value = 2;
-            end
         case 'coreTimeFrequencyObject'
             strPopup = 'spectrogramBrowserHandle';
         case 'pcdStream'
              strPopup = {'pcdBrowserHandle','plotROI'};
         otherwise
-            strPopup = 'streamBrowserHandle';
+            strPopup = 'DataStreamBrowser';
     end
     Value = find(strcmp(strPopup,class(browserListObj.list{it})));
     if isempty(Value), Value = 1;end

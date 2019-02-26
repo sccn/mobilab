@@ -27,14 +27,20 @@ addpath(p);
 %   plus one from LIMO plugin. So, need to be more specific: 
 %   find the Import Data menu within the top-level File menu
 
-filemenu = findobj(fig,'Label','File','type','uimenu','parent',fig);
-h = findobj(filemenu,'Label','Import data');
+%filemenu = findobj(fig,'Label','File','type','uimenu','parent',fig);
+%h = findobj(filemenu,'Label','Import data');
 
 % uimenu( h, 'label', 'From file (.xdf, .xdfz, .drf)', 'callback','allDataStreams = pop_load_file_mobilab;');
 % uimenu( h, 'label', 'From folder (concat LSL or DataRiver files)', 'callback','allDataStreams = pop_load_folder_mobilab;');
 % uimenu( h, 'label', 'From legacy DataRiver .bdf file', 'callback','allDataStreams = pop_load_bdf;');
 % uimenu( h, 'label', 'From MoBILAB folder', 'callback','allDataStreams = pop_load_MoBI;');
-uimenu( h, 'label', 'Into MoBILAB', 'callback','runmobilab;');
+% uimenu( h, 'label', 'Into MoBILAB', 'callback','runmobilab;');
 
-h = findobj(fig,'Label','Tools');
-uimenu( h, 'label', 'MoBILAB','CallBack','disp(''runmobilab'');runmobilab;');
+h = uimenu( fig, 'label', 'MoBILAB');
+uimenu(h,'Label','Import xdf file','Callback','mobilab.loadData(''file'');waitfor(findall(0,''Tag'',''MoBILAB:ImportFile''));mobilab.export2eeglab;');
+uimenu(h,'Label','Load MoBI folder','Callback','mobilab.loadData(''mobi'');');
+uimenu( h, 'label', 'GUI','CallBack','disp(''runmobilab'');runmobilab;');
+uimenu( h, 'label', 'MultiStream Browser', 'callback','mobilab.msBrowser();');
+uimenu( h, 'label', 'Insert Events', 'callback','mobilab.insertEvents();');
+uimenu( h, 'label', 'Export to EEGLAB', 'callback','mobilab.export2eeglab();');
+uimenu( h, 'label', 'EEG Browser', 'callback','pop_eegbrowser(EEG);');

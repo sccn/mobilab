@@ -71,9 +71,6 @@ classdef dataSourceFromFolder < dataSource
                 for jt=1:length(files), java.io.File([folder filesep files{jt}]).delete();end
                 rmdir(folder,'s')
             end
-            %markerIndices = obj.getItemIndexFromItemClass('markerStream');
-            %if length(markerIndices) > 1, obj.makeMultiMarkerStreamObject;end
-            obj.expandAroundBoundaryEvents;
             obj.findSpaceBoundary;
             obj.updateLogicalStructure;
             if seeLogFile, disp(['Logs were saved in: ' [obj.mobiDataDirectory filesep 'logfile.txt']]);end

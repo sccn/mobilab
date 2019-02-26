@@ -190,7 +190,7 @@ classdef dataStream < coreStreamObject
             if varargin{1} == -1
                 prompt = {'Enter the length of the window',...
                     'Enter the method (''moving'',''lowess'',''loess'',''sgolay''):'};
-                dlg_title = 'Smooth input parameters';
+                dlg_title = 'Smooth';
                 num_lines = 1;
                 def = {'32','moving'};
                 varargin = inputdlg2(prompt,dlg_title,num_lines,def);
@@ -226,7 +226,6 @@ classdef dataStream < coreStreamObject
             if ~isnumeric(channels), error('Invalid input argument.');end
             if ~all(intersect(channels,1:obj.numberOfChannels)), error('Invalid input argument.');end
             Nch = length(channels);
-            I = obj.artifactMask~=0;
             fprintf('allDataStreams.item{%i}.smooth(%i,''%s'');\n',obj.container.findItem(obj.uuid),movingWindow,method);
             try 
                 commandHistory.commandName = 'smooth';
@@ -245,85 +244,13 @@ classdef dataStream < coreStreamObject
                 cobj.mmfObj.Writable = true;
                 obj.initStatusbar(1,Nch,'Smoothing...');
                 for it=1:Nch
-                    cobj.mmfObj.Data.x(:,it)  = smooth(obj.timeStamp(:),obj.mmfObj.Data.x(:,channels(it)).*...
-                        (1-obj.artifactMask(:,channels(it))),movingWindow,method);
+                    cobj.mmfObj.Data.x(:,it)  = smooth(obj.timeStamp(:),obj.mmfObj.Data.x(:,channels(it)),...
+                        movingWindow,method);
                     obj.statusbar(it);
                 end
-                if any(I(:)), cobj.mmfObj.Data.x(I) = cobj.mmfObj.Data.x(I).*(1-cobj.artifactMask(I));end
                 cobj.mmfObj.Writable = false; 
             catch ME
                 if exist('cobj','var'), obj.container.deleteItem(cobj.container.findItem(cobj.uuid));end
-                ME.rethrow;
-            end
-        end
-        %%
-        function cleanLine(obj,frequencies,channels)
-            if nargin < 2, frequencies = [60 120];end
-            if nargin < 3, channels = 1:obj.numberOfChannels;end
-            dispCommand = false;
-            if frequencies(1) == -1
-                prefObj = [...
-                    PropertyGridField('frequencies',[60 120],'DisplayName','Line frequencies','Description','Line noise frequencies to remove. Cleanline is a toolbox developed by Tim Mullen at UCSD/SCCN, please visit https://bitbucket.org/tmullen/cleanline for more info.')...
-                    PropertyGridField('channels',1:obj.numberOfChannels,'DisplayName','Channels','Description','Channels to clean.')...
-                    ];
-
-                hFigure = figure('MenuBar','none','Name','Filter','NumberTitle', 'off','Toolbar', 'none','Units','pixels','Color',obj.container.container.preferences.gui.backgroundColor,...
-                    'Resize','off','userData',0);
-                position = get(hFigure,'position');
-                set(hFigure,'position',[position(1:2) 303 231]);
-                hPanel = uipanel(hFigure,'Title','','BackgroundColor','white','Units','pixels','Position',[0 55 303 180],'BorderType','none');
-                g = PropertyGrid(hPanel,'Properties', prefObj,'Position', [0 0 1 1]);
-                uicontrol(hFigure,'Position',[72 15 70 21],'String','Cancel','ForegroundColor',obj.container.container.preferences.gui.fontColor,...
-                    'BackgroundColor',obj.container.container.preferences.gui.buttonColor,'Callback',@cancelCallback);
-                uicontrol(hFigure,'Position',[164 15 70 21],'String','Ok','ForegroundColor',obj.container.container.preferences.gui.fontColor,...
-                    'BackgroundColor',obj.container.container.preferences.gui.buttonColor,'Callback',@okCallback);
-                uiwait(hFigure);
-                if ~ishandle(hFigure), return;end
-                if ~get(hFigure,'userData'), close(hFigure);return;end
-                close(hFigure);
-                drawnow
-                val = g.GetPropertyValues();
-                frequencies = val.frequencies;
-                channels = val.channels;
-                dispCommand = true;
-            end
-            
-            try 
-            commandHistory.commandName = 'cleanLine';
-            commandHistory.uuid        = obj.uuid;
-            commandHistory.varargin{1} = frequencies;
-            commandHistory.varargin{2} = channels;
-            cobj = obj.copyobj(commandHistory);
-            
-            if dispCommand
-                disp('Running:');
-                    disp(['  ' cobj.history]);
-            end
-            
-            index = obj.container.findItem(obj.uuid);
-            EEG = obj.container.export2eeglab(index);
-            if exist([EEG.filepath filesep EEG.filename '.set'],'file')
-                delete([EEG.filepath filesep EEG.filename '.set']);
-            end
-            if exist([EEG.filepath filesep EEG.filename '.fdt'],'file')
-                delete([EEG.filepath filesep EEG.filename '.fdt']);
-            end
-            EEG.filepath = [];
-            EEG.filename = [];
-            EEG.data = obj.data';
-            
-            EEG = cleanline(EEG, 'bandwidth',6,'chanlist',channels ,'computepower',0,'linefreqs',frequencies,'normSpectrum',0,'alpha',0.05,'pad',2,...
-                'plotfigures',0,'scanforlines',4,'sigtype','Channels','tau',100,'verb',0,'winsize',2,'winstep',1);
-            
-            cobj.mmfObj.Data.x = EEG.data(channels,:).';
-            catch ME
-                if exist('cobj','var')
-                    obj.container.deleteItem(cobj.container.findItem(cobj.uuid));
-                end
-                if exist('EEG','var')
-                    if exist([EEG.filepath filesep EEG.filename '.set'],'file'), delete([EEG.filepath filesep EEG.filename '.set']);end
-                    if exist([EEG.filepath filesep EEG.filename '.fdt'],'file'), delete([EEG.filepath filesep EEG.filename '.fdt']);end
-                end
                 ME.rethrow;
             end
         end
@@ -435,40 +362,18 @@ classdef dataStream < coreStreamObject
             if length(varargin) == 1 && iscell(varargin{1}), varargin = varargin{1};end
             if nargin < 2, error('prog:input','Not enough input arguments.');end
             if isnumeric(varargin{1}) && length(varargin{1}) ==1 && varargin{1} == -1
-                
-                prefObj = [...
-                    PropertyGridField('filterType','bandpass','Type',PropertyType('char', 'row', {'lowpass', 'bandpass','highpass','bandstop'}),'DisplayName','Filter type')...
-                    PropertyGridField('cutOff',[1 obj.samplingRate/4],'DisplayName','Cutoff frequencies')...
-                    PropertyGridField('channels',1:obj.numberOfChannels,'DisplayName','Channels','Description','Channels to filter.')...
-                    PropertyGridField('order',obj.samplingRate*4,'DisplayName','Order')...
-                    PropertyGridField('plotFreqz',false,'DisplayName','Plot frequency response')...
-                    ];
-
-                hFigure = figure('MenuBar','none','Name','Filter','NumberTitle', 'off','Toolbar', 'none','Units','pixels','Color',obj.container.container.preferences.gui.backgroundColor,...
-                    'Resize','off','userData',0);
-                position = get(hFigure,'position');
-                set(hFigure,'position',[position(1:2) 303 231]);
-                hPanel = uipanel(hFigure,'Title','','BackgroundColor','white','Units','pixels','Position',[0 55 303 180],'BorderType','none');
-                g = PropertyGrid(hPanel,'Properties', prefObj,'Position', [0 0 1 1]);
-                uicontrol(hFigure,'Position',[72 15 70 21],'String','Cancel','ForegroundColor',obj.container.container.preferences.gui.fontColor,...
-                    'BackgroundColor',obj.container.container.preferences.gui.buttonColor,'Callback',@cancelCallback);
-                uicontrol(hFigure,'Position',[164 15 70 21],'String','Ok','ForegroundColor',obj.container.container.preferences.gui.fontColor,...
-                    'BackgroundColor',obj.container.container.preferences.gui.buttonColor,'Callback',@okCallback);
-                uiwait(hFigure);
-                if ~ishandle(hFigure), return;end
-                if ~get(hFigure,'userData')
-                    close(hFigure);
-                    cobj = [];
+                properyArray = {...
+                    {'Type (lowpass, bandpass, highpass, or bandstop)','CutOff','Channels','Order','Freqz'},...
+                    {'bandpass',['[1 ' num2str(obj.samplingRate/4) ']'], ['[' num2str(1:obj.numberOfChannels) ']'],num2str(obj.samplingRate*4),'false'}};
+                params = inputdlg(properyArray{1},'Filter',1,properyArray{2});
+                if isempty(params)
                     return;
                 end
-                close(hFigure);
-                drawnow
-                val = g.GetPropertyValues();
-                varargin{1} = val.filterType;
-                varargin{2} = val.cutOff;
-                varargin{3} = val.channels;
-                varargin{4} = val.order;
-                varargin{5} = val.plotFreqz;
+                varargin{1} = params{1};
+                varargin{2} = str2num(params{2});
+                varargin{3} = str2num(params{3});
+                varargin{4} = str2num(params{4});
+                varargin{5} = str2num(params{5});
                 dispCommand = true;
             end
             plotFreqz = false;
@@ -476,7 +381,6 @@ classdef dataStream < coreStreamObject
             if ischar(varargin{1})
                 if length(varargin) < 4
                     N = obj.samplingRate*1.25;
-                    % disp('Third argument must be the length of the filter (integer type). Using the default: 1024.');
                 elseif isnumeric(varargin{4}) && length(varargin{4}) == 1
                      N = varargin{4};
                 else N = obj.samplingRate*1.25;
@@ -596,28 +500,9 @@ classdef dataStream < coreStreamObject
             
             if nargin < 2, error('You must enter the new sampling rate.');end
             if newSamplingRate == -1
-                prefObj = PropertyGridField('newSamplingRate',obj.samplingRate,'DisplayName','New sampling rate');
-                hFigure = figure('MenuBar','none','Name','Resample','NumberTitle', 'off','Toolbar', 'none','Units','pixels','Color',obj.container.container.preferences.gui.backgroundColor,...
-                    'Resize','off','userData',0);
-                position = get(hFigure,'position');
-                set(hFigure,'position',[position(1:2) 303 231]);
-                hPanel = uipanel(hFigure,'Title','','BackgroundColor','white','Units','pixels','Position',[0 55 303 180],'BorderType','none');
-                g = PropertyGrid(hPanel,'Properties', prefObj,'Position', [0 0 1 1]);
-                uicontrol(hFigure,'Position',[72 15 70 21],'String','Cancel','ForegroundColor',obj.container.container.preferences.gui.fontColor,...
-                    'BackgroundColor',obj.container.container.preferences.gui.buttonColor,'Callback',@cancelCallback);
-                uicontrol(hFigure,'Position',[164 15 70 21],'String','Ok','ForegroundColor',obj.container.container.preferences.gui.fontColor,...
-                    'BackgroundColor',obj.container.container.preferences.gui.buttonColor,'Callback',@okCallback);
-                uiwait(hFigure);
-                if ~ishandle(hFigure), return;end
-                if ~get(hFigure,'userData')
-                    close(hFigure);
-                    cobj = [];
-                    return;
-                end
-                close(hFigure);
-                drawnow
-                val = g.GetPropertyValues();
-                newSamplingRate = val.newSamplingRate;
+                params = inputdlg({'New sampling rate'},'Resample',1,{num2str(obj.samplingRate)});
+                if isempty(params), return;end
+                newSamplingRate = str2num(params{1});
             end
             if nargin < 3, method = obj.container.container.preferences.eeg.resampleMethod;end
             if isempty(method), method = obj.container.container.preferences.eeg.resampleMethod;end
@@ -651,7 +536,7 @@ classdef dataStream < coreStreamObject
                     cobj.mmfObj.Writable = true;
                     data = obj.mmfObj.Data.x;
                     if newSamplingRate < obj.samplingRate
-                        b = fir1(min([512 newSamplingRate*1.25]), 0.99, 'low');
+                        b = fir1(min([512 round(newSamplingRate*1.25)]), 0.99, 'low');
                         for it=1:obj.numberOfChannels
                             tmp = interp1(obj.timeStamp',data(:,it),timeStampi(:),method,'extrap');
                             cobj.mmfObj.Data.x(:,it) = filtfilt_fast(b,1,tmp);
@@ -666,7 +551,6 @@ classdef dataStream < coreStreamObject
                         obj.binFile = cobj.binFile;
                         obj.samplingRate = cobj.samplingRate;
                         obj.timeStamp = timeStampi;
-                        obj.artifactMask = cobj.artifactMask;
                         saveHeader(obj,'f');
                         obj.connect;
                         obj.event = cobj.event;
@@ -682,143 +566,7 @@ classdef dataStream < coreStreamObject
                 end
             end
         end
-        %%
-        function cobj = ica(obj,channels)
-            % Performs the Independent Component Analysis of the time series.
-            % If a NVIDIA GPU card is available it uses cudaica (20x faster),
-            % otherwise uses binica. In both cases the InfoMax criteria is 
-            % implemented. The method takes care of rank defficient data.
-            % 
-            % Input arguments:
-            %       channels: channels to do ica on, default: all
-            %        
-            % Output arguments:
-            %       cobj: handle to the new object
-            %        
-            % Usage:
-            %       eegObj = mobilab.allStreams.item{ eegItem };
-            %       channels = 1:eegObj.numberOfChannels;
-            %       icaObj = eegObj.ica( channels );
-            %       plot(icaObj);
-            
-            if nargin < 2, channels = 1:obj.numberOfChannels;end
-            if any(channels == -1), 
-                channels = 1:obj.numberOfChannels;
-                index = obj.container.findItem(obj.uuid);
-                disp('Running:');
-                disp(['  mobilab.allStreams.item{ ' num2str(index) ' }.ica( [' num2str(channels) '] );']);
-            end
-            
-            I = ~logical(sum(obj.artifactMask,2));
-            if prod([sum(I) length(channels)]) == prod(size(obj)) %#ok
-                data = obj.mmfObj.Data.x';
-            else
-                data = obj.mmfObj.Data.x(I,channels)';
-            end
-            desc = whos('data');
-            if desc.bytes > 2^30
-                disp('Downsampling...')
-                sr = obj.samplingRate; 
-                while desc.bytes > 2^28
-                    dim = size(data,2);
-                    ts = timeseries(data,(0:dim-1)/sr);
-                    t = ts.Time(1:2:dim);
-                    ts = resample(ts,t);
-                    data = squeeze(ts.Data);
-                    desc = whos('data');
-                end
-                clear ts;
-            end
-            
-            try
-                r = rank(data);
-                if r < obj.numberOfChannels
-                    disp('Removing null subspace from tha data before running ICA.');
-                    try [U,S,V] = svd(gpuArray(data),'econ');
-                        U = gather(U(:,1:r));
-                        S = gather(S(1:r,1:r));
-                        V = gather(V(:,1:r));
-                    catch, [U,S,V] = svds(data,r);
-                    end
-                    s = diag(S);
-                    data = V';
-                    clear V;
-                    US  = U*S;
-                    iUS = diag(1./s)*U';
-                else
-                    US  = 1;
-                    iUS = 1;
-                end
-                
-                %-- (not even God knows this trick)
-                % data = bsxfun(@rdivide,data,sqrt(sum(data.^2)));
-                %--
-                
-                try [wts,sph] = cudaica(data);
-                    algorithm = 'cuda';
-                catch ME
-                    warning(ME.message)
-                    disp('CUDAICA has failed, trying binica...');
-                    [wts,sph] = binica(data);
-                    algorithm = 'bin';
-                end
-                iWts = US*pinv(wts*sph);
-                sph = sph*iUS;
-                scaling = repmat(sqrt(mean(iWts.^2))', [1 size(wts,2)]);
-                wts = wts.*scaling;
-                
-                commandHistory.commandName = 'ica';
-                commandHistory.uuid = obj.uuid;
-                commandHistory.varargin = {channels};
-                commandHistory.rank = r;
-                commandHistory.algorithm = algorithm;
-                commandHistory.icawinv = pinv(wts*sph);
-                commandHistory.icasphere = sph;        
-                commandHistory.icaweights = wts;       
-                cobj = copyobj(obj,commandHistory);
-                                
-                W = (cobj.icaweights*cobj.icasphere)';
-                buffer_size = 1024;
-                dim = size(cobj);
-                data = obj.mmfObj.Data.x;
-                obj.initStatusbar(1,dim(1),'Applying ICA weights...');
-                for it=1:buffer_size:dim(1)
-                    if it+buffer_size-1 > dim(1)
-                        cobj.mmfObj.Data.x(it:end,:) = data(it:end,channels)*W;
-                        break
-                    else
-                        cobj.mmfObj.Data.x(it:it+buffer_size-1,:) = data(it:it+buffer_size-1,channels)*W;
-                    end
-                    obj.statusbar(it);
-                end
-                obj.statusbar(dim(1));
-            catch ME
-                if exist('cobj','var'), obj.container.deleteItem(obj.container.findItem(cobj.uuid));end
-                cudaicaFiles = dir(pwd);
-                cudaicaFiles([1 2]) = [];
-                cudaicaFiles = {cudaicaFiles.name};
-                I1 = strfind(cudaicaFiles,'cudaica');
-                I2 = strfind(cudaicaFiles,'binica');
-                I = ~cellfun(@isempty,I1) | ~cellfun(@isempty,I2);
-                if any(I)
-                    cudaicaFiles = cudaicaFiles(I);
-                    for it=1:length(cudaicaFiles), delete([pwd filesep cudaicaFiles{it}]);end
-                end
-                if exist('temp.mat','file'), delete('temp.mat');end
-                ME.rethrow;
-            end
-            cudaicaFiles = dir(pwd);
-            cudaicaFiles([1 2]) = [];
-            cudaicaFiles = {cudaicaFiles.name};
-            I1 = strfind(cudaicaFiles,'cudaica');
-            I2 = strfind(cudaicaFiles,'binica');
-            I = ~cellfun(@isempty,I1) | ~cellfun(@isempty,I2);
-            if any(I)
-                cudaicaFiles = cudaicaFiles(I);
-                for it=1:length(cudaicaFiles), delete([pwd filesep cudaicaFiles{it}]);end
-            end
-            if exist('temp.mat','file'), delete('temp.mat');end
-        end
+        
         %%
         function [psdData,frequency] = spectrum(obj,varargin)
             % Computes the power spectral density (psd).
@@ -841,36 +589,19 @@ classdef dataStream < coreStreamObject
             %       plotFlag = true;
             %       [psdData,frequency] = spectrum( eegObj, method, channels, plotFlag);
             
-
             dispCommand = false;
             if ~isempty(varargin) && varargin{1}(1) == -1
-                prefObj = [...
-                    PropertyGridField('method','welch','Type',PropertyType('char', 'row', {'mtm','welch','periodogram','yulear'}),'DisplayName','Method',...
-                    'Description',sprintf('''mtm'': Thompson multitaper.\n''welch'': Welch.\n''periodogram'': Periodogram.\n''yulear'': Yule-Walker AR method.\n''paul'': Paul wavelet.'))...
-                    PropertyGridField('channels',1:obj.numberOfChannels,'DisplayName','Channels')...
-                    PropertyGridField('plotFlag',true,'DisplayName','Plot')...
-                    PropertyGridField('plotType','2D','Type',PropertyType('char', 'row', {'2D','3D'}),'DisplayName','Plot type','Description','Produces 2D plot PSD vs Frequency or 3D PSD vs Frequency vs Channel')...
-                    ];
-                hFigure = figure('MenuBar','none','Name','Spectral estimation','NumberTitle', 'off','Toolbar', 'none','Units','pixels','Color',obj.container.container.preferences.gui.backgroundColor,...
-                    'Resize','off','userData',0);
-                position = get(hFigure,'position');
-                set(hFigure,'position',[position(1:2) 303 231]);
-                hPanel = uipanel(hFigure,'Title','','BackgroundColor','white','Units','pixels','Position',[0 55 303 175],'BorderType','none');
-                g = PropertyGrid(hPanel,'Properties', prefObj,'Position', [0 0 1 1]);
-                uicontrol(hFigure,'Position',[72 15 70 21],'String','Cancel','ForegroundColor',obj.container.container.preferences.gui.fontColor,...
-                    'BackgroundColor',obj.container.container.preferences.gui.buttonColor,'Callback',@cancelCallback);
-                uicontrol(hFigure,'Position',[164 15 70 21],'String','Ok','ForegroundColor',obj.container.container.preferences.gui.fontColor,...
-                    'BackgroundColor',obj.container.container.preferences.gui.buttonColor,'Callback',@okCallback);
-                uiwait(hFigure);
-                if ~ishandle(hFigure), return;end
-                if ~get(hFigure,'userData'), close(hFigure);return;end
-                close(hFigure);
-                drawnow;
-                val = g.GetPropertyValues();
-                varargin{1} = val.method;
-                varargin{2} = val.channels;
-                varargin{3} = val.plotFlag;
-                varargin{4} = val.plotType;
+                properyArray = {...
+                    {'Method (mtm , welch, periodogram, or yulear)','Channels','Plot','Plot in 3D'},...
+                    {'welch',['[' num2str(1:obj.numberOfChannels) ']'],'true','false'}};
+                params = inputdlg(properyArray{1},'Filter',1,properyArray{2});
+                if isempty(params)
+                    return;
+                end
+                varargin{1} = params{1};
+                varargin{2} = str2num(params{2});
+                varargin{3} = str2num(params{3});
+                if str2num(params{4}), varargin{4} = '3D';else varargin{4} = '2D';end
                 dispCommand = true;
             end
             if dispCommand
@@ -897,7 +628,7 @@ classdef dataStream < coreStreamObject
             fmax = 0.8*obj.samplingRate/2-mod(0.8*obj.samplingRate/2,10);
             obj.initStatusbar(1,Nch,'Computing PSD...');
             data = obj.mmfObj.Data.x;
-            psdObj = Hs.psd(data(:,channels(1)).*(1-obj.artifactMask(:,channels(1))),'Fs',obj.samplingRate,'NFFT',2048);
+            psdObj = Hs.psd(data(:,channels(1)),'Fs',obj.samplingRate,'NFFT',2048);
             [~,loc1] = min(abs(psdObj.frequencies-fmin));
             [~,loc2] = min(abs(psdObj.frequencies-fmax));
             frequency = psdObj.frequencies(loc1:loc2);
@@ -913,7 +644,7 @@ classdef dataStream < coreStreamObject
             
             obj.statusbar(1);
             for it=2:Nch
-                psdObj = Hs.psd(data(:,channels(it)).*(1-obj.artifactMask(:,channels(it))),'Fs',obj.samplingRate,'NFFT',2048);
+                psdObj = Hs.psd(data(:,channels(it)),'Fs',obj.samplingRate,'NFFT',2048);
                 psdData(:,it) = psdObj.Data(loc1:loc2);
                 obj.statusbar(it);
             end
@@ -921,13 +652,7 @@ classdef dataStream < coreStreamObject
                 figure('Toolbar','figure','Color',obj.container.container.preferences.gui.backgroundColor);
                 if ~ischar(plotType), plotType = '2D';end
                 
-                if strcmp(plotType,'2D')
-                    h = plot(frequency,10*log10(psdData),'ButtonDownFcn','get(gco,''userData'')');
-                    tmpLabels = obj.label(channels(:));
-                    set(h(:),{'userData'},flipud(tmpLabels(:)));
-                    ylabel('Power/frequency (dB/Hz)')
-                    
-                elseif strcmp(plotType,'3D')
+                if strcmp(plotType,'3D')
                     hold on
                     color = lines(length(channels));
                     One = ones(length(frequency),1);
@@ -936,8 +661,7 @@ classdef dataStream < coreStreamObject
                     zlabel('Power/frequency (dB/Hz)')
                     ylabel('Channels')
                     set(gca,'YTickLabel',obj.label(channels),'YTick',1:length(channels))
-                    if length(channels) > 1, view(18,24); else view(0,0);end
-                    
+                    if length(channels) > 1, view(18,24); else view(0,0);end    
                 else
                     h = plot(frequency,10*log10(psdData),'ButtonDownFcn','get(gco,''userData'')');
                     tmpLabels = obj.label(channels(:));
@@ -949,118 +673,6 @@ classdef dataStream < coreStreamObject
                 title([Hs.EstimationMethod ' Power Spectral Density Estimate']);
                 grid on;
             end
-        end
-        %%
-        function cobj = continuousWaveletTransform(obj,varargin)
-            % Computes the time-frequency representation of the time series
-            % using the Continuous Wavelet Transform.
-            %
-            % Input arguments:
-            %       channels: channels to compute the time frequecy decomposition of,
-            %                 default: all
-            %       wavelet:  name of the wavelet, could be: cmor1-1.5, morl, morlex,
-            %                 morl0, mexh, or paul
-            %       fmin:     minimum frequency in the frequency axis, default: 2 Hz
-            %       fmax:     maximum frequency in the frequency axis, default: obj.samplingRate/2
-            %       numFreq:  number of frequencies, default: 64
-            %
-            % Output arguments:
-            %       cobj: handle to the new object
-            %
-            % Usage:
-            %       eegObj   = mobilab.allStreams.item{ eegItem };
-            %       channels = 1:eegObj.numberOfChannels;
-            %       wavelet  = 'cmor1-1.5';
-            %       fmin     = 2;
-            %       fmax     = 45;
-            %       numFreq  = 64;
-            %       tfObj    = eegObj.continuousWaveletTransform( channels, wavelet, fmin, fmax, numFreq);
-            %       plot( tfObj );
-            
-            dispCommand = false;
-            if length(varargin) < 2
-                prefObj = [...
-                    PropertyGridField('channels',1:obj.numberOfChannels,'DisplayName','Channels','Description','Channels to decompose.')...
-                    PropertyGridField('wavelet','cmor1-1.5','Type',PropertyType('char', 'row', {'cmor1-1.5','morl','morlex','morl0','mexh','paul'}),'DisplayName','Wavelet',...
-                    'Description',sprintf('''morl'': Analytic Morlet wavelet.\n''morlex'': Non-analytic Morlet wavelet.\n''morl0'': Non-analytic Morlet wavelet with zero mean.\n''mexh'': Mexican hat wavelet.\n''paul'': Paul wavelet.'))...
-                    PropertyGridField('fmin',2,'DisplayName','fmin','Description','Lowest frequency in the decomposition.')...
-                    PropertyGridField('fmax',obj.samplingRate/2,'DisplayName','fmax','Description','Highest frequency in the decomposition.')...
-                    PropertyGridField('numFreq',64,'DisplayName','Num freq','Description','Number of frequencies.')...
-                    ];
-                hFigure = figure('MenuBar','none','Name','Continuous wavelet transform','NumberTitle', 'off','Toolbar', 'none','Units','pixels','Color',obj.container.container.preferences.gui.backgroundColor,...
-                    'Resize','off','userData',0);
-                position = get(hFigure,'position');
-                set(hFigure,'position',[position(1:2) 303 231]);
-                hPanel = uipanel(hFigure,'Title','','BackgroundColor','white','Units','pixels','Position',[0 55 303 175],'BorderType','none');
-                g = PropertyGrid(hPanel,'Properties', prefObj,'Position', [0 0 1 1]);
-                uicontrol(hFigure,'Position',[72 15 70 21],'String','Cancel','ForegroundColor',obj.container.container.preferences.gui.fontColor,...
-                    'BackgroundColor',obj.container.container.preferences.gui.buttonColor,'Callback',@cancelCallback);
-                uicontrol(hFigure,'Position',[164 15 70 21],'String','Ok','ForegroundColor',obj.container.container.preferences.gui.fontColor,...
-                    'BackgroundColor',obj.container.container.preferences.gui.buttonColor,'Callback',@okCallback);
-                uiwait(hFigure);
-                if ~ishandle(hFigure), return;end
-                if ~get(hFigure,'userData'), close(hFigure);return;end
-                close(hFigure);
-                drawnow;
-                val = g.GetPropertyValues();
-                varargin{1} = val.channels;
-                varargin{2} = val.wavelet;
-                varargin{3} = val.fmin;
-                varargin{4} = val.fmax;
-                varargin{5} = val.numFreq;
-                dispCommand = true;
-            end
-            narg = length(varargin);
-            if narg < 2, varargin{1} = 1:obj.numberOfChannels;end
-            channels = varargin{1};
-            if ~isvector(channels), error('First argument must be channels to decompose.');end
-            if ~all(ismember(channels,1:obj.numberOfChannels)), error('Wrong channel indices.');end
-            if narg < 2, varargin{2} = 'cmor1-1.5';end
-            if narg < 3, varargin{3} = 2;end
-            if narg < 4, varargin{4} = obj.samplingRate/2;end
-            if narg < 5, varargin{5} = 64;end
-                
-            wname = varargin{2};
-            fmin = varargin{3};
-            fmax = varargin{4};
-            numFreq = varargin{5};
-            
-            commandHistory.commandName = 'continuousWaveletTransform';
-            commandHistory.uuid = obj.uuid;
-            commandHistory.varargin = varargin;
-            cobj = copyobj(obj,commandHistory);
-            
-            % decompose the first channels
-            data = obj.mmfObj.Data.x;
-            T = 1/obj.samplingRate;
-            scales = freq2scales(fmin, fmax, numFreq, wname, T);
-            S = cwt(data(:,channels(1)),scales,varargin{2});
-            
-            if dispCommand
-                disp('Running:');
-                disp(['  ' cobj.history]);
-            end
-            
-            Nf = length(cobj.frequency);
-            flipInd = fliplr(1:Nf);
-            
-            % In this case the loop is the most efficient aproach because S
-            % could be as big as 2 GB and many people in this planet don't
-            % have a cluster to run this program.
-            for k=1:Nf
-                cobj.mmfObj.Data.x(:,k,1) = real(S(flipInd(k),:));
-                cobj.mmfObj.Data.y(:,k,1) = imag(S(flipInd(k),:));
-            end
-            obj.initStatusbar(2,cobj.numberOfChannels,'Continuous time wavelet decomposition...');
-            for it=2:cobj.numberOfChannels
-                S = cwt(data(:,channels(it)),scales,varargin{2});
-                for k=1:Nf
-                    cobj.mmfObj.Data.x(:,k,it) = real(S(flipInd(k),:));
-                    cobj.mmfObj.Data.y(:,k,it) = imag(S(flipInd(k),:));
-                end
-                obj.statusbar(it);
-            end
-            obj.statusbar(cobj.numberOfChannels);
         end
         %%
         function browserObj = plot(obj)
@@ -1128,10 +740,6 @@ classdef dataStream < coreStreamObject
                     metadata.binFile = fullfile(path,[metadata.name '_' metadata.uuid '_' metadata.sessionUUID '.bin']);
                     metadata.samplingRate = commandHistory.varargin{1};
                     metadata.timeStamp = interp1(1:length(obj.timeStamp), obj.timeStamp',1:obj.samplingRate/metadata.samplingRate:length(obj.timeStamp),'linear','extrap');
-                    metadata.artifactMask = sparse(length(metadata.timeStamp),obj.numberOfChannels);
-                    for it=1:obj.numberOfChannels
-                        metadata.artifactMask(:,it) = sparse(interp1(obj.timeStamp',full(obj.artifactMask(:,it)),metadata.timeStamp','nearest','extrap'));
-                    end
                     eventObj = obj.event.interpEvent(obj.timeStamp,metadata.timeStamp);
                     metadata.eventStruct.hedTag = eventObj.hedTag;
                     metadata.eventStruct.label = eventObj.label;
@@ -1144,22 +752,12 @@ classdef dataStream < coreStreamObject
                     metadata.binFile = fullfile(path,[metadata.name '_' metadata.uuid '_' metadata.sessionUUID '.bin']);
                     channels = commandHistory.varargin{3};
                     metadata.numberOfChannels = length(channels);
-                    metadata.artifactMask = obj.artifactMask(:,channels);
                     allocateFile(metadata.binFile,obj.precision,[length(metadata.timeStamp) metadata.numberOfChannels]);
                     
                 case 'sgolayFilter'
                     prename = 'sgolay_';
                     metadata.name = [prename metadata.name];
                     metadata.binFile = fullfile(path,[metadata.name '_' metadata.uuid '_' metadata.sessionUUID '.bin']);
-                    allocateFile(metadata.binFile,obj.precision,[length(metadata.timeStamp) metadata.numberOfChannels]);
-                    
-                case 'cleanLine'
-                    prename = 'cl_';
-                    metadata.name = [prename metadata.name];
-                    metadata.binFile = fullfile(path,[metadata.name '_' metadata.uuid '_' metadata.sessionUUID '.bin']);
-                    channels = commandHistory.varargin{2};
-                    metadata.numberOfChannels = length(channels);
-                    metadata.artifactMask = obj.artifactMask(:,channels);
                     allocateFile(metadata.binFile,obj.precision,[length(metadata.timeStamp) metadata.numberOfChannels]);
                     
                 case 'filter'
@@ -1169,7 +767,6 @@ classdef dataStream < coreStreamObject
                     channels = commandHistory.varargin{3};
                     metadata.numberOfChannels = length(channels);
                     metadata.label = obj.label(channels);
-                    metadata.artifactMask = obj.artifactMask(:,channels);
                     allocateFile(metadata.binFile,obj.precision,[length(metadata.timeStamp) metadata.numberOfChannels]);
                     
                 case 'copyobj'
@@ -1177,47 +774,7 @@ classdef dataStream < coreStreamObject
                     metadata.name = [prename metadata.name];
                     metadata.binFile = fullfile(path,[metadata.name '_' metadata.uuid '_' metadata.sessionUUID '.bin']);
                     copyfile(obj.binFile,metadata.binFile,'f');
-                    
-                case 'continuousWaveletTransform'
-                    channels = commandHistory.varargin{1};
-                    wname = commandHistory.varargin{2};
-                    fmin = commandHistory.varargin{3};
-                    fmax = commandHistory.varargin{4};
-                    numFreq = commandHistory.varargin{5};
-                    T = 1/obj.samplingRate;
-                    scales = freq2scales(fmin,fmax,numFreq,wname,T);
-                    frequency = fliplr(scal2frq(scales,wname,T));
-                    prename = 'cwt_';
-                    metadata.frequency = frequency;
-                    metadata.name = [prename metadata.name];
-                    metadata.binFile = fullfile(path,['cwt_' metadata.name '_' metadata.uuid metadata.sessionUUID '.bin']);
-                    metadata.label = obj.label(channels);
-                    metadata.numberOfChannels = length(metadata.label);
-                    metadata.artifactMask = [];
-                    metadata.precision = 'double';
-                    metadata.class = 'timeFrequencyStream';
-                    allocateFile(metadata.binFile,obj.precision,[length(metadata.timeStamp)*length(metadata.frequency)*2 metadata.numberOfChannels]);
-                    
-                case 'ica'
-                    prename = [commandHistory.algorithm 'ica_'];
-                    metadata.name = [prename metadata.name];
-                    metadata.binFile = fullfile(path,[metadata.name '_' metadata.uuid '_' metadata.sessionUUID '.bin']);
-                    metadata.numberOfChannels = commandHistory.rank;
-                    metadata.algorithm = commandHistory.algorithm;
-                    metadata.icawinv = commandHistory.icawinv;
-                    metadata.icasphere = commandHistory.icasphere;
-                    metadata.icaweights = commandHistory.icaweights;
-                    metadata.artifactMask = sparse(length(metadata.timeStamp),commandHistory.rank);
-                    metadata.parentCommand = rmfield(commandHistory,{'rank','algorithm','icawinv','icasphere','icaweights'});
-                    if isa(obj,'eeg')
-                        metadata.class = 'icaEEG';
-                    else
-                        metadata.class = 'icaDataStream';
-                    end
-                    metadata.label = cell(metadata.numberOfChannels,1);
-                    for it=1:metadata.numberOfChannels, metadata.label{it} = ['IC' num2str(it)];end
-                    allocateFile(metadata.binFile,obj.precision,[length(metadata.timeStamp) metadata.numberOfChannels]);
-                    
+                
                 case {'minus' 'plus' 'times' 'rdivide'}
                     op = {'minus' 'plus' 'times' 'rdivide'};
                     I = ismember(op,commandHistory.commandName);

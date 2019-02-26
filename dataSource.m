@@ -174,8 +174,6 @@ classdef dataSource < handle
             
             for it=1:length(delList),
                 if ~obj.item{delList(it)}.writable, error('MoBILAB:attempt_to_delete_read_only_object','Cannot delete files containing raw data.');end
-                if ~strcmp(obj.item{delList(it)}.owner.name,obj.container.preferences.username), error(['MoBILAB:pemission','You cannot delete this object if you''re not the owner. To solve this issue contact user '...
-                        obj.item{delList(it)}.owner.name ' from ' obj.item{delList(it)}.owner.organization ', email: ' obj.item{delList(it)}.owner.email '.']);end
                 disp(['Removing object: ' obj.item{delList(it)}.name]);
                 bin2delete = obj.item{delList(it)}.binFile;
                 hdr2delete = obj.item{delList(it)}.header;
@@ -752,7 +750,6 @@ classdef dataSource < handle
             metadata.event = event;
             metadata.class = 'multiMarkerStream';
             metadata.writable = true;
-            metadata.artifactMask = sparse(length(metadata.timeStamp),metadata.numberOfChannels);
             data = zeros(length(metadata.timeStamp),metadata.numberOfChannels);
             fid = fopen(metadata.binFile,'w');
             fwrite(fid,data(:),markerStreamList{it}.precision);
@@ -785,13 +782,7 @@ classdef dataSource < handle
             cobj.event = eventObj;
             if delList, obj.deleteItem(markerIndices);end
         end
-        %%
-        function expandAroundBoundaryEvents(obj,expansion)
-            if nargin < 2, expansion = 5;end
-            N = length(obj.item);
-            if N < 1, return;end
-            for it=1:N, obj.item{it}.expandAroundBoundaryEvents(expansion);end
-        end
+        
         %%
         function findSpaceBoundary(obj)
             N = length(obj.item);

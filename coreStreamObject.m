@@ -40,13 +40,6 @@ classdef coreStreamObject < handle
                            % otherwise is considered raw data and it cannot be modified.
                            
         unit               % Cell array of strings specifying the unit of each channel.
-        
-        owner              % Contact information of the person who has generated/recorded
-                           % the data set. It has the fields username, email, and organization.
-                           % Even when supplying this information is optional it is highly
-                           % recommended to do so. This info will keep other users from  
-                           % modifying a data set created by somebody else, for instance
-                           % objects can be deleted only by its owner.
                            
         hardwareMetaData
         parentCommand
@@ -60,10 +53,6 @@ classdef coreStreamObject < handle
                       % the object where it is contained.
                       
         container     % Pointer to the dataSource object.
-        
-        artifactMask  % Sparse matrix with the same dimensions of "data". Non-zero entries 
-                      % contain a number between 0 and 1 with the probability of the correspondent
-                      % sample to be an artifact.
                       
         auxChannel    % Auxiliary channels whose type may be not the same as the data contained in 
                       % obj.data. For instance a Trigger channel will go here. auxChannel.data contains
@@ -295,31 +284,7 @@ classdef coreStreamObject < handle
             obj.hardwareMetaData = hardwareMetaData;
             saveProperty(obj,'hardwareMetaData',hardwareMetaData);
         end
-        %%
-        function owner = get.owner(obj)
-            stack = dbstack;
-            if any(strcmp({stack.name},'coreStreamObject.set.owner')), owner = obj.owner;return;end
-            if isempty(obj.owner)
-                try obj.owner = retrieveProperty(obj,'owner');
-                catch ME
-                    if strcmp(ME.identifier,'MoBILAB:unknownProperty')
-                        mobilab = evalin('base','mobilab');
-                        obj.owner.name = mobilab.preferences.username;
-                        obj.owner.organization = mobilab.preferences.organization;
-                        obj.owner.email = mobilab.preferences.email;
-                        saveProperty(obj,'owner',obj.owner);
-                    else ME.rethrow;
-                    end
-                end
-            end
-            owner = obj.owner;
-        end
-        function set.owner(obj,owner)
-            stack = dbstack;
-            if any(strcmp({stack.name},'coreStreamObject.get.owner')), obj.owner = owner;return;end
-            obj.owner = owner;
-            saveProperty(obj,'owner',owner);
-        end
+        
         %%
         function eventObj = get.event(obj)
             stack = dbstack;
@@ -347,31 +312,6 @@ classdef coreStreamObject < handle
             event.latencyInFrame = eventObj.latencyInFrame; %#ok
             disp(['Saving: event in: ' obj.header]);        %#ok
             save(obj.header,'-mat','-append','event');      %#ok
-        end
-        %%
-        function artifactMask = get.artifactMask(obj)
-            stack = dbstack;
-            if any(strcmp({stack.name},'coreStreamObject.set.artifactMask')), artifactMask = obj.artifactMask;return;end 
-            if isempty(obj.artifactMask)
-                try obj.artifactMask = retrieveProperty(obj,'artifactMask');
-                catch ME
-                    if  strcmp(ME.identifier,'MoBILAB:unknownProperty')
-                        obj.artifactMask = sparse(size(obj));
-                        saveProperty(obj,'artifactMask',obj.artifactMask);
-                    else ME.rethrow;
-                    end
-                end
-            end
-            artifactMask = obj.artifactMask;
-        end
-        function set.artifactMask(obj,artifactMask)
-            dim = size(obj);
-            if ~ismatrix(artifactMask), error(['''artifactMask'' must be <' num2str(dim(1)) 'x' num2str(dim(2)) '> sparse']);end
-            stack = dbstack;
-            if any(strcmp({stack.name},'coreStreamObject.get.artifactMask')), obj.artifactMask = artifactMask;return;end
-            if any(size(artifactMask) ~= dim), error(['''artifactMask'' must be <' num2str(dim(1)) 'x' num2str(dim(2)) '> sparse']);end
-            obj.artifactMask = artifactMask;
-            saveProperty(obj,'artifactMask',artifactMask)
         end
         %%
         function samplingRate = get.samplingRate(obj)
@@ -436,7 +376,7 @@ classdef coreStreamObject < handle
             if ~obj.writable, error('Cannot overwrite raw data. Use copyobj to create a copy.');end
             sizeData = size(data);
             sizeObj  = size(obj);
-            if sizeData(1) ~= sizeObj(1), error('MoBILAB:noRMSamples','Cannot remove samples by hand. Use the field ''artifactMask'' instead.');end
+            if sizeData(1) ~= sizeObj(1), error('MoBILAB:noRMSamples','Cannot remove samples by hand.');end
             obj.mmfObj.Writable = obj.writable;
             isComplex = isfield(obj.mmfObj.Data,'y');
             if prod(sizeData(2:end)) ~= prod(sizeObj(2:end)) || ~isa(data,obj.precision)
@@ -573,12 +513,8 @@ classdef coreStreamObject < handle
         function inspect(obj,~)
             % Pops up a figure showing all the published properties of the 
             % object.
-            
             properyArray = getPropertyGridField(obj);
-            f = figure('MenuBar','none','Name',['Inspector: ' obj.name],'NumberTitle', 'off','Toolbar', 'none');
-            position = get(f,'position');
-            set(f,'position',[position(1:2) 385 424]);
-            PropertyGrid(f,'Properties', properyArray,'Position', [0 0 1 1]);
+            inputdlg(properyArray{1},obj.name,1,properyArray{2});
         end
         function val = isMemoryMappingActive(obj)
             % Returns true if the connection with the binary file is valid,
@@ -590,17 +526,7 @@ classdef coreStreamObject < handle
         %%
         function browserObj = dataStreamBrowser(obj,defaults)
             % Pops up a time series browser.
-            
-            if ~obj.isMemoryMappingActive, return;end
-            if nargin < 2, defaults.browser = @streamBrowserHandle;end
-            if ~isfield(defaults,'browser')
-                if isstruct(defaults)
-                    defaults.browser = @streamBrowserHandle;
-                else
-                    defaults = struct('browser',@streamBrowserHandle);
-                end
-            end
-            browserObj = defaults.browser(obj,defaults);
+            browserObj = DataStreamBrowser(obj);
         end
         %%
         function jsonObj = serialize(obj)
@@ -611,7 +537,6 @@ classdef coreStreamObject < handle
             metadata.class = class(obj);
             metadata.size = size(obj);
             metadata.event = obj.event.uniqueLabel;
-            metadata.artifactMask = sum(metadata.artifactMask(:) ~= 0);
             metadata.writable = double(metadata.writable);
             metadata.history = obj.history;
             if isfield(metadata,'segmentUUID'), metadata.segmentUUID = char(metadata.segmentUUID);end
@@ -766,7 +691,6 @@ classdef coreStreamObject < handle
                 metadata.numberOfChannels = length(commandHistory.varargin{1});
                 metadata.label = commandHistory.varargin{2};
                 channels = commandHistory.varargin{1};
-                metadata.artifactMask = metadata.artifactMask(:,channels);
                 if isfield(metadata,'channelSpace'),
                     try   metadata.channelSpace = metadata.channelSpace(channels,:);
                     catch metadata.channelSpace = [];
@@ -839,8 +763,8 @@ classdef coreStreamObject < handle
             if ~isvalid(obj); disp('Invalid or deleted object.');return;end
             dim = obj.size;
             auxNch = length(obj.auxChannel.label);
-            string = sprintf('\nClass:  %s\nProperties:\n  name:                 %s\n  uuid:                 %s\n  samplingRate:         %i Hz\n  timeStamp:            <1x%i double>\n  numberOfChannels:     %i\n  data:                 <%ix%i %s>\n  artifactMask:         <%ix%i sparse>\n  event.latencyInFrame: <1x%i double>\n  event.label:          <%ix1 cell>',...
-                class(obj),obj.name,char(obj.uuid),obj.samplingRate,length(obj.timeStamp),obj.numberOfChannels,dim(1),dim(2),obj.precision,dim(1),dim(2),length(obj.event.latencyInFrame),length(obj.event.label));
+            string = sprintf('\nClass:  %s\nProperties:\n  name:                 %s\n  uuid:                 %s\n  samplingRate:         %i Hz\n  timeStamp:            <1x%i double>\n  numberOfChannels:     %i\n  data:                 <%ix%i %s>\n  event.latencyInFrame: <1x%i double>\n  event.label:          <%ix1 cell>',...
+                class(obj),obj.name,char(obj.uuid),obj.samplingRate,length(obj.timeStamp),obj.numberOfChannels,dim(1),dim(2),obj.precision,length(obj.event.latencyInFrame),length(obj.event.label));
             
             if iscellstr(obj.unit) && ~isempty(obj.unit{1})
                  unit = obj.unit{1}; %#ok
@@ -848,9 +772,6 @@ classdef coreStreamObject < handle
             end
             string = sprintf('%s\n  label:                <%ix1 cell>',string, dim(2));
             string = sprintf('%s\n  unit:                 %s',string, unit); %#ok
-            string = sprintf('%s\n  owner.name:           %s',string,obj.owner.name);
-            string = sprintf('%s\n  owner.organization:   %s',string,obj.owner.organization);
-            string = sprintf('%s\n  owner.email:          %s',string,obj.owner.email);
             string = sprintf('%s\n  sessionUUID:          %s',string,char(obj.sessionUUID));
             string = sprintf('%s\n  auxChannel.label:     <%ix1 cell>',string, auxNch);
             string = sprintf('%s\n  auxChannel.data:      <%ix%i %s>',string, dim(1),auxNch,obj.precision);
@@ -865,24 +786,34 @@ classdef coreStreamObject < handle
         %%
         function properyArray = getPropertyGridField(obj)
             dim = size(obj);
-            properyArray = [...
-                PropertyGridField('class',class(obj),'DisplayName','class','ReadOnly',false,'Description','')...
-                PropertyGridField('name',obj.name,'DisplayName','name','ReadOnly',false,'Description','')...
-                PropertyGridField('uuid',obj.uuid,'DisplayName','uuid','ReadOnly',false,'Description','Universal unique identifier')...
-                PropertyGridField('sessionUUID',obj.sessionUUID,'DisplayName','sessionUUID','ReadOnly',false,'Description','Unique id of all the files belonging to the same session.')...
-                PropertyGridField('samplingRate',obj.samplingRate,'DisplayName','samplingRate','ReadOnly',false,'Description','Sampling rate in hertz.')...
-                PropertyGridField('timeStamp',['<1x' num2str(dim(1)) ' ' class(obj.timeStamp) '>'],'DisplayName','timeStamp','ReadOnly',false,'Description','Time stamps in seconds.')...
-                PropertyGridField('numberOfChannels',obj.numberOfChannels,'DisplayName','numberOfChannels','ReadOnly',false,'Description','')...
-                PropertyGridField('data',['<' num2str(dim(1)) 'x' num2str(dim(2)) ' ' obj.precision '>'],'DisplayName','data','ReadOnly',false,'Description','Data is a dependent property, for intensive I/O operations is more efficient accessing directly the memory mapped file object, obj.mmfObj.Data.x.')...
-                PropertyGridField('label',obj.label,'DisplayName','label','ReadOnly',false,'Description','')...
-                PropertyGridField('eventLabels',obj.event.uniqueLabel,'DisplayName','events','ReadOnly',false,'Description','')...
-                PropertyGridField('history',obj.history,'DisplayName','history','ReadOnly',false,'Description','')...
-                PropertyGridField('ownerName',obj.owner.name,'DisplayName','owner.name','ReadOnly',false,'Description','')...
-                PropertyGridField('ownerOrg',obj.owner.organization,'DisplayName','owner.organization','ReadOnly',false,'Description','')...
-                PropertyGridField('ownerEmail',obj.owner.email,'DisplayName','owner.email','ReadOnly',false,'Description','')...
-                PropertyGridField('auxChannelLabel',obj.auxChannel.label,'DisplayName','auxChannel.label','ReadOnly',false,'Description','')...
-                PropertyGridField('auxChannelData',['<' num2str(dim(1)) 'x' num2str(size(obj.auxChannel.data,2)) ' ' obj.precision '>'],'DisplayName','auxChannel.data','ReadOnly',false,'Description','')...
-                ];
+            L = '{';
+            for k=1:obj.numberOfChannels
+                L = [L '''' obj.label{k} ''','];
+            end
+            L(end) = '}';
+            if ~isempty(obj.event.uniqueLabel)
+                U = '{';
+                for k=1:length(obj.event.uniqueLabel)
+                    U = [U '''' obj.event.uniqueLabel{k} ''','];
+                end
+                U(end) = '}';
+            else
+                U = '{}';
+            end
+            if ~isempty(obj.auxChannel.label)
+                A = '{';
+                for k=1:length(obj.auxChannel.label)
+                    A = [A '''' obj.auxChannel.label{k} ''','];
+                end
+                A(end) = '}';
+            else
+                A = '{}';
+            end
+            properyName = {'class','name','uuid','sessionUUID','samplingRate','timeStamp','numberOfChannels','data','label','eventLabels','history','auxChannelLabel','auxChannelData'};
+            properyVal = {class(obj),obj.name,obj.uuid,obj.sessionUUID,num2str(obj.samplingRate),['<1x' num2str(dim(1)) ' ' class(obj.timeStamp) '>'],num2str(obj.numberOfChannels),...
+                ['<' num2str(dim(1)) 'x' num2str(dim(2)) ' ' obj.precision '>'],L,U,obj.history,A,...
+                ['<' num2str(dim(1)) 'x' num2str(size(obj.auxChannel.data,2)) ' ' obj.precision '>']};
+            properyArray = {properyName,properyVal};
         end
         %%
         function metadata = saveobj(obj)
@@ -977,21 +908,6 @@ classdef coreStreamObject < handle
                 obj.connect;
             catch  ME
                 ME.throw;
-            end
-        end
-        %%
-        function expandAroundBoundaryEvents(obj,expansion)
-            if nargin < 2, expansion = 12;end
-            eventLabel = 'boundary';
-            windowSize = round(expansion*obj.samplingRate);
-            windowSize = round(windowSize/2)*2;
-            eventLatencyInFrame = obj.event.getLatencyForEventLabel(eventLabel);
-            Nb  = length(eventLatencyInFrame);
-            Win = hann(windowSize)*ones(1,obj.numberOfChannels);
-            try 
-                if Nb, for jt=1:Nb, obj.artifactMask(eventLatencyInFrame(jt)-windowSize/2:eventLatencyInFrame(jt)+windowSize/2-1,:) = Win;end;end
-            catch
-                obj.artifactMask(eventLatencyInFrame,:) = 1;
             end
         end
     end

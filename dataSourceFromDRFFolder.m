@@ -151,15 +151,10 @@ classdef dataSourceFromDRFFolder < dataSource
                 rmdir(tmpMobiDataDirectory,'s');
             end
             obj.connect;
-            for stream_count=1:length(obj.item)
-                obj.item{stream_count}.artifactMask = sparse(length(obj.item{stream_count}.timeStamp), obj.item{stream_count}.numberOfChannels);
-            end
-            obj.expandAroundBoundaryEvents;
             obj.findSpaceBoundary;
             obj.linkData;
             obj.updateLogicalStructure;
             obj.save(obj.mobiDataDirectory);
-            
         end
     end
 end

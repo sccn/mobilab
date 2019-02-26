@@ -10,7 +10,9 @@ classdef videoStream < coreStreamObject
             load(header,'-mat','videoFile');
             warning on
             if exist('videoFile','var')
-                obj.videoFile = videoFile; 
+                if ~isempty(videoFile)
+                    obj.videoFile = videoFile;
+                end
             else
                 obj.videoFile = '';
             end

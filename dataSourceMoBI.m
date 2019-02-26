@@ -148,11 +148,6 @@ classdef dataSourceMoBI < dataSource
                 metadata.class = 'icaEEG';
                 saveThis = true;
             end
-            if isfield(metadata,'artifactProbability')
-                metadata.artifactMask = metadata.artifactProbability;
-                metadata = rmfield(metadata,'artifactProbability');
-                saveThis = true;
-            end
             if isfield(metadata,'hardwareMetaDataObj') 
                 metadata.hardwareMetaData = metadata.hardwareMetaDataObj;
                 metadata = rmfield(metadata,'hardwareMetaDataObj');

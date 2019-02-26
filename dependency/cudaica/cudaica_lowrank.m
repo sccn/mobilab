@@ -40,7 +40,7 @@ if minRank < n
         disp('CUDAICA has failed, trying binica...');
         [wts,sph] = binica(X);
     end
-    wts = wts*sph*U(:,sorting(1:end-(n-r)))';
+    wts = wts*sph*U(:,sorting(1:end-(n-minRank)))';
     sph = eye(n);
 else
     try
