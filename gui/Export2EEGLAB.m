@@ -16,8 +16,13 @@ uicontrol(fig,'Style','text','String','Data','Position',[84 314 60 20],'FontWeig
 uicontrol(fig,'Style','text','String','Events','Position',[394 314 60 20],'FontWeight','bold');
 uicontrol(fig,'Style','text','String','EEG','Position',[254 6 60 23],'FontWeight','bold');
 
-skinPath = [fileparts(fileparts(which('CoreBrowser.m'))) filesep 'skin'];
-insertIcon  = imread([skinPath filesep '32px-Gnome-media-seek-forward.svg.png']);
+try
+    skinPath = [fileparts(fileparts(which('CoreBrowser.m'))) filesep 'skin'];
+    insertIcon  = imread([skinPath filesep '32px-Gnome-media-seek-forward.svg.png']);
+catch
+    skinPath = fileparts(which('CoreBrowser.m'));
+    insertIcon  = imread(pickfiles(skinPath,'32px-Gnome-media-seek-forward.svg.png'));
+end
 uicontrol('Parent', fig, 'Style', 'pushbutton','Callback',@onExport,'CData',permute(insertIcon,[2 1 3]),...
     'Position',[259 43 47 43],'TooltipString','Export to EEGLAB');
 end
