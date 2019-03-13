@@ -18,6 +18,5 @@ try
         contObj.container.gui;
     end
 catch ME
-    if ~strcmp(ME.identifier,'MoBILAB:attempt_to_delete_read_only_object'), sendEmailReport(ME);end
     errordlg(ME.message);
 end

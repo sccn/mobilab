@@ -1,9 +1,14 @@
-function runmobilab
+function runmobilab(showGuiFlag)
+if nargin < 1
+    showGuiFlag = false;
+end
 try
     mobilab = evalin('base','mobilab');
     if ~isvalid(mobilab), error('MoBILAB:unexpectedError','Unexpected error.\nRestarting MoBILAB...');end
-catch %#ok
+catch
     mobilab = mobilabApplication;
     assignin('base','mobilab',mobilab)
 end
-mobilab.gui;
+if showGuiFlag
+    mobilab.gui;
+end

@@ -10,10 +10,9 @@ classdef eeg < dataStream
         isReferenced    % Boolean that reflects whether an EEG data set has been re-referenced of not.
         reference       % Cell array with the labels of the channels used to compute the reference.
         channelSpace
+        fiducials
     end
-    properties(GetAccess=private, SetAccess=private, Hidden)
-        hm
-    end
+    
     methods
         function obj = eeg(header)
             % Creates an eeg object.
@@ -101,12 +100,7 @@ classdef eeg < dataStream
             metadata.sessionUUID = char(obj.sessionUUID);
             metadata.uuid = char(obj.uuid);
             if ~isempty(metadata.channelSpace),  metadata.hasChannelSpace = 'yes'; else metadata.hasChannelSpace = 'no';end
-            if ~isempty(metadata.leadFieldFile), metadata.hasLeadField    = 'yes'; else metadata.hasLeadField    = 'no';end
-            if ~isempty(obj.fiducials) &&  ~isempty(obj.surfaces) && ~isempty(obj.atlas)
-                 metadata.hasHeadModel = 'yes';
-            else metadata.hasHeadModel = 'no';
-            end
-            metadata = rmfield(metadata,{'parentCommand' 'timeStamp' 'hardwareMetaData' 'channelSpace' 'leadFieldFile' 'fiducials' 'surfaces' 'atlas'});
+            metadata = rmfield(metadata,{'parentCommand' 'timeStamp' 'hardwareMetaData' 'channelSpace' 'fiducials'});
             jsonObj = savejson('',metadata,'ForceRootName', false);
         end
         %%
@@ -593,32 +587,10 @@ classdef eeg < dataStream
             newHeader = metadata2headerFile(metadata);
         end
         %%
-        function cobj = createROIobj(obj,commandHistory)
-            metadata = obj.saveobj;
-            metadata.writable = true;
-            metadata.parentCommand = commandHistory;
-            uuid = generateUUID;
-            metadata.uuid = uuid;
-            path = fileparts(obj.binFile);
-            prename = 'roi_';
-            metadata.name = [prename metadata.name];
-            metadata.binFile = fullfile(path,[metadata.name '_' metadata.uuid '_' metadata.sessionUUID '.bin']);
-            metadata.timeStamp = obj.timeStamp(commandHistory.varargin{1});
-            metadata = rmfield(metadata,{'surfaces','leadFieldFile','atlas'});
-            metadata.label = obj.atlas.label;
-            I = setdiff(1:max(obj.atlas.colorTable),unique(obj.atlas.colorTable));
-            metadata.label(I) = [];
-            metadata.numberOfChannels = length(metadata.label);
-            metadata.class = 'roiStream';
-            allocateFile(metadata.binFile,obj.precision,[length(metadata.timeStamp) metadata.numberOfChannels]);
-            newHeader = metadata2headerFile(metadata);
-            cobj = obj.container.addItem(newHeader);
-        end
-        %%
         function disp(obj)
-            string = sprintf('  channelSpace:         <%ix3 double>',size(obj.channelSpace,1));
+            string = sprintf('  channelSpace:         <%ix3 double>\n',size(obj.channelSpace,1));
             disp@coreStreamObject(obj)
-            disp(string);
+            fprintf(string);
         end
         %%
         function properyArray = getPropertyGridField(obj)

@@ -22,6 +22,7 @@ if isempty(p)
     p = [p filesep 'plugins' filesep 'mobilab'];
 end
 addpath(p);
+runmobilab(false);
 
 % JRI 7/3/14 -- original code was finding two "Import Data" menus (the one we want
 %   plus one from LIMO plugin. So, need to be more specific: 
@@ -39,8 +40,7 @@ addpath(p);
 h = uimenu( fig, 'label', 'MoBILAB');
 uimenu(h,'Label','Import xdf file','Callback','mobilab.loadData(''file'');waitfor(findall(0,''Tag'',''MoBILAB:ImportFile''));mobilab.export2eeglab;');
 uimenu(h,'Label','Load MoBI folder','Callback','mobilab.loadData(''mobi'');');
-uimenu( h, 'label', 'GUI','CallBack','disp(''runmobilab'');runmobilab;');
+uimenu( h, 'label', 'GUI','CallBack','disp(''runmobilab'');runmobilab(true);');
 uimenu( h, 'label', 'MultiStream Browser', 'callback','mobilab.msBrowser();');
 uimenu( h, 'label', 'Insert Events', 'callback','mobilab.insertEvents();');
 uimenu( h, 'label', 'Export to EEGLAB', 'callback','mobilab.export2eeglab();');
-uimenu( h, 'label', 'EEG Browser', 'callback','pop_eegbrowser(EEG);');

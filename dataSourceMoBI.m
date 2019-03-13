@@ -92,9 +92,9 @@ classdef dataSourceMoBI < dataSource
             val = true;
             version = coreStreamObject.version;
             try
-                warning off %#ok
+                warning off 
                 load(header,'-mat','hdrVersion');
-                warning on  %#ok
+                warning on  
             catch hdrVersion = -inf; %#ok
             end
             
@@ -108,9 +108,10 @@ classdef dataSourceMoBI < dataSource
             if ~exist('metadata','var')
                 val = false;
                 binFile = [header(1:end-3) 'bin'];
-                if exist(binFile,'file'), 
+                if exist(binFile,'file')
                      toZip = {header,binFile};
-                else toZip = header;
+                else
+                    toZip = header;
                 end
                 zipfile = [obj.mobiDataDirectory filesep 'lost+found.zip'];
                 fprintf(['File ' header ' may be corrupt.\nIt will be added to ' zipfile '\n']);
@@ -144,10 +145,6 @@ classdef dataSourceMoBI < dataSource
                 metadata.class = 'eeg';
                 saveThis = true;
             end
-            if isfield(metadata,'icawinv') && ~strcmp(metadata.class,'icaEEG')
-                metadata.class = 'icaEEG';
-                saveThis = true;
-            end
             if isfield(metadata,'hardwareMetaDataObj') 
                 metadata.hardwareMetaData = metadata.hardwareMetaDataObj;
                 metadata = rmfield(metadata,'hardwareMetaDataObj');
@@ -163,10 +160,6 @@ classdef dataSourceMoBI < dataSource
             end
             if strcmp(metadata.class,'vectorMeasure') || strcmp(metadata.class,'segmentedMocap')
                 metadata.class = 'mocap';
-                saveThis = true;
-            end
-            if strcmp(metadata.class,'icaStream')
-                metadata.class = 'icaEEG';
                 saveThis = true;
             end
             if ~isfield(metadata,'binFile')
@@ -189,31 +182,6 @@ classdef dataSourceMoBI < dataSource
                 end
                 saveThis = true;
             end
-            if isfield(metadata,'leadFieldFile') && ischar(metadata.leadFieldFile) && ~exist(metadata.leadFieldFile,'file') && ~isempty(metadata.leadFieldFile)
-                metadata.leadFieldFile = pickfiles(obj.mobiDataDirectory,{'lf' metadata.name metadata.uuid '.mat'});
-                if ~isempty(metadata.leadFieldFile)
-                    metadata.leadFieldFile = deblank(metadata.leadFieldFile(1,:));
-                    leadFieldFile = fullfile(obj.mobiDataDirectory,['lf_' metadata.name '_' metadata.uuid '_' obj.sessionUUID , '.mat']);
-                    if ~strcmp(metadata.leadFieldFile,leadFieldFile)
-                        java.io.File(metadata.leadFieldFile).renameTo(java.io.File(leadFieldFile));
-                        metadata.leadFieldFile = leadFieldFile;
-                    end
-                end
-                saveThis = true;
-            end
-            if isfield(metadata,'surfaces') && ischar(metadata.surfaces) && ~exist(metadata.surfaces,'file') && ~isempty(metadata.surfaces)
-                metadata.surfaces = pickfiles(obj.mobiDataDirectory,{'headModel' metadata.name metadata.uuid '.mat'});
-                if ~isempty(metadata.surfaces)
-                    metadata.surfaces = deblank(metadata.surfaces(1,:));
-                    surfaces = fullfile(obj.mobiDataDirectory,['headModel' metadata.name '_' metadata.uuid '_' obj.sessionUUID , '.mat']);
-                    if ~strcmp(metadata.surfaces,surfaces)
-                        java.io.File(metadata.surfaces).renameTo(java.io.File(surfaces));
-                        metadata.surfaces = surfaces;
-                    end
-                end
-                saveThis = true;
-            end
-            
             if ~ischar(metadata.uuid), metadata.uuid = char(metadata.uuid);saveThis = true;end
             if ~ischar(metadata.sessionUUID), metadata.sessionUUID = char(metadata.sessionUUID);saveThis = true;end
             if isfield(metadata,'segmentUUID') && ~ischar(metadata.segmentUUID), metadata.segmentUUID = char(metadata.segmentUUID);saveThis = true;end

@@ -343,7 +343,7 @@ try
     set([handles.popupmenu3 handles.popupmenu4],'String',nameList);
         
 catch ME
-    sendEmailReport(ME);
+    errordlg(ME.message);
 end
 
 % --- Executes on button press in pushbutton7.

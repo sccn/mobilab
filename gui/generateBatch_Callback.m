@@ -52,5 +52,5 @@ try
     fprintf('\nSaved in:\n');
     fprintf([' ' outFile '\n\n']);
 catch ME
-    sendEmailReport(ME);
+    errordlg(ME.message);
 end
