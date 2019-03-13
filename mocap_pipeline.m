@@ -10,10 +10,6 @@ numberOfGaussianMixtures = 2;
 robustPcaFlag = true;
 MaxIter = 2;
 updateEEGLABGui = false;
-message{1} = 'From: The Talking Machine Postal Service ( or TTMPS )';
-message{2,1} = '   ';
-message{3,1} = '   ';
-mailList = {'grace.leslie@gmail.com','alejo.ojeda83@gmail.com'};
 
 %% reading csv file
 csvfile = pickfiles(dataDirectory,'sample_data.csv');
@@ -339,12 +335,10 @@ for k=1:length(folders)
         fprintf(fid,'Error in %s, message: %s\n',[num2str(k) '_MoBI'],ME.message);
     end
     disp([num2str(k) ': ' foldername ' => ' state.accomplished]);
-    message{end+1,1} = [num2str(k) ': ' foldername ' => ' state.accomplished]; %#ok
     try delete(allDataStreams);end %#ok
     clear allDataStreams
 end
 disp('Done!!!')
-message{end+1,1} = 'Done!!!';
 end
 
 %% ----------------------------
@@ -542,7 +536,7 @@ if nargin < 4, colormap = 'hsv';end
 ntrials = length(labels);
 uLabels = unique(labels);
 color = eval([colormap '(length(uLabels));']);
-warning off %#ok
+warning off
 h1 = figure;hold on;
 for jt=1:ntrials
     I = ismember(uLabels,labels(jt));
@@ -556,5 +550,76 @@ grid on
 h2 = figure;
 imagesc(abs(D));
 title('Similarity matrix')
-warning on %#ok
+warning on
+end
+%%
+function mObj = maskStream(obj,timeMask)
+loc = ismember(obj.timeStamp,timeMask);
+if ~any(loc)
+    error('MoBILAB:maskStream','Time stamps don''t match  at all.');
+end
+I = diff(loc);
+seMatrix = obj.timeStamp([find(I==1)'+1 find(I==-1)'+1]);
+bsObj = basicSegment(seMatrix,'msk');
+mObj = bsObj.apply(obj);
+end
+%%
+function mObj = mergeStreams(streamList)
+N = length(streamList);
+for it=2:N
+    if ~isa(streamList{it},class(streamList{1}))
+        error('MoBILAB:mergeStream','Cannot merge streams from different type.');
+    end
+end
+t = [];
+I = [];
+for it=1:N 
+    t = [t streamList{it}.timeStamp]; %#ok
+    I = [I; it*ones(length(streamList{it}.timeStamp),1)]; %#ok
+end  
+[ts,loc] = sort(t);
+[tu,locU] = unique(ts);
+order = unique(I(loc));
+metadata = streamList{1}.saveobj;
+metadata.writable = true;
+metadata.parentCommand.commandName = 'mergeStream';
+metadata.parentCommand.uuid = streamList{1}.uuid;
+bsObj = streamList{1}.segmentObj;
+for it=2:N
+    metadata.parentCommand.varargin{it-1} = streamList{it}.uuid;
+    bsObj = cat(bsObj,streamList{order(it)}.segmentObj);
+end
+metadata.segmentObj = bsObj;
+metadata.uuid = java.util.UUID.randomUUID;
+path = fileparts(metadata.mmfName);
+prename = 'merged_';
+metadata.name = [prename metadata.name];
+metadata.mmfName = fullfile(path,[metadata.name '_' char(metadata.uuid) '.bin']);
+metadata.timeStamp = tu;
+obj_properties = fieldnames(metadata);
+obj_values     = struct2cell(metadata);
+varargIn = cat(1,obj_properties,obj_values);
+Np = length(obj_properties);
+index = [1:Np; Np+1:2*Np];
+varargIn = varargIn(index(:));
+Zeros = zeros(length(metadata.timeStamp),1);
+fid = fopen(metadata.mmfName,'w');
+c = onCleanup(@()fclose(fid));
+for it=1:streamList{1}.numberOfChannels, fwrite(fid,Zeros,streamList{1}.precision);end
+constructorHandle = eval(['@' metadata.class]);
+mObj = constructorHandle(varargIn{:});
+streamList{1}.container.item{end+1} = mObj;
+for ch=1:mObj.numberOfChannels
+    val = [];
+    for it=1:N, val = [val; streamList{it}.data(:,ch)];end %#ok
+    mObj.data(:,ch) = val(loc(locU));
+end
+mObj.event = event;
+for jt=1:N
+    latency = streamList{jt}.timeStamp(streamList{jt}.event.latencyInFrame);
+    if ~isempty(latency)
+        latencyInsamples = mObj.getTimeIndex(latency);
+        mObj.event = mObj.event.addEvent(latencyInsamples,streamList{jt}.event.label);
+    end
+end
 end

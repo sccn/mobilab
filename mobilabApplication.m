@@ -152,7 +152,6 @@ classdef mobilabApplication < handle
                 uimenu(hHelp,'Label','Technical documentation','Callback','mobilab.onlineHelp;');
                 uimenu(hHelp,'Label','GUI operation','Callback','mobilab.onlineHelp([mobilab.doc ''/MoBILAB_toolbox_tutorial'']);');
                 uimenu(hHelp,'Label','Scripting examples','Callback','mobilab.onlineHelp([mobilab.doc ''/MoBILAB_from_the_command_line'']);');
-                uimenu(hHelp,'Label','Head model','Callback','mobilab.onlineHelp([mobilab.doc ''/headModel'']);');
                 hHow2 = uimenu(hHelp,'Label','Howto');
                 uimenu(hHow2,'Label','Export MoBILAB''s objects to EEGLAB','Callback','mobilab.onlineHelp([mobilab.doc ''/MoBILAB_from_the_command_line#Step_6:_Exporting_results_to_EEGLAB'']);');
                 uimenu(hHow2,'Label','Insert events','Callback','mobilab.onlineHelp([mobilab.doc ''/MoBILAB_from_the_command_line#Step_5:_Computing_the_derivatives_on_the_PCA_projections'']);');
@@ -442,7 +441,6 @@ classdef mobilabApplication < handle
                 obj.preferences.eeg.resampleMethod = 'linear';
                 obj.preferences.eeg.filterType = 'bandpass';
                 obj.preferences.eeg.cutoff = [1 200];
-                obj.preferences.eeg.headModel = fullfile(obj.path,'data','head_modelColin27_4825.mat');
                 obj.preferences.tmpDirectory = tempdir;
                 configuration = obj.preferences; %#ok
                 save(fullfile(getHomeDir,'.mobilab.mat'),'configuration');
@@ -695,7 +693,7 @@ for it=1:length(dependencyTree)
     end
 end
 end
-
+%%
 function ImportFile(mobilab)
 fig = figure('Menu','none','WindowStyle','modal','NumberTitle','off','Name','Import file','UserData',mobilab,'Tag','MoBILAB:ImportFile');
 fig.Position(3:4) = [534   132];
@@ -711,7 +709,7 @@ btnOk = uicontrol(fig,'Style','pushbutton','String','Ok','Position',[124    15  
 btnCancel = uicontrol(fig,'Style','pushbutton','String','Cancel','Position',[232    15    83    20],'Callback',@onCancel);
 btnHelp = uicontrol(fig,'Style','pushbutton','String','Help','Position',[338    15    83    20],'Callback',@onHelp);
 end
-
+%%
 function selectFile(src,evnt)
 [FileName,PathName] = uigetfile2({'*.xdf;*.xdfz','LSL files (*.xdf, *.xdfz)';'*.drf;*.bdf','Datariver File (*.drf, *.bdf)';'*.set;*.SET','EEGLAB File (*.set, *.SET)'},'Select the source file');
 if any([isnumeric(FileName) isnumeric(PathName)]), return;end
@@ -720,7 +718,7 @@ sourceFileName = fullfile(PathName,FileName);
 src.Parent.Children(9).String = sourceFileName;
 src.Parent.Children(6).String = fullfile(PathName,filename);
 end
-
+%%
 function onSet(src,evnt)
 sourceFileName = src.Parent.Children(9).String;
 if ~exist(sourceFileName,'file')
@@ -748,14 +746,39 @@ end
 src.Parent.UserData.refresh;
 close(src.Parent);
 end
-
+%%
 function onCancel(src,evnt)
 close(src.Parent);
 end
-
+%%
 function onHelp(src,evnt)
 disp('Import file:')
 disp('  1- Select the raw xdf file')
 disp('  2- Select the folder where to save the MoBI data (usually automatically selected)')
 disp('  3- Click OK to import the file.')
+end
+%%
+function copyfolder(source,destination)
+if ~exist(destination,'dir'), mkdir(destination);end
+if strcmp(source,destination), return;end
+list = dir(source);
+list(1:2) = [];
+if isempty(list), return;end
+isFile = logical(~cell2mat({list.isdir}));
+names = {list.name};
+filesnames = names(isFile);
+for it=1:length(filesnames)
+   toCopy = fullfile(source,filesnames{it});
+   disp(['cp: ' toCopy]);
+   copyfile(toCopy,destination);
+end
+[~,destName] = fileparts(destination);
+foldernames = names(~isFile);
+for it=1:length(foldernames)
+    if ~(strfind(destination,source) == 1 && strcmp(foldernames{it},destName))
+        src  = fullfile(source,foldernames{it});
+        dest = fullfile(destination,foldernames{it});
+        copyfolder(src,dest);
+    end
+end
 end
