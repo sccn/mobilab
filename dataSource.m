@@ -500,7 +500,11 @@ classdef dataSource < handle
                 switch class(streamObjList{k})
                     case 'eeg'
                         if isfield(streamObjList{k}.hardwareMetaData,'desc')
-                            for jt=1:streamObjList{k}.numberOfChannels, chanlocs(jt).type = streamObjList{k}.hardwareMetaData.desc.channels.channel{jt}.type;end
+                            try
+                                for jt=1:streamObjList{k}.numberOfChannels, chanlocs(jt).type = streamObjList{k}.hardwareMetaData.desc.channels.channel{jt}.type;end
+                            catch
+                                for jt=1:streamObjList{k}.numberOfChannels, chanlocs(jt).type = streamObjList{k}.hardwareMetaData.desc.channels.type;end
+                            end
                         else
                             for jt=1:streamObjList{k}.numberOfChannels, chanlocs(jt).type = 'EEG';end
                         end

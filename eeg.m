@@ -10,10 +10,9 @@ classdef eeg < dataStream
         isReferenced    % Boolean that reflects whether an EEG data set has been re-referenced of not.
         reference       % Cell array with the labels of the channels used to compute the reference.
         channelSpace
+        fiducials
     end
-    properties(GetAccess=private, SetAccess=private, Hidden)
-        hm
-    end
+    
     methods
         function obj = eeg(header)
             % Creates an eeg object.
@@ -101,12 +100,7 @@ classdef eeg < dataStream
             metadata.sessionUUID = char(obj.sessionUUID);
             metadata.uuid = char(obj.uuid);
             if ~isempty(metadata.channelSpace),  metadata.hasChannelSpace = 'yes'; else metadata.hasChannelSpace = 'no';end
-            if ~isempty(metadata.leadFieldFile), metadata.hasLeadField    = 'yes'; else metadata.hasLeadField    = 'no';end
-            if ~isempty(obj.fiducials) &&  ~isempty(obj.surfaces) && ~isempty(obj.atlas)
-                 metadata.hasHeadModel = 'yes';
-            else metadata.hasHeadModel = 'no';
-            end
-            metadata = rmfield(metadata,{'parentCommand' 'timeStamp' 'hardwareMetaData' 'channelSpace' 'leadFieldFile' 'fiducials' 'surfaces' 'atlas'});
+            metadata = rmfield(metadata,{'parentCommand' 'timeStamp' 'hardwareMetaData' 'channelSpace' 'fiducials'});
             jsonObj = savejson('',metadata,'ForceRootName', false);
         end
         %%

@@ -44,4 +44,3 @@ uimenu( h, 'label', 'GUI','CallBack','disp(''runmobilab'');runmobilab(true);');
 uimenu( h, 'label', 'MultiStream Browser', 'callback','mobilab.msBrowser();');
 uimenu( h, 'label', 'Insert Events', 'callback','mobilab.insertEvents();');
 uimenu( h, 'label', 'Export to EEGLAB', 'callback','mobilab.export2eeglab();');
-uimenu( h, 'label', 'EEG Browser', 'callback','pop_eegbrowser(EEG);');

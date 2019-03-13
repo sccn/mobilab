@@ -673,6 +673,12 @@ end
 
 %%
 function addDependency2Path(dependencyTree)
+indxdf = contains(dependencyTree,'xdf');
+if any(indxdf)
+    if ~isempty(which('load_xdf'))
+        dependencyTree(indxdf) = [];
+    end
+end
 for it=1:length(dependencyTree)
     list = dir(dependencyTree{it});
     I = ~cell2mat({list.isdir});
