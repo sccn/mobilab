@@ -1,6 +1,4 @@
 % Definition of the class dataSourceSET. This class imports EEGLAB set files into MoBILAB.
-% If the set file contains an ICA decomposition it creates two objects, one for EEG and the
-% other one (its child) for the ICA data.
 % 
 % Author: Alejandro Ojeda, SCCN, INC, UCSD, Oct-2012
 
@@ -95,36 +93,6 @@ classdef dataSourceSET < dataSource
             fclose(fid);
             header = metadata2headerFile(metadata);
             obj.addItem(header);
-            
-            if ~isempty(EEG.icawinv) && ~isempty(EEG.icaweights) && ~isempty(EEG.icasphere)
-                uuid = generateUUID;
-                metadata.uuid = uuid;
-                metadata.name = ['ica_' metadata.name];
-                metadata.class = 'icaEEG';
-                metadata.numberOfChannels = length(EEG.icachansind);
-                metadata.label = cell(metadata.numberOfChannels,1);
-                metadata.channelSpace = metadata.channelSpace(EEG.icachansind,:);
-                metadata.icawinv    = EEG.icawinv;
-                metadata.icaweights = EEG.icaweights;
-                metadata.icasphere  = EEG.icasphere;
-                
-                for it=1:metadata.numberOfChannels, metadata.label{it} = ['IC' num2str(it)];end
-                metadata.binFile = [obj.mobiDataDirectory filesep 'ica_' EEG.setname '_' uuid '_' obj.sessionUUID '.bin'];
-                fid = fopen(metadata.binFile,'w');
-                if isempty(EEG.icaact)
-                    EEG.icaact = (EEG.icaweights*EEG.icasphere)*EEG.data(EEG.icachansind,:);
-                    EEG.icaact = reshape( EEG.icaact, size(EEG.icaact,1), EEG.pnts, EEG.trials);
-                end
-                dim = size(EEG.icaact);
-                data = reshape(EEG.icaact,[dim(1) prod(dim(2:end))]);
-                if isa(data,'mmo'), data = data(:,:);end
-                fwrite(fid,data','double');
-                fclose(fid);
-                
-                header = metadata2headerFile(metadata);
-                obj.addItem(header);
-            end
-            
             obj.connect;
             obj.updateLogicalStructure;
             obj.container.lockGui;

@@ -92,9 +92,9 @@ classdef dataSourceMoBI < dataSource
             val = true;
             version = coreStreamObject.version;
             try
-                warning off %#ok
+                warning off 
                 load(header,'-mat','hdrVersion');
-                warning on  %#ok
+                warning on  
             catch hdrVersion = -inf; %#ok
             end
             
@@ -108,9 +108,10 @@ classdef dataSourceMoBI < dataSource
             if ~exist('metadata','var')
                 val = false;
                 binFile = [header(1:end-3) 'bin'];
-                if exist(binFile,'file'), 
+                if exist(binFile,'file')
                      toZip = {header,binFile};
-                else toZip = header;
+                else
+                    toZip = header;
                 end
                 zipfile = [obj.mobiDataDirectory filesep 'lost+found.zip'];
                 fprintf(['File ' header ' may be corrupt.\nIt will be added to ' zipfile '\n']);
@@ -144,10 +145,6 @@ classdef dataSourceMoBI < dataSource
                 metadata.class = 'eeg';
                 saveThis = true;
             end
-            if isfield(metadata,'icawinv') && ~strcmp(metadata.class,'icaEEG')
-                metadata.class = 'icaEEG';
-                saveThis = true;
-            end
             if isfield(metadata,'hardwareMetaDataObj') 
                 metadata.hardwareMetaData = metadata.hardwareMetaDataObj;
                 metadata = rmfield(metadata,'hardwareMetaDataObj');
@@ -163,10 +160,6 @@ classdef dataSourceMoBI < dataSource
             end
             if strcmp(metadata.class,'vectorMeasure') || strcmp(metadata.class,'segmentedMocap')
                 metadata.class = 'mocap';
-                saveThis = true;
-            end
-            if strcmp(metadata.class,'icaStream')
-                metadata.class = 'icaEEG';
                 saveThis = true;
             end
             if ~isfield(metadata,'binFile')
