@@ -444,16 +444,6 @@ classdef mobilabApplication < handle
                 obj.preferences.eeg.cutoff = [1 200];
                 obj.preferences.eeg.headModel = fullfile(obj.path,'data','head_modelColin27_4825.mat');
                 obj.preferences.tmpDirectory = tempdir;
-                
-                answer = [];
-                options.Resize='on';
-                options.WindowStyle='normal';
-                while isempty(answer)
-                    answer = inputdlg({'Name' 'Organization' 'email'},'Please enter your contact info',1,{getUserName 'SCCN' [getUserName '@sccn.ucsd.edu']},options);
-                end
-                obj.preferences.username = answer{1};
-                obj.preferences.organization = answer{2};
-                obj.preferences.email = answer{3};
                 configuration = obj.preferences; %#ok
                 save(fullfile(getHomeDir,'.mobilab.mat'),'configuration');
             end

@@ -593,32 +593,10 @@ classdef eeg < dataStream
             newHeader = metadata2headerFile(metadata);
         end
         %%
-        function cobj = createROIobj(obj,commandHistory)
-            metadata = obj.saveobj;
-            metadata.writable = true;
-            metadata.parentCommand = commandHistory;
-            uuid = generateUUID;
-            metadata.uuid = uuid;
-            path = fileparts(obj.binFile);
-            prename = 'roi_';
-            metadata.name = [prename metadata.name];
-            metadata.binFile = fullfile(path,[metadata.name '_' metadata.uuid '_' metadata.sessionUUID '.bin']);
-            metadata.timeStamp = obj.timeStamp(commandHistory.varargin{1});
-            metadata = rmfield(metadata,{'surfaces','leadFieldFile','atlas'});
-            metadata.label = obj.atlas.label;
-            I = setdiff(1:max(obj.atlas.colorTable),unique(obj.atlas.colorTable));
-            metadata.label(I) = [];
-            metadata.numberOfChannels = length(metadata.label);
-            metadata.class = 'roiStream';
-            allocateFile(metadata.binFile,obj.precision,[length(metadata.timeStamp) metadata.numberOfChannels]);
-            newHeader = metadata2headerFile(metadata);
-            cobj = obj.container.addItem(newHeader);
-        end
-        %%
         function disp(obj)
-            string = sprintf('  channelSpace:         <%ix3 double>',size(obj.channelSpace,1));
+            string = sprintf('  channelSpace:         <%ix3 double>\n',size(obj.channelSpace,1));
             disp@coreStreamObject(obj)
-            disp(string);
+            fprintf(string);
         end
         %%
         function properyArray = getPropertyGridField(obj)
