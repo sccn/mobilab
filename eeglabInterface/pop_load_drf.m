@@ -113,6 +113,5 @@ catch ME
         end
         if exist(allDataStreams.dataSourceLocation,'file'), delete(allDataStreams.dataSourceLocation);end
     end
-    sendEmailReport(ME);
     errordlg(ME.message);
 end

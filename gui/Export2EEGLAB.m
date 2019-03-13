@@ -35,5 +35,9 @@ sel = cell2mat(tbl_data.Data(:,1));
 data = mobilab.allStreams.getItemIndexFromItemName(tbl_data.Data(sel,2));
 sel = cell2mat(tbl_events.Data(:,1));
 evnts = mobilab.allStreams.getItemIndexFromItemName(tbl_events.Data(sel,2));
+src.Parent.Pointer='watch';
+drawnow;
 mobilab.allStreams.export2eeglab(data,evnts);
+src.Parent.Pointer='arrow';
+drawnow;
 end

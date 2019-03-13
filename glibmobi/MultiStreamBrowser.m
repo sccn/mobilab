@@ -142,7 +142,6 @@ catch ME
     if strcmp(ME.message,'There are no data to plot.')
         warndlg2(ME.message);
     else
-        sendEmailReport(ME);
         errordlg(ME.message);
     end
 end
@@ -171,7 +170,6 @@ try
     end
     set(treeHandle,'Name','Right click on objects to add them to the Browser');
 catch ME
-    sendEmailReport(ME);
     errordlg(ME.message);
 end
 
@@ -182,7 +180,6 @@ try
     browserListObj = get(handles.figure1,'userData');
     browserListObj.plotStep(-browserListObj.step);
 catch ME
-    sendEmailReport(ME);
     errordlg(ME.message);
 end
 
@@ -204,7 +201,6 @@ try
         end
     end
 catch ME
-    sendEmailReport(ME);
     errordlg(ME.message);
 end
 
@@ -216,7 +212,6 @@ try
     browserListObj = get(handles.figure1,'userData');
     browserListObj.plotStep(browserListObj.step);
 catch ME
-    sendEmailReport(ME);
     errordlg(ME.message);
 end
 
@@ -237,7 +232,6 @@ try
     browserListObj = get(handles.figure1,'userData');
     browserListObj.changeSettings;
 catch ME
-    sendEmailReport(ME);
     errordlg(ME.message);
 end
 
@@ -373,7 +367,6 @@ try
     end
     browserListObj.plotThisTimeStamp(newNowCursor);
 catch ME
-    sendEmailReport(ME);
     errordlg(ME.message);
 end
 
@@ -675,7 +668,6 @@ try
     assignin('base','EEG',EEG);
     evalin('base','eeglab(''redraw'')');
 catch ME
-    sendEmailReport(ME);
     errordlg(ME.message);
 end
 

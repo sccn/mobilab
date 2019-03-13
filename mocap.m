@@ -1210,3 +1210,9 @@ classdef mocap < dataStream
         end
     end
 end
+
+%%
+function cancelCallback(hObject,~,~)
+set(get(hObject,'parent'),'userData',0);
+uiresume;
+end

@@ -197,7 +197,6 @@ try
         disp 'timer resume'
     end
 catch ME
-    sendEmailReport(ME);
     errordlg(ME.message);
 end
 

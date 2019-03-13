@@ -67,6 +67,5 @@ catch ME
             end
         end
     end
-    sendEmailReport(ME);
     errordlg(ME.message);
 end
