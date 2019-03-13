@@ -1,6 +1,6 @@
 classdef CoreBrowser < handle
     properties
-        step = 1;
+        step = 5;
         eventColor  % onscreen display color
         showEvents = true;
         nowCursor
@@ -16,7 +16,7 @@ classdef CoreBrowser < handle
         timeTexttHandle
         timerObj = [];
         timeStamp
-        font
+        font = struct('size',7,'weight','normal');
         eventObj
         master
     end
@@ -34,13 +34,12 @@ classdef CoreBrowser < handle
     properties(Hidden=true)
         %timerMult = 0.008;
         timerMult = 0.01;
+        eventLatencyLookUp
     end
     %%
     methods
         function obj = CoreBrowser
             obj = obj@handle;
-            obj.font.size = 9;
-            obj.font.weight = 'normal'; % bold
             obj.speed = 1;
             obj.timerObj = timer('TimerFcn',{@playCallback, obj}, 'Period', obj.timerPeriod,...
                 'BusyMode','queue','ExecutionMode','fixedRate');
@@ -86,12 +85,12 @@ classdef CoreBrowser < handle
             end
             
             obj.timeIndex = 1:length(obj.streamHandle.timeStamp);
+            obj.eventLatencyLookUp = griddedInterpolant(obj.timeIndex, obj.streamHandle.timeStamp);
             obj.nowCursor = obj.streamHandle.timeStamp(1)+obj.windowWidth/2;
             obj.channelIndex = 1:obj.dim(1);
             obj.eventObj = obj.streamHandle.event;
             
-            skinPath = [fileparts(fileparts(which('CoreBrowser.m'))) filesep 'skin'];
-            
+            resFolder = [fileparts(which('CoreBrowser.m')) filesep 'resources'];
             backgroundColor = [0.93 0.96 1];
             fontColor = [0 0 0.4];
             
@@ -99,25 +98,27 @@ classdef CoreBrowser < handle
             hFigure.Position(3:4) = [950 530];
             hAxes = axes(hFigure,'Position',[0.1300 0.2302 0.8184 0.6948], 'Box','on');
             
-            imgRev   = imread([skinPath filesep '32px-Gnome-media-seek-backward.svg.png']);
-            imgPlay  = imread([skinPath filesep '32px-Gnome-media-playback-start.svg.png']);
-            imgPause = imread([skinPath filesep '32px-Gnome-media-playback-pause.svg.png']);
-            imgNext  = imread([skinPath filesep '32px-Gnome-media-seek-forward.svg.png']);
-            imgPref  = imread([skinPath filesep '32px-Gnome-preferences-system.svg.png']);
+            imgRev   = imread([resFolder filesep '32px-Gnome-media-seek-backward.svg.png']);
+            imgPlay  = imread([resFolder filesep '32px-Gnome-media-playback-start.svg.png']);
+            imgPause = imread([resFolder filesep '32px-Gnome-media-playback-pause.svg.png']);
+            imgNext  = imread([resFolder filesep '32px-Gnome-media-seek-forward.svg.png']);
+            imgPref  = imread([resFolder filesep '32px-Gnome-preferences-system.svg.png']);
             hRev     = uicontrol('Parent', hFigure, 'Style', 'pushbutton','Position',[159      53 40 40],'Callback',@play_rev_Callback,'CData',imgRev);
             hPlay    = uicontrol('Parent', hFigure, 'Style', 'pushbutton','Position',[159+41   53 40 40],'Callback',@play_Callback,    'CData',imgPlay, 'UserData',{imgPlay, imgPause});
             hNext    = uicontrol('Parent', hFigure, 'Style', 'pushbutton','Position',[159+41*2 53 40 40],'Callback',@play_fwd_Callback,'CData',imgNext);
             hPref    = uicontrol('Parent', hFigure, 'Style', 'pushbutton','Position',[159+41*3 53 40 40],'Callback',@settings_Callback,'CData',imgPref);
             hSlider  = uicontrol('Parent', hFigure, 'Style', 'slider','Position',[125.13 31 778.87 16],'Callback',@slider_Callback);
-            hText    = uicontrol('Parent', hFigure, 'Style', 'text','Position',[374.13 14 266.87 12],'String','Current latency = ');
-            hTextMin = uicontrol('Parent', hFigure, 'Style', 'text','Position',[125 14 100 12],'String',obj.timeStamp(1),'HorizontalAlignment','left');
-            hTextMax = uicontrol('Parent', hFigure, 'Style', 'text','Position',[125+680 14 100 12],'String',obj.timeStamp(end),'HorizontalAlignment','right');
+            hText    = uicontrol('Parent', hFigure, 'Style', 'text','Position',[374.13 14 266.87 15],'String','Current latency = ');
+            hTextMin = uicontrol('Parent', hFigure, 'Style', 'text','Position',[125 14 100 15],'String',obj.timeStamp(1),'HorizontalAlignment','left');
+            hTextMax = uicontrol('Parent', hFigure, 'Style', 'text','Position',[125+680 14 100 15],'String',obj.timeStamp(end),'HorizontalAlignment','right');
             
             hText2   = uicontrol('Parent', hFigure, 'Style', 'text','Position',[438 81 100 13],'String','Go to event');
-            hNextEvnt = uicontrol('Parent', hFigure, 'Style', 'pushbutton','Position',[543+41 53 40 40],'Callback',@next_Callback,'CData',imgNext);
-            hRevEvnt = uicontrol('Parent', hFigure, 'Style', 'pushbutton','Position',[543 53 40  40],'Callback',@previous_Callback,'CData',imgRev);
-            if ~isempty(obj.eventObj.uniqueLabel)
-                hPopUp   = uicontrol('Parent', hFigure, 'Style', 'popup',     'Position',[438 37 100 40],'String',obj.eventObj.uniqueLabel);
+            hNextEvnt = uicontrol('Parent', hFigure, 'Style', 'pushbutton','Position',[543+41 53 40 40],'Callback',@next_Callback,'CData',imgNext,'TooltipString','Go to next event');
+            hRevEvnt = uicontrol('Parent', hFigure, 'Style', 'pushbutton','Position',[543 53 40  40],'Callback',@previous_Callback,'CData',imgRev,'TooltipString','Go to previous event');
+            uniqueEvents = obj.eventObj.uniqueLabel;
+            uniqueEvents(cellfun(@isempty,uniqueEvents)) = [];
+            if ~isempty(uniqueEvents)
+                hPopUp = uicontrol('Parent', hFigure, 'Style', 'popup', 'Position',[438 37 100 40],'String',uniqueEvents);
             else
                 hPopUp = uicontrol(hFigure,'Position',[438 37 100 40]);
                 set([hNextEvnt hRevEvnt hText2 hPopUp],'Visible','off','Enable','off');
@@ -159,7 +160,7 @@ classdef CoreBrowser < handle
                 set([hRev, hPlay hNext hPref hSlider hText, hTextMin hTextMax ],'Enable','off');
             end
             
-            set(obj.figureHandle,'WindowScrollWheelFcn',@(src, event)onMouseWheelMove(obj,[], event),'KeyPressFcn',@(src, event)onKeyPress(obj,[], event));
+            set(obj.figureHandle,'WindowScrollWheelFcn',@(src, event)onMouseWheelMove(obj,[], event));
             if isa(obj,'mocapBrowserHandle')
                 set(findobj(obj.figureHandle,'tag','connectLine'),'Visible','on');
                 set(findobj(obj.figureHandle,'tag','deleteLine'),'Visible','on');
@@ -192,18 +193,6 @@ classdef CoreBrowser < handle
             % step = -10*obj.speed*(eventObj.VerticalScrollCount*eventObj.VerticalScrollAmount)/obj.streamHandle.samplingRate;%#ok
             step = -(eventObj.VerticalScrollCount*eventObj.VerticalScrollAmount)/obj.streamHandle.samplingRate/2;%#ok
             plotStep(obj,step);%#ok
-        end
-        function onKeyPress(obj,~,eventObj)
-            switch eventObj.Key
-                case 'leftarrow',  plotStep(obj,-obj.step*obj.speed*2);
-                case 'rightarrow', plotStep(obj,obj.step*obj.speed*2);
-                case 'subtract' 
-                    obj.gain = obj.gain/2;
-                    plotStep(obj,0);
-                case 'add'
-                    obj.gain = obj.gain*2;
-                    plotStep(obj,0);
-            end
         end
     end
     %%
@@ -294,20 +283,22 @@ else
     eventObj = browserObj.streamHandle.event;
 end
 ind = get(findobj(get(hObject,'parent'),'style','popupmenu'),'Value');
-if ~isempty(eventObj.label)
-    [~,loc] = ismember( eventObj.label, eventObj.uniqueLabel{ind});
+uniqueEvents = eventObj.uniqueLabel;
+uniqueEvents(cellfun(@isempty,uniqueEvents)) = [];
+if ~isempty(uniqueEvents)
+    [~,loc] = ismember( eventObj.label, uniqueEvents{ind});
     tmp  = eventObj.latencyInFrame(logical(loc));
-    tmp2 = browserObj.streamHandle.timeStamp(eventObj.latencyInFrame(logical(loc))) -  browserObj.nowCursor;
+    tmp2 = browserObj.eventLatencyLookUp(eventObj.latencyInFrame(logical(loc))) -  browserObj.nowCursor;
     tmp(tmp2>0) = [];
     tmp2(tmp2>=0) = [];
     [~,loc1] = max(tmp2);
     jumpLatency = tmp(loc1);
     if ~isempty(jumpLatency)
         if browserObj.master == -1
-            set(browserObj.sliderHandle,'Value',browserObj.streamHandle.timeStamp(jumpLatency));
+            set(browserObj.sliderHandle,'Value',browserObj.eventLatencyLookUp(jumpLatency));
             slider_Callback(browserObj.sliderHandle,eventdata);
         else
-            browserObj.master.plotThisTimeStamp(browserObj.streamHandle.timeStamp(jumpLatency));
+            browserObj.master.plotThisTimeStamp(browserObj.eventLatencyLookUp(jumpLatency));
         end
     end
 end
@@ -324,20 +315,22 @@ else
     eventObj = browserObj.streamHandle.event;
 end
 ind = get(findobj(get(hObject,'parent'),'style','popupmenu'),'Value');
-if ~isempty(eventObj.label)
-    [~,loc] = ismember( eventObj.label, eventObj.uniqueLabel{ind});
+uniqueEvents = eventObj.uniqueLabel;
+uniqueEvents(cellfun(@isempty,uniqueEvents)) = [];
+if ~isempty(uniqueEvents)
+    [~,loc] = ismember( eventObj.label, uniqueEvents{ind});
     tmp  = eventObj.latencyInFrame(logical(loc));
-    tmp2 = browserObj.streamHandle.timeStamp(eventObj.latencyInFrame(logical(loc))) -  browserObj.nowCursor;
+    tmp2 = browserObj.eventLatencyLookUp(eventObj.latencyInFrame(logical(loc))) -  browserObj.nowCursor;
     tmp(tmp2<=0) = [];
     tmp2(tmp2<=0) = [];
     [~,loc1] = min(tmp2);
     jumpLatency = tmp(loc1);
     if ~isempty(jumpLatency)
         if browserObj.master == -1
-            set(browserObj.sliderHandle,'Value',browserObj.streamHandle.timeStamp(jumpLatency));
+            set(browserObj.sliderHandle,'Value',browserObj.eventLatencyLookUp(jumpLatency));
             slider_Callback(browserObj.sliderHandle,eventdata);
         else
-            browserObj.master.plotThisTimeStamp(browserObj.streamHandle.timeStamp(jumpLatency));
+            browserObj.master.plotThisTimeStamp(browserObj.eventLatencyLookUp(jumpLatency));
         end
     end
 end
