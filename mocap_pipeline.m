@@ -345,7 +345,6 @@ for k=1:length(folders)
 end
 disp('Done!!!')
 message{end+1,1} = 'Done!!!';
-%unixSendMail(mailList,'mocap pipeline',message);
 end
 
 %% ----------------------------
