@@ -2,19 +2,20 @@ function fig = Export2EEGLAB(mobilab)
 fig = figure('Menu','none','WindowStyle','normal','NumberTitle','off','Name','Export to EEGLAB','UserData',mobilab);
 fig.Position(3:4) = [560   340];
 n = length(mobilab.allStreams.item);
-TData= cell(n,2);
+TData= cell(n,3);
 for k=1:n
     TData{k,1} = false;
     TData{k,2} = mobilab.allStreams.item{k}.name;
+    TData{k,3} = class(mobilab.allStreams.item{k});
 end
-tbl_source = uitable(fig, 'Data',TData,'ColumnName',{'Select','Name'},'Units','normalized','Position',[0.03 0.2647 0.45 0.65],...
+tbl_source = uitable(fig, 'Data',TData,'ColumnName',{'Select','Name','Type'},'Units','normalized','Position',[0.03 0.2647 0.45 0.65],...
     'TooltipString','Select the items containing the events of interest','ColumnEditable',true);
-tbl_target = uitable(fig, 'Data',TData,'ColumnName',{'Select','Name'},'Units','normalized','Position',[0.53 0.2647, 0.45 0.65],...
+tbl_target = uitable(fig, 'Data',TData,'ColumnName',{'Select','Name','Type'},'Units','normalized','Position',[0.53 0.2647, 0.45 0.65],...
     'TooltipString','Select the items receiving the events of interest','ColumnEditable',true);
 
-uicontrol(fig,'Style','text','String','Data','Position',[84 314 60 20],'FontWeight','bold');
-uicontrol(fig,'Style','text','String','Events','Position',[394 314 60 20],'FontWeight','bold');
-uicontrol(fig,'Style','text','String','EEG','Position',[254 6 60 23],'FontWeight','bold');
+uicontrol(fig,'Style','text','String','Data','Position',[84 314 60 20],'FontWeight','bold','Units','normalized');
+uicontrol(fig,'Style','text','String','Events','Position',[394 314 60 20],'FontWeight','bold','Units','normalized');
+uicontrol(fig,'Style','text','String','EEG','Position',[254 6 60 23],'FontWeight','bold','Units','normalized');
 
 try
     skinPath = [fileparts(fileparts(which('CoreBrowser.m'))) filesep 'skin'];
@@ -24,7 +25,7 @@ catch
     insertIcon  = imread(pickfiles(skinPath,'32px-Gnome-media-seek-forward.svg.png'));
 end
 uicontrol('Parent', fig, 'Style', 'pushbutton','Callback',@onExport,'CData',permute(insertIcon,[2 1 3]),...
-    'Position',[259 43 47 43],'TooltipString','Export to EEGLAB');
+    'Position',[259 43 47 43],'TooltipString','Export to EEGLAB','Units','normalized');
 end
 
 function onExport(src, evnt)

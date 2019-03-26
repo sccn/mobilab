@@ -360,8 +360,12 @@ classdef mobilabApplication < handle
             figHandle = InsertEvents(obj);
         end
         function figHandle = export2eeglab(obj)
-            if isempty(obj.allStreams) || ~isvalid(obj.allStreams), error('Load some data first');end
-            figHandle = Export2EEGLAB(obj);
+            if isempty(obj.allStreams) || ~isvalid(obj.allStreams)
+                disp('There is no MoBI data.');
+                figHandle = [];
+            else
+                figHandle = Export2EEGLAB(obj);
+            end
         end
         
         %%
@@ -714,6 +718,10 @@ uicontrol(fig,'Style','text','String','_MoBI','Position',[439   66    44    20])
 btnOk = uicontrol(fig,'Style','pushbutton','String','Ok','Position',[124    15    83    20],'Callback',@onSet);
 btnCancel = uicontrol(fig,'Style','pushbutton','String','Cancel','Position',[232    15    83    20],'Callback',@onCancel);
 btnHelp = uicontrol(fig,'Style','pushbutton','String','Help','Position',[338    15    83    20],'Callback',@onHelp);
+
+pipelineCtrl = uicontrol(fig,'Style','edit','Position',[138    40   300    20]);
+pipelineLabel = uicontrol(fig,'Style','text','String','Preproc (optional)','Position',[6    38   128    20]);
+browsePreproc = uicontrol(fig,'Style','pushbutton','String','Sel script','Position',[439   40    83    20],'Callback',@selectScript);
 end
 %%
 function selectFile(src,evnt)
@@ -721,16 +729,23 @@ function selectFile(src,evnt)
 if any([isnumeric(FileName) isnumeric(PathName)]), return;end
 sourceFileName = fullfile(PathName,FileName);
 [~,filename,ext] = fileparts(sourceFileName);
-src.Parent.Children(9).String = sourceFileName;
-src.Parent.Children(6).String = fullfile(PathName,filename);
+src.Parent.Children(12).String = sourceFileName;
+src.Parent.Children(9).String = fullfile(PathName,filename);
+end
+%%
+function selectScript(src,evnt)
+[FileName,PathName] = uigetfile2({'*.m','MATLAB script (*.m)';'*.m','MATLAB script (*.m)'},'Select preprocessing script');
+if any([isnumeric(FileName) isnumeric(PathName)]), return;end
+sourceFileName = fullfile(PathName,FileName);
+src.Parent.Children(3).String = sourceFileName;
 end
 %%
 function onSet(src,evnt)
-sourceFileName = src.Parent.Children(9).String;
+sourceFileName = src.Parent.Children(12).String;
 if ~exist(sourceFileName,'file')
     errordlg('Cannot locate the file.');
 end
-mobiDataDirectory = [src.Parent.Children(6).String '_MoBI'];
+mobiDataDirectory = [src.Parent.Children(9).String '_MoBI'];
 [~,~,ext] = fileparts(sourceFileName);
 if isempty(ext) && exist(source,'dir'), ext = 'dir';end
 switch ext
@@ -746,6 +761,9 @@ disp('Running:');
 disp(['  mobilab.allStreams = ' importFunStr '( ''' sourceFileName ''' , ''' mobiDataDirectory ''');' ]);
 try
     src.Parent.UserData.allStreams = importFun(sourceFileName,mobiDataDirectory);
+    if exist(src.Parent.Children(3).String,'file')
+        run(src.Parent.Children(3).String);
+    end
 catch ME
     errordlg(ME.message);
 end
