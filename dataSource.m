@@ -6,7 +6,7 @@
 
 %%
 classdef dataSource < handle
-    properties(SetAccess=protected), 
+    properties(SetAccess=protected) 
         sessionUUID                   % Universal unique identifier that links all the data sets
                                       % belonging to the same session. A session is defined as a
                                       % raw file or collection of files recorded the same day and
@@ -386,66 +386,6 @@ classdef dataSource < handle
             if nargin < 4, newEEGfile = [];end
             if nargin < 5, updateGui = true;end
             
-            if length(dataObjIndex) == 1
-                if isa(obj.item{dataObjIndex},'eeg')
-                    EEG = obj.item{dataObjIndex}.EEGstructure;
-                    if ~isempty(obj.item{dataObjIndex}.auxChannel.data)
-                        EEG.data = [EEG.data;obj.item{dataObjIndex}.auxChannel.data'];
-                        for it=1:length(obj.item{dataObjIndex}.auxChannel.label)
-                            EEG.chanlocs(end+1).labels = obj.item{dataObjIndex}.auxChannel.label{it};
-                        end
-                        EEG.nbchan = size(EEG.data,1);
-                    end
-                    eventObjIndex = unique([dataObjIndex eventObjIndex]);
-                    eventcodesObj = obj.item(eventObjIndex);
-                    
-                    type    = eventcodesObj{1}.event.label(:);
-                    latency = eventcodesObj{1}.timeStamp(eventcodesObj{1}.event.latencyInFrame(:));
-                    hedTag  = eventcodesObj{1}.event.hedTag(:);
-                    
-                    for it=2:length(eventcodesObj)
-                        if ~isempty(eventcodesObj{it}.event.latencyInFrame)
-                            type = cat(1,type,eventcodesObj{it}.event.label(:));
-                            hedTag = cat(1,hedTag,eventcodesObj{it}.event.hedTag(:));
-                            latency = [latency eventcodesObj{it}.timeStamp(eventcodesObj{it}.event.latencyInFrame)]; %#ok
-                        end
-                    end
-                    latency = obj.item{dataObjIndex}.getTimeIndex(latency);
-                    if ~isempty(latency)
-                        [latency,loc] = sort(latency,'ascend');
-                        type = type(loc);
-                        hedTag = hedTag(loc);
-                        Nevents = length(latency);
-                        EEG.event = repmat(struct('type','','latency',0,'duration',0,'urevent',1,'hedTag',[]),1,Nevents);
-                        disp(['Inserting ' num2str(Nevents) ' events.']);
-                        obj.container.initStatusbar(1,Nevents,'Creating EEG.event...');
-                        for it=1:length(latency)
-                            EEG.event(it).type = type{it};
-                            EEG.event(it).latency = latency(it);
-                            EEG.event(it).hedTag = hedTag{it};
-                            EEG.event(it).urevent = it;
-                            if strcmp(type,'boundary'), EEG.event(it).duration = NaN;end
-                            obj.container.statusbar(it);
-                        end
-                    end
-                    EEG.urevent = EEG.event;
-                    if ~isempty(newEEGfile)
-                        [p,n,e] = fileparts(newEEGfile);
-                        EEG.filename = [n e];
-                        EEG.filepath = p;
-                        pop_saveset( EEG, [n e],p);
-                    end
-                    if updateGui
-                        assignin('base','EEG',EEG);
-                        try
-                            evalin('base','eeglab(''redraw'');');
-                        end
-                    end
-                    return;
-                end
-            end
-            
-            configEEGLAB
             I = false(length(dataObjIndex),1);
             for k=1:length(dataObjIndex), I(k) = obj.item{dataObjIndex(k)}.isMemoryMappingActive;end
             dataObjIndex = dataObjIndex(I);
@@ -547,8 +487,10 @@ classdef dataSource < handle
                 end
             end
             EEG.urevent = EEG.event;
-            pop_saveset( EEG, [name '.set'],path);
-            EEG = pop_loadset( [name '.set'],path);
+            if ~isempty(newEEGfile)
+                pop_saveset( EEG, [name '.set'],path);
+                EEG = pop_loadset( [name '.set'],path);
+            end
             if nargout < 1 && updateGui
                 try 
                     ALLEEG = evalin('base','ALLEEG');
@@ -868,7 +810,7 @@ try
         ind = unique(streamObj{it}.getTimeIndex(xi));
         x = streamObj{it}.timeStamp(ind)';
         for ch=1:streamObj{it}.numberOfChannels
-            yi = interp1(x,y(ind,ch),xi,'nearest');
+            yi = interp1(x,y(ind,ch),xi,'linear');
             fwrite(tfid,yi(:),precision);
         end
         % if srOld, streamObj{it}.samplingRate = srOld;end
