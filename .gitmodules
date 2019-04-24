@@ -1,3 +1,3 @@
 [submodule "xdf"]
-	path = xdf
+	path = dependency/xdf
 	url = https://github.com/xdf-modules/xdf-EEGLAB.git
