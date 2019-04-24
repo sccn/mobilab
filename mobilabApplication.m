@@ -707,6 +707,7 @@ end
 function ImportFile(mobilab)
 fig = figure('Menu','none','WindowStyle','modal','NumberTitle','off','Name','Import file','UserData',mobilab,'Tag','MoBILAB:ImportFile');
 fig.Position(3:4) = [534   132];
+fig.Resize = 'off';
 
 filenameCtrl = uicontrol(fig,'Style','edit','Position',[88   98   350    20]);
 filenameLabel = uicontrol(fig,'Style','text','String','File name','Position',[10   96    72    20]);
