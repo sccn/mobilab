@@ -429,7 +429,7 @@ classdef mobilabApplication < handle
                 else
                     obj.preferences = configuration; %#ok
                 end                
-                if ~isfield(obj.preferences.mocap,'bodyModel')
+                if ~isfield(obj.preferences, 'mocap') || ~isfield(obj.preferences.mocap,'bodyModel')
                     obj.preferences.mocap.bodyModel = fullfile(obj.path,'data','KinectBodyModel.mat');
                 end
             else
