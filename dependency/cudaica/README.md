@@ -30,7 +30,7 @@ ldconfig	# configure dynamic linker run-time bindings
 ./reconf.sh
 ```
 
-5- Run the *configure* script (**not with the default options**). This is probably the most critical step since we will be tempted to use the defaults (nacked *./configure* command), we strongly recommend to run the script specifying the compute capability of your GPU card (see [here](https://developer.nvidia.com/cuda-gpus)). In this example we used a Quadro K6000 with compute capability of 3.5, then we run the following command:
+5- Run the *configure* script (**not with the default options**). This is probably the most critical step since we will be tempted to use the defaults (naked *./configure* command), we strongly recommend to run the script specifying the compute capability of your GPU card (see [here](https://developer.nvidia.com/cuda-gpus)). In this example we used a Quadro K6000 with compute capability of 3.5, then we run the following command:
 ```bash
 ./configure -with-cuda-arch=35
 ```
