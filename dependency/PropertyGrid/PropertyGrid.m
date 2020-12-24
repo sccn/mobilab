@@ -314,7 +314,7 @@ classdef PropertyGrid < UIControl
                     if ~isempty(name) && ~isempty(self.BoundItem)  % help
                         nameparts = strsplit(name, '.');
                         if numel(nameparts) > 1
-                            helpobject = nestedfetch(self.BoundItem, strjoin('.', nameparts(1:end-1)));
+                            helpobject = nestedfetch(self.BoundItem, strjoin2('.', nameparts(1:end-1)));
                         else
                             helpobject = self.BoundItem;
                         end

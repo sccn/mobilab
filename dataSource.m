@@ -381,7 +381,11 @@ classdef dataSource < handle
             %
             %       EEG = mobilab.allStreams.export2eeglab( index_eeg_object, index_marker_object);
 
-            if nargin < 2, error('Not enough input arguments.');end
+            eeglab_options;
+            if ~option_savetwofiles 
+                errordlg('Change EEGLAB preferences to save two files - Mobilab requires it');
+            end
+                        if nargin < 2, error('Not enough input arguments.');end
             if nargin < 3, eventObjIndex = dataObjIndex;end
             if nargin < 4, newEEGfile = [];end
             if nargin < 5, updateGui = true;end

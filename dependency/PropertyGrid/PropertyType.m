@@ -47,7 +47,7 @@ classdef PropertyType
             end
             if ~isempty(self.Domain)
                 if iscellstr(self.Domain)
-                    s = [s ' ' strjoin(',', self.Domain)];
+                    s = [s ' ' strjoin2(',', self.Domain)];
                 elseif isnumeric(self.Domain)
                     s = [s ' ' mat2str(self.Domain)];
                 end
@@ -284,7 +284,7 @@ classdef PropertyType
                                 javavalue = mat2str(value);
                             end
                         case 'cellstr'
-                            javavalue = java.lang.String(strjoin(sprintf('\n'), value));
+                            javavalue = java.lang.String(strjoin2(sprintf('\n'), value));
                         case 'logical'
                             if ~isempty(self.Domain)
                                 javavalue = javaStringArray(self.Domain(value));  % value is an indicator vector

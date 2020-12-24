@@ -9,7 +9,7 @@
 % See also: strsplit, cell2mat
 
 % Copyright 2008-2009 Levente Hunyadi
-function string = strjoin(adjoiner, strings)
+function string = strjoin2(adjoiner, strings)
 
 validateattributes(adjoiner, {'char'}, {'vector'});
 validateattributes(strings, {'cell'}, {'vector'});

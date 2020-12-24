@@ -6,7 +6,7 @@
 % adjoiner:
 %    string separating each neighboring element
 %
-% See also: strjoin
+% See also: strjoin2
 
 % Copyright 2008-2009 Levente Hunyadi
 function strings = strsplit(string, adjoiner)
