@@ -556,6 +556,11 @@ classdef mobilabApplication < handle
             loadData(obj,format);
         end
         function loadData(obj,format)
+            eeglab_options;
+            if ~option_savetwofiles
+                errordlg2('Change the EEGLAB preference to save 2 files for each dataset');
+                return
+            end
             switch lower(format)
                 case 'file',   guiFun = @ImportFile;
                 case 'folder', guiFun = @ImportFolder;

@@ -16,7 +16,7 @@
 
 function v = eegplugin_mobilab(fig,try_strings, catch_strings)
 
-v = '20201223'; % date of release
+v = '20210311'; % date of release
 p = fileparts(which('runmobilab'));
 if isempty(p)
     p = fileparts(which('eeglab'));
