@@ -35,9 +35,18 @@ classdef dataSourceXDF < dataSource
             if ~any(ismember({'.xdf','.xdfz'},ext))
                 error('MoBILAB:isNotXDF',['dataSourceXDF cannot read ''' ext ''' format.']);
             end
-            if ~exist('load_xdf','file')
-                error('MoBILAB:xdfimportMissing','xdfimport plugin is missing.')
+            
+            if exist('load_xdf','file')
+               disp(['Using load_xdf.m from ' which('load_xdf')])
+            else
+                if exist('eeg_load_xdf','file')
+                    disp('Using load_xdf.m from xdfimport plugin')
+                    addpath([fileparts(which('eeg_load_xdf')) filesep 'xdf']);
+                else   
+                    error('MoBILAB:xdfimportMissing','xdfimport plugin is missing.')
+                end
             end
+            
             uuid = generateUUID;
             obj@dataSource(mobiDataDirectory,uuid);
             obj.listenerHandle.Enabled = false;
