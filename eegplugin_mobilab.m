@@ -16,13 +16,19 @@
 
 function v = eegplugin_mobilab(fig,try_strings, catch_strings)
 
-v = '20210311'; % date of release
+v = '20210924'; % date of release
 p = fileparts(which('runmobilab'));
 if isempty(p)
     p = fileparts(which('eeglab'));
     p = [p filesep 'plugins' filesep 'mobilab'];
+    addpath(p);
+    p = [p filesep 'plugins' filesep 'mobilab' filesep 'dependency' filesep 'xdf' ];
+    addpath(p);
+    p = [p filesep 'plugins' filesep 'mobilab' filesep 'dependency' filesep 'xdf' filesep 'xdf' ];
+    addpath(p);
+    p = [p filesep 'plugins' filesep 'mobilab' filesep 'gui' ];
+    addpath(p);
 end
-addpath(p);
 runmobilab(false);
 
 % JRI 7/3/14 -- original code was finding two "Import Data" menus (the one we want

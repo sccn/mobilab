@@ -491,6 +491,8 @@ classdef dataSource < handle
                 end
             end
             EEG.urevent = EEG.event;
+            [~,EEG.data,ext] = fileparts(EEG.data);
+            EEG.data = [ EEG.data ext ];
             if ~isempty(newEEGfile)
                 pop_saveset( EEG, [name '.set'],path);
                 EEG = pop_loadset( [name '.set'],path);
