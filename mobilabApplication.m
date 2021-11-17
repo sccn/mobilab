@@ -287,7 +287,9 @@ classdef mobilabApplication < handle
                 renderer.setClosedIcon(jImageIcon);
                 renderer.setOpenIcon(jImageIcon);
                 renderer.setLeafIcon(jImageIcon);
-                javax.swing.ToolTipManager.sharedInstance(1).registerComponent(jTree);
+                try
+                    javax.swing.ToolTipManager.sharedInstance(1).registerComponent(jTree);
+                end
                 jTree.setCellRenderer(renderer);
                 %set(jTree,'userData',callbacks);
                 set(figureHandle,'userData',callbacks)
