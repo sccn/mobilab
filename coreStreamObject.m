@@ -766,9 +766,14 @@ classdef coreStreamObject < handle
             string = sprintf('\nClass:  %s\nProperties:\n  name:                 %s\n  uuid:                 %s\n  samplingRate:         %i Hz\n  timeStamp:            <1x%i double>\n  numberOfChannels:     %i\n  data:                 <%ix%i %s>\n  event.latencyInFrame: <1x%i double>\n  event.label:          <%ix1 cell>',...
                 class(obj),obj.name,char(obj.uuid),obj.samplingRate,length(obj.timeStamp),obj.numberOfChannels,dim(1),dim(2),obj.precision,length(obj.event.latencyInFrame),length(obj.event.label));
             
-            if iscellstr(obj.unit) && ~isempty(obj.unit{1})
-                 unit = obj.unit{1}; %#ok
-            else unit = 'none';      %#ok
+            if ~isempty(obj.unit)
+                if iscellstr(obj.unit)
+                    unit = obj.unit{1};
+                else
+                    unit = obj.unit;
+                end
+            else
+                unit = 'unknown';      %#ok
             end
             string = sprintf('%s\n  label:                <%ix1 cell>',string, dim(2));
             string = sprintf('%s\n  unit:                 %s',string, unit); %#ok
