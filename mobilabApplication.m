@@ -566,7 +566,7 @@ classdef mobilabApplication < handle
                 case 'folder', guiFun = @ImportFolder;
                 case 'dr_bdf', guiFun = @ImportFromDatariverBDF;
                 case 'mobi'
-                    mobiDataDirectory = uigetdir2('Select the _MoBI folder');
+                    mobiDataDirectory = uigetdir('Select the _MoBI folder');
                     if isnumeric(mobiDataDirectory), return;end
                     if ~exist(mobiDataDirectory,'dir'), return;end
                     suffix = '_MoBI';
