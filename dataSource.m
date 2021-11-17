@@ -824,7 +824,7 @@ try
         ind = unique(streamObj{it}.getTimeIndex(xi));
         x = streamObj{it}.timeStamp(ind)';
         for ch=1:streamObj{it}.numberOfChannels
-            yi = interp1(x,y(ind,ch),xi,'linear');
+            yi = interp1(x,double(y(ind,ch)),xi,'linear');
             fwrite(tfid,yi(:),precision);
         end
         % if srOld, streamObj{it}.samplingRate = srOld;end
