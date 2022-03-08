@@ -287,7 +287,9 @@ classdef mobilabApplication < handle
                 renderer.setClosedIcon(jImageIcon);
                 renderer.setOpenIcon(jImageIcon);
                 renderer.setLeafIcon(jImageIcon);
-                javax.swing.ToolTipManager.sharedInstance(1).registerComponent(jTree);
+                try
+                    javax.swing.ToolTipManager.sharedInstance(1).registerComponent(jTree);
+                end
                 jTree.setCellRenderer(renderer);
                 %set(jTree,'userData',callbacks);
                 set(figureHandle,'userData',callbacks)
@@ -566,7 +568,7 @@ classdef mobilabApplication < handle
                 case 'folder', guiFun = @ImportFolder;
                 case 'dr_bdf', guiFun = @ImportFromDatariverBDF;
                 case 'mobi'
-                    mobiDataDirectory = uigetdir2('Select the _MoBI folder');
+                    mobiDataDirectory = uigetdir('Select the _MoBI folder');
                     if isnumeric(mobiDataDirectory), return;end
                     if ~exist(mobiDataDirectory,'dir'), return;end
                     suffix = '_MoBI';

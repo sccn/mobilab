@@ -35,6 +35,9 @@ classdef dataSourceXDF < dataSource
             if ~any(ismember({'.xdf','.xdfz'},ext))
                 error('MoBILAB:isNotXDF',['dataSourceXDF cannot read ''' ext ''' format.']);
             end
+            if exist('eegplugin_xdfimport', 'file')
+                addpath(genpath(fileparts(which('eegplugin_xdfimport'))));
+            end
             if ~exist('load_xdf','file')
                 error('MoBILAB:xdfimportMissing','xdfimport plugin is missing.')
             end
@@ -237,6 +240,11 @@ classdef dataSourceXDF < dataSource
                             eegChannels = ismember(lower(channelType),'eeg');
                             % mmfObj = memmapfile(streams{stream_count}.tmpfile,'Format',{streams{stream_count}.precision...
                             %     [length(eegChannels) length(streams{stream_count}.time_stamps)] 'x'},'Writable',false);
+                            if all(~eegChannels)
+                                eegChannels = ~eegChannels;
+                                warning("Although the stream is marked as EEG, there are no channels tagged with this type. " + ...
+                                    "We will populate the .data field with all the channels assuming they contain EEG.");
+                            end
                             if any(~eegChannels)
                                 auxChannel.label = labels(~eegChannels);
                                 % auxChannel.data = mmfObj.Data.x(~eegChannels,:)';

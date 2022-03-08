@@ -391,9 +391,17 @@ classdef dataSource < handle
             if nargin < 5, updateGui = true;end
             
             I = false(length(dataObjIndex),1);
-            for k=1:length(dataObjIndex), I(k) = obj.item{dataObjIndex(k)}.isMemoryMappingActive;end
+            for k=1:length(dataObjIndex)
+                I(k) = obj.item{dataObjIndex(k)}.isMemoryMappingActive;
+                if ~I(k)
+                    warning(['Cannot export empty data stream: ' obj.item{dataObjIndex(k)}.name]);
+                end
+            end
             dataObjIndex = dataObjIndex(I);
-            if isempty(dataObjIndex), return;end
+            if isempty(dataObjIndex)
+                warning('Cannot find a nonempty data stream to export, the command will result in no action');
+                return;
+            end
             loc = (1:length(dataObjIndex))';
             for k=1:length(dataObjIndex)
                 if ~isempty(obj.item{dataObjIndex(k)}.label{1}) && ~isempty(strfind(lower(obj.item{dataObjIndex(k)}.label{1}),'unknown'))
@@ -816,7 +824,7 @@ try
         ind = unique(streamObj{it}.getTimeIndex(xi));
         x = streamObj{it}.timeStamp(ind)';
         for ch=1:streamObj{it}.numberOfChannels
-            yi = interp1(x,y(ind,ch),xi,'linear');
+            yi = interp1(x,double(y(ind,ch)),xi,'linear');
             fwrite(tfid,yi(:),precision);
         end
         % if srOld, streamObj{it}.samplingRate = srOld;end

@@ -20,6 +20,10 @@ classdef DataStreamBrowser < CoreBrowser
         function obj = DataStreamBrowser(streamHandle, plotMode, master)
             if nargin < 2, plotMode = 'standalone';end
             if nargin < 3, master = -1;end
+            if prod(streamHandle.size) == 0
+                warning("Cannot plot an empty stream");
+                return;
+            end
             obj.streamHandle = streamHandle;
             obj.dim = fliplr(size(streamHandle.data));
             obj.addlistener('channelIndex','PostSet',@DataStreamBrowser.updateChannelDependencies);
