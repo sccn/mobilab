@@ -143,10 +143,9 @@ classdef coreStreamObject < handle
         end
         %%
         function timeStamp = get.timeStamp(obj)
-            stack = dbstack;
-            if any(strcmp({stack.name},'coreStreamObject.set.timeStamp')), timeStamp = obj.timeStamp;return;end
-            if isempty(obj.timeStamp), obj.timeStamp = retrieveProperty(obj,'timeStamp');end
-            timeStamp = obj.timeStamp;
+            if isempty(obj.timeStamp), timeStamp = retrieveProperty(obj,'timeStamp');
+            else, timeStamp = obj.timeStamp;
+            end
         end
         function set.timeStamp(obj,timeStamp)
             stack = dbstack;
