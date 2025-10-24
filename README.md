@@ -8,7 +8,7 @@ MoBILAB is an open source toolbox for analysis and visualization of mobile brain
 
 MoBILAB is no longer compatible with recent MATLAB versions
 ===========
-MoBILAB relies on complex MATLAB objects that are no longer fully supported in recent MATLAB versions, and would be too difficult to port (MoBILAB is known to work on MATLAB 2017a if you are committed -- and maybe some later version as well). Therefore, it is no longer maintained. Instead, use the XDF plugins in EEGLAB, which, as of 2024, support importing multiple LSL/XDF data streams into EEGLAB.
+MoBILAB relies on legacy MATLAB objects that are no longer supported in recent MATLAB versions, and would be too difficult to port (MoBILAB is known to work on MATLAB 2017a if you are committed -- and maybe some later version as well). Therefore, it is no longer maintained. Instead, use the XDF plugins in EEGLAB, which, as of 2024, support importing multiple LSL/XDF data streams into EEGLAB.
 
 Release notes
 =============
